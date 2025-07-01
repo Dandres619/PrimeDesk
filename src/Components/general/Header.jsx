@@ -16,7 +16,7 @@ export const Header = () => {
           {[
             { path: "/", label: "Inicio" },
             { path: "/agendar", label: "Agendar Cita" },
-            { path: "/estado", label: "Consultar Estado" },
+            { path: "/estado", label: "Consultar estado de cita" },
             { path: "/contacto", label: "Contacto" },
           ].map((item, index) => (
             <NavLink

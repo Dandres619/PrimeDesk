@@ -6,7 +6,6 @@ export const Footer = () => {
   return (
     <footer className="bg-[#1f2937] text-gray-300 px-6 py-16">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
-        {/* Información */}
         <div>
           <h3 className="text-xl font-semibold text-white mb-4">Rafa Motos</h3>
           <p className="text-sm leading-relaxed">
@@ -29,7 +28,6 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* Enlaces rápidos */}
         <div>
           <h3 className="text-xl font-semibold text-white mb-4">
             Enlaces rápidos
@@ -42,7 +40,7 @@ export const Footer = () => {
             </li>
             <li>
               <Link to="/estado" className="hover:text-white transition">
-                Consultar estado
+                Consultar estado de la cita
               </Link>
             </li>
             <li>
@@ -53,7 +51,6 @@ export const Footer = () => {
           </ul>
         </div>
 
-        {/* Mapa */}
         <div>
           <h3 className="text-xl font-semibold text-white mb-4">Ubicación</h3>
           <div className="rounded-xl overflow-hidden border border-gray-600 shadow-lg">
