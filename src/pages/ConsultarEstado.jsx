@@ -11,7 +11,6 @@ export const ConsultarEstado = () => {
   const [placa, setPlaca] = useState("");
   const [datosCita, setDatosCita] = useState(null);
   const [error, setError] = useState("");
-  const [buscado, setBuscado] = useState(false);
 
   const citasMock = [
     {
@@ -43,11 +42,16 @@ export const ConsultarEstado = () => {
 
   const handleBuscar = (e) => {
     e.preventDefault();
+
+    if (placa.trim() === "") {
+      setError("Por favor ingresa una placa antes de buscar.");
+      setDatosCita(null);
+      return;
+    }
+
     const resultado = citasMock.find(
       (cita) => cita.placa.toUpperCase() === placa.toUpperCase()
     );
-
-    setBuscado(true);
 
     if (resultado) {
       setDatosCita(resultado);
@@ -62,7 +66,6 @@ export const ConsultarEstado = () => {
     setPlaca("");
     setDatosCita(null);
     setError("");
-    setBuscado(false);
   };
 
   return (
@@ -72,21 +75,18 @@ export const ConsultarEstado = () => {
           Consultar estado de cita
         </h1>
         <p className="text-sm text-gray-600 text-center mb-8">
-          Ingresa la placa de tu motocicleta para ver el estado actual de tu
-          cita.
+          Ingresa la placa de tu motocicleta para ver el estado actual de tu cita.
         </p>
 
-        <form
-          onSubmit={handleBuscar}
-          className="flex flex-col sm:flex-row gap-4"
-        >
+        <form onSubmit={handleBuscar} className="flex flex-col sm:flex-row gap-4">
           <input
             type="text"
             placeholder="Ej. ABC123"
             value={placa}
             onChange={(e) => setPlaca(e.target.value)}
-            required
-            className="flex-1 border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`flex-1 border ${
+              error ? "border-red-500" : "border-gray-300"
+            } rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
           />
           <button
             type="submit"
@@ -95,6 +95,12 @@ export const ConsultarEstado = () => {
             <FaSearch /> Buscar
           </button>
         </form>
+
+        {error && (
+          <div className="mt-4 text-red-600 text-center text-sm font-medium">
+            {error}
+          </div>
+        )}
 
         {datosCita && (
           <div className="mt-10 bg-gray-50 border border-gray-200 rounded-lg p-6 space-y-4 shadow-sm animate-fade-in">
@@ -137,12 +143,6 @@ export const ConsultarEstado = () => {
                 <FaUndoAlt /> Consultar otra placa
               </button>
             </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-8 text-red-600 text-center font-medium">
-            {error}
           </div>
         )}
       </div>
