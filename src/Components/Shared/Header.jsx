@@ -11,7 +11,7 @@ export const Header = () => {
   const links = [
     { path: "/", label: "Inicio" },
     { path: "/agendar", label: "Agendar Cita" },
-    { path: "/estado", label: "Consultar estado de cita" },
+    { path: "/estado", label: "Consultar estado de la moto" },
     { path: "/contacto", label: "Contacto" },
   ];
 

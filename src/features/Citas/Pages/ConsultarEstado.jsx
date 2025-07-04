@@ -17,7 +17,7 @@ export const ConsultarEstado = () => {
       placa: "ABC123",
       cliente: "Juan Pérez",
       referencia: "Yamaha FZ 2.0",
-      estado: "En reparación",
+      estado: "Pendiente",
     },
     {
       placa: "XYZ789",
@@ -29,12 +29,10 @@ export const ConsultarEstado = () => {
 
   const getColorEstado = (estado) => {
     switch (estado) {
-      case "En reparación":
-        return "bg-yellow-100 text-yellow-800";
       case "Lista para entrega":
         return "bg-green-100 text-green-800";
       case "Pendiente":
-        return "bg-red-100 text-red-800";
+        return "bg-yellow-100 text-yellow-800";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -72,10 +70,10 @@ export const ConsultarEstado = () => {
     <main className="min-h-screen bg-[#f3f4f6] py-16 px-4">
       <div className="max-w-xl mx-auto bg-white shadow-xl rounded-xl p-8 border border-gray-200">
         <h1 className="text-3xl font-bold text-[#1f2937] mb-6 text-center">
-          Consultar estado de cita
+          Consultar estado de la moto
         </h1>
         <p className="text-sm text-gray-600 text-center mb-8">
-          Ingresa la placa de tu motocicleta para ver el estado actual de tu cita.
+          Ingresa la placa de tu motocicleta para ver el estado actual de la misma.
         </p>
 
         <form onSubmit={handleBuscar} className="flex flex-col sm:flex-row gap-4">

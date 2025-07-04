@@ -1,7 +1,7 @@
 import React from "react";
-import { Header } from "../Components/general/Header";
-import { Footer } from "../Components/general/Footer";
-import { Link, Outlet } from "react-router-dom";
+import { Header } from "../Components/Shared/Header";
+import { Footer } from "../Components/Shared/Footer";
+import { Outlet } from "react-router-dom";
 
 export const ClienteLayout = () => {
   return (

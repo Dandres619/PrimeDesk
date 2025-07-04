@@ -40,7 +40,7 @@ export const Footer = () => {
             </li>
             <li>
               <Link to="/estado" className="hover:text-white transition">
-                Consultar estado de la cita
+                Consultar estado de la motocicleta
               </Link>
             </li>
             <li>
@@ -68,7 +68,16 @@ export const Footer = () => {
         </div>
       </div>
 
-      <div className="mt-10 pt-6 border-t border-gray-700 text-center text-sm text-gray-400">
+      <div className="mt-8 text-center">
+        <Link
+          to="/login"
+          className="text-sm text-gray-400 hover:text-white transition"
+        >
+          Acceso administrativo
+        </Link>
+      </div>
+
+      <div className="mt-6 pt-6 border-t border-gray-700 text-center text-sm text-gray-400">
         &copy; {new Date().getFullYear()} Rafa Motos. Todos los derechos
         reservados.
       </div>
