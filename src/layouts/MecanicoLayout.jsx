@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { AdminSideBar } from "../components/Sidebar/Pages/AdminSideBar";
+import { MecanicoSideBar } from "../components/Sidebar/Pages/MecanicoSideBar";
 import { AdminFooter } from "../Components/shared/AdminFooter";
 import { Menu } from "lucide-react";
 
-export const AdminLayout = () => {
+export const MecanicoLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="h-screen flex overflow-hidden">
-      <AdminSideBar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <MecanicoSideBar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex flex-col flex-1 overflow-hidden">
         <div className="sm:hidden flex items-center justify-between px-4 py-3 border-b bg-white shadow">

@@ -1,9 +1,8 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
 import { NavItem } from "../Components/NavItem";
-import { Calendar, Settings, LogOut, LayoutDashboard } from "lucide-react";
+import { Calendar, LogOut} from "lucide-react";
 
-export const AdminSideBar = ({ open, onClose }) => {
+export const MecanicoSideBar = ({ open, onClose }) => {
   return (
     <>
       {open && (
@@ -23,18 +22,12 @@ export const AdminSideBar = ({ open, onClose }) => {
               <h1 className="text-xl font-bold text-[#1f2937] tracking-tight">
                 Rafa Motos
               </h1>
-              <p className="text-sm text-gray-500">Panel Administrativo</p>
+              <p className="text-sm text-gray-500">Panel de mecánicos</p>
             </div>
 
             <nav className="flex flex-col gap-1 mt-6 px-4">
               <NavItem
-                to="/admin"
-                end
-                icon={<LayoutDashboard size={18} />}
-                label="Dashboard"
-              />
-              <NavItem
-                to="/admin/citas"
+                to="/mecanico"
                 icon={<Calendar size={18} />}
                 label="Citas"
               />

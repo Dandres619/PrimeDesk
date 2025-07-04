@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import { ClienteLayout } from "../layouts/ClienteLayout";
 import { AdminLayout } from "../layouts/AdminLayout";
+import { MecanicoLayout } from "../layouts/MecanicoLayout";
 import { Home } from "../pages/Home";
 import { Agendar } from "../features/Citas/Pages/Agendar";
 import { ConsultarEstado } from "../features/Citas/Pages/ConsultarEstado";
@@ -20,6 +21,9 @@ export const AppRouter = () => {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
         <Route path="citas" element={<CitasAgendadas />} />
+      </Route>
+      <Route path="/mecanico" element={<MecanicoLayout />}>
+        <Route index element={<CitasAgendadas />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
