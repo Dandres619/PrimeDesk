@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { AdminSideBar } from "../Components/admin/Sidebar/AdminSideBar";
-import { AdminFooter } from "../Components/admin/AdminFooter";
+import { AdminSideBar } from "../features/Sidebar/Pages/AdminSideBar";
+import { AdminFooter } from "../Components/shared/AdminFooter";
 import { Menu } from "lucide-react";
 
 export const AdminLayout = () => {

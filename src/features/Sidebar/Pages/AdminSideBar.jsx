@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { NavItem } from "./NavItem";
+import { NavItem } from "../Components/NavItem";
 import { Calendar, Settings, LogOut, LayoutDashboard } from "lucide-react";
 
 export const AdminSideBar = ({ open, onClose }) => {
@@ -37,11 +37,6 @@ export const AdminSideBar = ({ open, onClose }) => {
                 to="/admin/citas"
                 icon={<Calendar size={18} />}
                 label="Citas"
-              />
-              <NavItem
-                to="/admin/configuracion"
-                icon={<Settings size={18} />}
-                label="Configuración"
               />
             </nav>
           </div>
