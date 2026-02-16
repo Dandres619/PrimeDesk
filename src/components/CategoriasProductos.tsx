@@ -10,231 +10,77 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Switch } from './ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  Tag,
-  CheckCircle,
-  XCircle,
-  Package
-} from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Tag, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+
+const initialCategories = [
+  { id: 1, name: 'Repuestos de Motor', description: 'Componentes y repuestos para el sistema del motor', status: 'Activo', createdAt: '2024-01-15' },
+  { id: 2, name: 'Sistema de Frenos', description: 'Pastillas, discos, líquidos y componentes de frenos', status: 'Activo', createdAt: '2024-01-12' },
+  { id: 3, name: 'Transmisión', description: 'Cadenas, piñones, embragues y componentes de transmisión', status: 'Activo', createdAt: '2024-01-10' },
+  { id: 4, name: 'Sistema Eléctrico', description: 'Baterías, cables, luces y componentes eléctricos', status: 'Activo', createdAt: '2024-01-08' },
+  { id: 5, name: 'Carrocería', description: 'Espejos, guardabarros, tanques y partes de carrocería', status: 'Inactivo', createdAt: '2024-01-14' },
+  { id: 6, name: 'Aceites y Lubricantes', description: 'Aceites de motor, lubricantes y fluidos especializados', status: 'Activo', createdAt: '2024-01-16' }
+];
 
 export function CategoriasProductos() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [viewingCategory, setViewingCategory] = useState<any>(null);
-  const [confirmDialog, setConfirmDialog] = useState<{
-    open: boolean;
-    title: string;
-    description: string;
-    confirmText: string;
-    variant: 'delete' | 'cancel' | 'default';
-    onConfirm: () => void;
-  }>({
-    open: false,
-    title: '',
-    description: '',
-    confirmText: '',
-    variant: 'default',
-    onConfirm: () => {}
-  });
-
-  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 2;
+  const [categories, setCategories] = useState(initialCategories);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => {} });
 
-  const [categories, setCategories] = useState([
-    {
-      id: 1,
-      name: 'Repuestos de Motor',
-      description: 'Componentes y repuestos para el sistema del motor',
-      status: 'Activo',
-      createdAt: '2024-01-15',
-      updatedAt: '2024-01-15'
-    },
-    {
-      id: 2,
-      name: 'Sistema de Frenos',
-      description: 'Pastillas, discos, líquidos y componentes de frenos',
-      status: 'Activo',
-      createdAt: '2024-01-12',
-      updatedAt: '2024-01-20'
-    },
-    {
-      id: 3,
-      name: 'Transmisión',
-      description: 'Cadenas, piñones, embragues y componentes de transmisión',
-      status: 'Activo',
-      createdAt: '2024-01-10',
-      updatedAt: '2024-01-18'
-    },
-    {
-      id: 4,
-      name: 'Sistema Eléctrico',
-      description: 'Baterías, cables, luces y componentes eléctricos',
-      status: 'Activo',
-      createdAt: '2024-01-08',
-      updatedAt: '2024-01-25'
-    },
-    {
-      id: 5,
-      name: 'Carrocería',
-      description: 'Espejos, guardabarros, tanques y partes de carrocería',
-      status: 'Inactivo',
-      createdAt: '2024-01-14',
-      updatedAt: '2024-01-22'
-    },
-    {
-      id: 6,
-      name: 'Aceites y Lubricantes',
-      description: 'Aceites de motor, lubricantes y fluidos especializados',
-      status: 'Activo',
-      createdAt: '2024-01-16',
-      updatedAt: '2024-01-16'
-    }
-  ]);
+  const filtered = categories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.description.toLowerCase().includes(searchTerm.toLowerCase()));
+  const totalPages = Math.ceil(filtered.length / 2);
+  const paginated = filtered.slice((currentPage - 1) * 2, currentPage * 2);
 
-  const filteredCategories = categories.filter(category => 
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Paginación
-  const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCategories = filteredCategories.slice(startIndex, startIndex + itemsPerPage);
-
-  const handleSaveCategory = (categoryData: any) => {
-    if (editingCategory) {
-      setCategories(categories.map(category => 
-        category.id === editingCategory.id 
-          ? { 
-              ...category, 
-              ...categoryData, 
-              updatedAt: new Date().toISOString().split('T')[0]
-            } 
-          : category
-      ));
-      toast.success('Categoría actualizada exitosamente');
-    } else {
-      const newCategory = { 
-        id: Date.now(), 
-        ...categoryData,
-        status: 'Activo',
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0]
-      };
-      setCategories([...categories, newCategory]);
-      toast.success('Categoría creada exitosamente');
-    }
+  const handleSave = (data: any) => {
+    editingCategory ? setCategories(categories.map(c => c.id === editingCategory.id ? { ...c, ...data } : c)) : setCategories([...categories, { id: Date.now(), ...data, status: 'Activo', createdAt: new Date().toISOString().split('T')[0] }]);
+    toast.success(`Categoría ${editingCategory ? 'actualizada' : 'creada'} exitosamente`);
     setIsDialogOpen(false);
     setEditingCategory(null);
   };
 
-  const toggleCategoryStatus = (categoryId: number) => {
-    setCategories(categories.map(category => 
-      category.id === categoryId 
-        ? { 
-            ...category, 
-            status: category.status === 'Activo' ? 'Inactivo' : 'Activo',
-            updatedAt: new Date().toISOString().split('T')[0]
-          }
-        : category
-    ));
-    toast.success('Estado de la categoría actualizado');
-  };
-
-  const showDeleteConfirm = (categoryId: number) => {
-    setConfirmDialog({
-      open: true,
-      title: 'Eliminar Categoría',
-      description: '¿Está seguro de que desea eliminar esta categoría? Esta acción no se puede deshacer.',
-      confirmText: 'Eliminar',
-      variant: 'delete',
-      onConfirm: () => deleteCategory(categoryId)
-    });
-  };
-
-  const deleteCategory = (categoryId: number) => {
-    setCategories(categories.filter(category => category.id !== categoryId));
-    toast.success('Categoría eliminada exitosamente');
-  };
-
-  const getStatusColor = (status: string) => {
-    return status === 'Activo' 
-      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
-      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
-  };
+  const stats = [
+    { label: 'Total Categorías', value: categories.length, icon: Tag, color: 'text-blue-600' },
+    { label: 'Activas', value: categories.filter(c => c.status === 'Activo').length, icon: CheckCircle, color: 'text-green-600' },
+    { label: 'Inactivas', value: categories.filter(c => c.status === 'Inactivo').length, icon: XCircle, color: 'text-red-600' }
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar categorías..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+          <Input placeholder="Buscar categorías..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => setEditingCategory(null)} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Categoría
+              <Plus className="w-4 h-4 mr-2" /> Nueva Categoría
             </Button>
           </DialogTrigger>
-          <CategoryDialog 
-            category={editingCategory} 
-            onSave={handleSaveCategory}
-          />
+          <CategoryDialog category={editingCategory} onSave={handleSave} />
         </Dialog>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <Tag className="w-8 h-8 text-blue-600 mr-4" />
-            <div>
-              <p className="text-2xl font-bold">{categories.length}</p>
-              <p className="text-muted-foreground">Total Categorías</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <CheckCircle className="w-8 h-8 text-green-600 mr-4" />
-            <div>
-              <p className="text-2xl font-bold">{categories.filter(c => c.status === 'Activo').length}</p>
-              <p className="text-muted-foreground">Activas</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <XCircle className="w-8 h-8 text-red-600 mr-4" />
-            <div>
-              <p className="text-2xl font-bold">{categories.filter(c => c.status === 'Inactivo').length}</p>
-              <p className="text-muted-foreground">Inactivas</p>
-            </div>
-          </CardContent>
-        </Card>
+        {stats.map((s, i) => (
+          <Card key={i}>
+            <CardContent className="flex items-center p-6">
+              <s.icon className={`w-8 h-8 ${s.color} mr-4`} />
+              <div><p className="text-2xl font-bold">{s.value}</p><p className="text-muted-foreground">{s.label}</p></div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Categories Table */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Tag className="w-5 h-5 text-blue-600" />
-            Categorías de Productos ({filteredCategories.length})
+            Categorías de Productos ({filtered.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -247,197 +93,71 @@ export function CategoriasProductos() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedCategories.map((category) => (
-                <TableRow key={category.id}>
+              {paginated.map((c) => (
+                <TableRow key={c.id}>
                   <TableCell>
-                    <div>
-                      <p className="font-medium">{category.name}</p>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {category.description}
-                      </p>
-                    </div>
+                    <p className="font-medium">{c.name}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{c.description}</p>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Switch
-                        checked={category.status === 'Activo'}
-                        onCheckedChange={() => toggleCategoryStatus(category.id)}
-                      />
-                      <span className="text-sm">
-                        {category.status}
-                      </span>
+                      <Switch checked={c.status === 'Activo'} onCheckedChange={() => { setCategories(categories.map(cat => cat.id === c.id ? { ...cat, status: cat.status === 'Activo' ? 'Inactivo' : 'Activo' } : cat)); toast.success('Estado actualizado'); }} />
+                      <span className="text-sm">{c.status}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => setViewingCategory(category)}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => {
-                          setEditingCategory(category);
-                          setIsDialogOpen(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => showDeleteConfirm(category.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setViewingCategory(c)} className="text-blue-600"><Eye className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setEditingCategory(c); setIsDialogOpen(true); }} className="text-blue-600"><Edit className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({ open: true, title: 'Eliminar Categoría', description: '¿Está seguro de que desea eliminar esta categoría?', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setCategories(categories.filter(cat => cat.id !== c.id)); toast.success('Categoría eliminada'); } })} className="text-red-600"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          
-          {/* Paginación */}
           <div className="mt-6 flex justify-center">
             <Pagination>
               <PaginationContent>
-                {totalPages > 1 && (
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                )}
-                
-                {Array.from({ length: Math.max(1, totalPages) }, (_, i) => i + 1).map((page) => (
-                  <PaginationItem key={page}>
-                    <PaginationLink
-                      onClick={() => totalPages > 1 ? setCurrentPage(page) : undefined}
-                      isActive={currentPage === page}
-                      className={totalPages > 1 ? "cursor-pointer" : "cursor-default"}
-                    >
-                      {page}
-                    </PaginationLink>
-                  </PaginationItem>
+                {totalPages > 1 && <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="cursor-pointer" /></PaginationItem>}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <PaginationItem key={p}><PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">{p}</PaginationLink></PaginationItem>
                 ))}
-                
-                {totalPages > 1 && (
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                )}
+                {totalPages > 1 && <PaginationItem><PaginationNext onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="cursor-pointer" /></PaginationItem>}
               </PaginationContent>
             </Pagination>
           </div>
         </CardContent>
       </Card>
 
-      {/* Category Details Dialog */}
       <Dialog open={!!viewingCategory} onOpenChange={() => setViewingCategory(null)}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Detalles de la Categoría</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Detalles de la Categoría</DialogTitle></DialogHeader>
           {viewingCategory && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Nombre de la Categoría</Label>
-                  <p className="font-medium">{viewingCategory.name}</p>
-                </div>
-                <div>
-                  <Label>Estado</Label>
-                  <Badge className={getStatusColor(viewingCategory.status)}>
-                    {viewingCategory.status}
-                  </Badge>
-                </div>
+                <div><Label>Nombre</Label><p className="font-medium">{viewingCategory.name}</p></div>
+                <div><Label>Estado</Label><Badge className={viewingCategory.status === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{viewingCategory.status}</Badge></div>
               </div>
-              
-              <div>
-                <Label>Descripción</Label>
-                <p className="mt-1 p-3 bg-muted/50 text-foreground rounded">{viewingCategory.description}</p>
-              </div>
+              <div><Label>Descripción</Label><p className="mt-1 p-3 bg-muted/50 rounded">{viewingCategory.description}</p></div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Confirm Dialog */}
-      <ConfirmDialog
-        open={confirmDialog.open}
-        onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}
-        title={confirmDialog.title}
-        description={confirmDialog.description}
-        confirmText={confirmDialog.confirmText}
-        variant={confirmDialog.variant}
-        onConfirm={confirmDialog.onConfirm}
-      />
+      <ConfirmDialog open={confirmDialog.open} onOpenChange={o => setConfirmDialog(p => ({ ...p, open: o }))} {...confirmDialog} />
     </div>
   );
 }
 
 function CategoryDialog({ category, onSave }: any) {
-  const [formData, setFormData] = useState({
-    name: category?.name || '',
-    description: category?.description || ''
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.description) {
-      toast.error('Por favor complete todos los campos obligatorios');
-      return;
-    }
-
-    onSave(formData);
-  };
-
+  const [form, setForm] = useState({ name: category?.name || '', description: category?.description || '' });
   return (
-    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>{category ? 'Editar Categoría' : 'Nueva Categoría'}</DialogTitle>
-      </DialogHeader>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <Label htmlFor="name">Nombre de la Categoría *</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="Ej: Repuestos de Motor"
-            required
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="description">Descripción *</Label>
-          <Textarea
-            id="description"
-            value={formData.description}
-            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            placeholder="Descripción detallada de la categoría..."
-            rows={4}
-            required
-          />
-        </div>
-        
-        <div className="flex justify-end gap-2">
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-            {category ? 'Actualizar' : 'Crear'} Categoría
-          </Button>
-        </div>
+    <DialogContent className="max-w-2xl">
+      <DialogHeader><DialogTitle>{category ? 'Editar' : 'Nueva'} Categoría</DialogTitle></DialogHeader>
+      <form onSubmit={e => { e.preventDefault(); onSave(form); }} className="space-y-4">
+        <div><Label>Nombre *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
+        <div><Label>Descripción *</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={4} required /></div>
+        <div className="flex justify-end"><Button type="submit" className="bg-blue-600 hover:bg-blue-700">{category ? 'Actualizar' : 'Crear'}</Button></div>
       </form>
     </DialogContent>
   );
