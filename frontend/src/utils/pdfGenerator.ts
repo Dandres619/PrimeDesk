@@ -87,7 +87,7 @@ export function generateSimplePDF(data: any, type: string, filename: string = 'd
   yPosition = 25;
   addText('Taller de Motocicletas Especializado', 10, 'normal', 'center');
   yPosition = 32;
-  addText('Calle Principal #123-45, Medellín, Colombia | Tel: +57 300 123 4567', 8, 'normal', 'center');
+  addText('Calle Principal #123-45, Bogotá, Colombia | Tel: +57 300 123 4567', 8, 'normal', 'center');
   
   pdf.setTextColor(0, 0, 0);
   yPosition = 50;

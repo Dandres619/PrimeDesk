@@ -12,9 +12,9 @@ import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useTheme } from './ThemeProvider';
-import {
-  User,
-  Bike,
+import { 
+  User, 
+  Bike, 
   Calendar as CalendarIcon,
   LogOut,
   Menu,
@@ -85,7 +85,7 @@ interface Agendamiento {
 const clientMenuItems = [
   { id: 'perfil', label: 'Mi Perfil', icon: User },
   { id: 'motos', label: 'Mis Motos', icon: Bike },
-  { id: 'agendar', label: 'Agendamientos', icon: CalendarIcon },
+  { id: 'agendar', label: 'Agendar Servicio', icon: CalendarIcon },
 ];
 
 interface ClientPanelProps {
@@ -100,61 +100,42 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
   // Estado del perfil
   const [clientData, setClientData] = useState<ClientData>({
-    nombre: '',
-    apellido: '',
-    email: '',
-    telefono: '',
-    documentType: '',
-    document: '',
-    direccion: '',
-    barrio: '',
-    fechaNacimiento: ''
+    nombre: 'Juan Carlos',
+    apellido: 'Pérez',
+    email: 'juan@email.com',
+    telefono: '3001234567',
+    documentType: 'CC',
+    document: '12345678',
+    direccion: 'Calle 123 #45-67',
+    barrio: 'Chapinero',
+    fechaNacimiento: '1985-05-15'
   });
-  const [clientId, setClientId] = useState<number | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
-  // Cargar datos del perfil al montar
-  React.useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const storedToken = localStorage.getItem('token');
-        if (!storedToken) return;
-
-        const response = await fetch('http://localhost:3000/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${storedToken}`
-          }
-        });
-
-        if (!response.ok) throw new Error('Error al cargar perfil');
-
-        const data = await response.json();
-
-        // Mapear datos del backend al estado
-        setClientData({
-          nombre: data.NombreCliente || '',
-          apellido: data.ApellidoCliente || '',
-          email: data.Correo || '',
-          telefono: data.Telefono || '',
-          documentType: data.TipoDocumento || '',
-          document: data.Documento || '',
-          direccion: data.Direccion || '',
-          barrio: data.Barrio || '',
-          fechaNacimiento: data.FechaNacimiento ? data.FechaNacimiento.split('T')[0] : ''
-        });
-        setClientId(data.ID_Cliente);
-
-      } catch (error) {
-        console.error(error);
-        toast.error('No se pudo cargar la información del perfil');
-      }
-    };
-
-    fetchProfile();
-  }, [currentUser]);
-
   // Estado de las motos
-  const [motos, setMotos] = useState<Moto[]>([]);
+  const [motos, setMotos] = useState<Moto[]>([
+    {
+      id: 1,
+      marca: 'Yamaha',
+      modelo: 'FZ25',
+      ano: 2020,
+      placa: 'ABC123',
+      color: 'Azul',
+      cilindraje: '250cc',
+      kilometraje: 15000
+    },
+    {
+      id: 2,
+      marca: 'Honda',
+      modelo: 'CB160F',
+      ano: 2019,
+      placa: 'DEF456',
+      color: 'Rojo',
+      cilindraje: '160cc',
+      kilometraje: 22000
+    }
+  ]);
+
   const [showMotoModal, setShowMotoModal] = useState(false);
   const [editingMoto, setEditingMoto] = useState<Moto | null>(null);
   const [motoFormData, setMotoFormData] = useState({
@@ -166,39 +147,6 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     cilindraje: '',
     kilometraje: 0
   });
-
-
-
-  // Cargar motos cuando tengamos el clientId
-  React.useEffect(() => {
-    if (!clientId) return;
-    const fetchMotos = async () => {
-      try {
-        const storedToken = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:3000/api/motocicletas?id_cliente=${clientId}`, {
-          headers: { 'Authorization': `Bearer ${storedToken}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          // Mapear respuesta del backend al formato del frontend
-          const mappedMotos = data.map((m: any) => ({
-            id: m.ID_Motocicleta,
-            marca: m.Marca,
-            modelo: m.Modelo,
-            ano: m.Anio,
-            placa: m.Placa,
-            color: m.Color,
-            cilindraje: m.Motor + 'cc', // Asumiendo que 'Motor' es cilindraje
-            kilometraje: m.Kilometraje
-          }));
-          setMotos(mappedMotos);
-        }
-      } catch (error) {
-        console.error('Error al cargar motos:', error);
-      }
-    };
-    fetchMotos();
-  }, [clientId]);
 
   // Estado del historial de servicios
   const [servicios, setServicios] = useState<ServicioHistorial[]>([
@@ -225,127 +173,44 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   ]);
 
   // Estado de agendamientos
-  const [agendamientos, setAgendamientos] = useState<Agendamiento[]>([]);
+  const [agendamientos, setAgendamientos] = useState<Agendamiento[]>([
+    {
+      id: 1,
+      motoId: 1,
+      motoBrand: 'Yamaha',
+      motoModel: 'FZ25',
+      motoPlate: 'ABC123',
+      fecha: '2025-10-10',
+      startTime: '10:00',
+      mechanicName: 'Carlos Méndez',
+      serviceTypes: ['Mantenimiento', 'Cambio de Aceite'],
+      notes: 'Cambio de aceite y revisión general'
+    }
+  ]);
   const [showAgendarModal, setShowAgendarModal] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<Agendamiento | null>(null);
   const [appointmentDetailsOpen, setAppointmentDetailsOpen] = useState(false);
-
-  const [availableMechanics, setAvailableMechanics] = useState<any[]>([]);
-  const [availableServices, setAvailableServices] = useState<any[]>([]);
-
   const [agendarFormData, setAgendarFormData] = useState({
     motoId: 0,
     fecha: '',
     startTime: '',
-    mecanico: '', // ID del mecánico
-    serviceTypes: [] as string[], // IDs de servicios
+    mecanico: '',
+    serviceTypes: [] as string[],
     descripcion: ''
   });
 
-  const [selectedMoto, setSelectedMoto] = useState<Moto | null>(null);
-  const [showDeleteMotoConfirm, setShowDeleteMotoConfirm] = useState(false);
   const [selectedMotoForHistory, setSelectedMotoForHistory] = useState<number | null>(null);
+  const [showDeleteMotoConfirm, setShowDeleteMotoConfirm] = useState(false);
+  const [selectedMoto, setSelectedMoto] = useState<Moto | null>(null);
 
-  // Cargar datos iniciales (Mecánicos, Servicios y Agendamientos del cliente)
-  React.useEffect(() => {
-    const fetchData = async () => {
-      const storedToken = localStorage.getItem('token');
-      if (!storedToken) return;
+  // Lista de mecánicos disponibles
+  const mechanics = ['Carlos Méndez', 'Luis Torres', 'Pedro Ramírez', 'Jorge Martínez'];
 
-      try {
-        // Cargar mecánicos
-        const mechanicsRes = await fetch('http://localhost:3000/api/empleados', {
-          headers: { 'Authorization': `Bearer ${storedToken}` }
-        });
-        if (mechanicsRes.ok) setAvailableMechanics(await mechanicsRes.json());
-
-        // Cargar servicios
-        const servicesRes = await fetch('http://localhost:3000/api/servicios', {
-          headers: { 'Authorization': `Bearer ${storedToken}` }
-        });
-        if (servicesRes.ok) setAvailableServices(await servicesRes.json());
-
-      } catch (error) {
-        console.error('Error cargando catálogos:', error);
-      }
-    };
-    fetchData();
-  }, [currentUser]);
-
-  // Cargar agendamientos del cliente
-  React.useEffect(() => {
-    if (!clientId) return;
-    const fetchAppointments = async () => {
-      try {
-        const storedToken = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:3000/api/agendamientos?id_cliente=${clientId}`, {
-          headers: { 'Authorization': `Bearer ${storedToken}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          // Mapear
-          const mapped = data.map((a: any) => ({
-            id: a.ID_Agendamiento,
-            motoId: a.ID_Motocicleta,
-            motoBrand: a.MarcaMoto,
-            motoModel: a.Modelo,
-            motoPlate: a.Placa,
-            fecha: a.Dia.split('T')[0],
-            startTime: a.HoraInicio,
-            mechanicName: `${a.NombreEmpleado} ${a.ApellidoEmpleado}`,
-            serviceTypes: [], // No vienen en el listado simple, habría que hacer join o fetching detalle
-            notes: a.Notas
-          }));
-          setAgendamientos(mapped);
-        }
-      } catch (error) {
-        console.error('Error cargando agendamientos:', error);
-      }
-    };
-    fetchAppointments();
-  }, [clientId]);
-
-  const handleUpdateProfile = async () => {
-    try {
-      const storedToken = localStorage.getItem('token');
-      if (!storedToken || !clientId) return;
-
-      // Actualizar datos del cliente (Necesitamos un endpoint para esto, usaremos el CRUD de clientes por ahora o crearemos uno especifico)
-      // El endpoint ideal sería PUT /api/clientes/:id
-      // Pero el servicio de clientes espera { id_usuario, nombre... }
-
-      // NOTA: Asumimos que existe PUT /api/clientes/:id. Si no, habría que crearlo o usar uno de usuarios.
-      // Dado que estamos en 'ClientPanel', intentaremos actualizar la tabla Clientes.
-
-      const response = await fetch(`http://localhost:3000/api/clientes/${clientId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${storedToken}`
-        },
-        body: JSON.stringify({
-          nombre: clientData.nombre,
-          apellido: clientData.apellido,
-          telefono: clientData.telefono,
-          direccion: clientData.direccion,
-          barrio: clientData.barrio,
-          fecha_nacimiento: clientData.fechaNacimiento,
-          // Enviamos los campos inmutables también por si el backend los requiere, aunque no deban cambiar
-          tipo_documento: clientData.documentType,
-          documento: clientData.document
-        })
-      });
-
-      if (!response.ok) throw new Error('Error al actualizar perfil');
-
-      toast.success('Perfil actualizado exitosamente');
-      setIsEditingProfile(false);
-    } catch (error) {
-      console.error(error);
-      toast.error('Error al guardar cambios');
-    }
+  const handleUpdateProfile = () => {
+    toast.success('Perfil actualizado exitosamente');
+    setIsEditingProfile(false);
   };
 
   const resetMotoForm = () => {
@@ -361,90 +226,32 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     setEditingMoto(null);
   };
 
-  const handleSubmitMoto = async (e: React.FormEvent) => {
+  const handleSubmitMoto = (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!motoFormData.marca || !motoFormData.modelo || !motoFormData.placa) {
       toast.error('Por favor complete los campos obligatorios');
       return;
     }
 
-    const storedToken = localStorage.getItem('token');
-    if (!storedToken || !clientId) return;
-
-    try {
-      if (editingMoto) {
-        // Actualizar moto
-        const response = await fetch(`http://localhost:3000/api/motocicletas/${editingMoto.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${storedToken}`
-          },
-          body: JSON.stringify({
-            marca: motoFormData.marca,
-            modelo: motoFormData.modelo,
-            anio: motoFormData.ano, // Backend espera 'anio' o 'Anyo'? Revisar mapeo. Backend usually expects 'anio' or snake_case.
-            // Revisando 'motocicletas.service.js' create: @marca, @modelo, @anio...
-            // Espera 'anio'.
-            placa: motoFormData.placa,
-            color: motoFormData.color,
-            motor: motoFormData.cilindraje, // Backend espera 'motor'
-            kilometraje: motoFormData.kilometraje,
-            id_cliente: clientId
-          })
-        });
-
-        if (!response.ok) throw new Error('Error al actualizar moto');
-
-        // Actualizar estado local
-        setMotos(motos.map(moto =>
-          moto.id === editingMoto.id
-            ? { ...moto, ...motoFormData }
-            : moto
-        ));
-        toast.success('Moto actualizada exitosamente');
-      } else {
-        // Crear nueva moto
-        const response = await fetch('http://localhost:3000/api/motocicletas', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${storedToken}`
-          },
-          body: JSON.stringify({
-            marca: motoFormData.marca,
-            modelo: motoFormData.modelo,
-            anio: motoFormData.ano,
-            placa: motoFormData.placa,
-            color: motoFormData.color,
-            motor: motoFormData.cilindraje,
-            kilometraje: motoFormData.kilometraje,
-            id_cliente: clientId
-          })
-        });
-
-        if (!response.ok) throw new Error('Error al crear moto');
-
-        const newMotoData = await response.json();
-
-        // El backend devuelve el objeto creado?
-        // motocicletas.controller.js create devuelve 'id: result.id, ...data'
-
-        const newMoto: Moto = {
-          id: newMotoData.id || Date.now(),
-          ...motoFormData
-        };
-        setMotos([...motos, newMoto]);
-        toast.success('Moto agregada exitosamente');
-      }
-
-      setShowMotoModal(false);
-      resetMotoForm();
-    } catch (error) {
-      console.error(error);
-      toast.error('Error al guardar la moto');
+    if (editingMoto) {
+      setMotos(motos.map(moto => 
+        moto.id === editingMoto.id 
+          ? { ...moto, ...motoFormData }
+          : moto
+      ));
+      toast.success('Moto actualizada exitosamente');
+    } else {
+      const newMoto: Moto = {
+        id: Date.now(),
+        ...motoFormData
+      };
+      setMotos([...motos, newMoto]);
+      toast.success('Moto agregada exitosamente');
     }
+
+    setShowMotoModal(false);
+    resetMotoForm();
   };
 
   const handleEditMoto = (moto: Moto) => {
@@ -467,82 +274,41 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     setSelectedMoto(null);
   };
 
-  const handleSubmitAgendamiento = async (e: React.FormEvent) => {
+  const handleSubmitAgendamiento = (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!agendarFormData.motoId || !agendarFormData.fecha || !agendarFormData.startTime || !agendarFormData.mecanico || agendarFormData.serviceTypes.length === 0) {
       toast.error('Por favor complete todos los campos obligatorios');
       return;
     }
 
-    const storedToken = localStorage.getItem('token');
+    const selectedMoto = motos.find(m => m.id === agendarFormData.motoId);
+    if (!selectedMoto) return;
 
-    // Calcular hora fin (1 hora por defecto)
-    const [hours, minutes] = agendarFormData.startTime.split(':').map(Number);
-    const endWindow = new Date();
-    endWindow.setHours(hours + 1, minutes);
-    const endTime = `${endWindow.getHours().toString().padStart(2, '0')}:${endWindow.getMinutes().toString().padStart(2, '0')}`;
+    const newAgendamiento: Agendamiento = {
+      id: Date.now(),
+      motoId: agendarFormData.motoId,
+      motoBrand: selectedMoto.marca,
+      motoModel: selectedMoto.modelo,
+      motoPlate: selectedMoto.placa,
+      fecha: agendarFormData.fecha,
+      startTime: agendarFormData.startTime,
+      mechanicName: agendarFormData.mecanico,
+      serviceTypes: agendarFormData.serviceTypes,
+      notes: agendarFormData.descripcion
+    };
 
-    try {
-      const response = await fetch('http://localhost:3000/api/agendamientos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${storedToken}`
-        },
-        body: JSON.stringify({
-          id_motocicleta: agendarFormData.motoId,
-          id_empleado: parseInt(agendarFormData.mecanico),
-          dia: agendarFormData.fecha,
-          hora_inicio: agendarFormData.startTime,
-          hora_fin: endTime,
-          notas: agendarFormData.descripcion,
-          servicios: agendarFormData.serviceTypes.map(Number)
-        })
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || 'Error al agendar');
-      }
-
-      const newAptData = await response.json();
-
-      // Actualizar lista localmente (o recargar)
-      // Para simplificar, recargamos la página o la lista, pero aqui agregaremos manualmente
-      // Necesitamos nombres de moto y mecanico para la vista
-      const selectedMoto = motos.find(m => m.id === agendarFormData.motoId);
-      const selectedMechanic = availableMechanics.find(m => m.ID_Empleado === parseInt(agendarFormData.mecanico));
-
-      const newAgendamiento: Agendamiento = {
-        id: newAptData.ID_Agendamiento,
-        motoId: agendarFormData.motoId,
-        motoBrand: selectedMoto?.marca || '',
-        motoModel: selectedMoto?.modelo || '',
-        motoPlate: selectedMoto?.placa || '',
-        fecha: agendarFormData.fecha,
-        startTime: agendarFormData.startTime,
-        mechanicName: selectedMechanic ? `${selectedMechanic.Nombre} ${selectedMechanic.Apellido}` : '',
-        serviceTypes: [], // Pendiente mostrar nombres
-        notes: agendarFormData.descripcion
-      };
-
-      setAgendamientos([...agendamientos, newAgendamiento]);
-      toast.success('Servicio agendado exitosamente.');
-      setShowAgendarModal(false);
-      setAgendarFormData({
-        motoId: 0,
-        fecha: '',
-        startTime: '',
-        mecanico: '',
-        serviceTypes: [],
-        descripcion: ''
-      });
-
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.message);
-    }
+    setAgendamientos([...agendamientos, newAgendamiento]);
+    toast.success('Servicio agendado exitosamente. La hora es aproximada y puede ser reagendada.');
+    setShowAgendarModal(false);
+    setAgendarFormData({
+      motoId: 0,
+      fecha: '',
+      startTime: '',
+      mecanico: '',
+      serviceTypes: [],
+      descripcion: ''
+    });
   };
 
   const getMotoName = (motoId: number) => {
@@ -562,7 +328,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       confirmado: 'bg-blue-100 text-blue-800 border-blue-200',
       cancelado: 'bg-red-100 text-red-800 border-red-200'
     };
-
+    
     return (
       <Badge className={variants[estado as keyof typeof variants] || variants.pendiente}>
         {estado.charAt(0).toUpperCase() + estado.slice(1).replace('_', ' ')}
@@ -585,7 +351,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                   <p className="text-muted-foreground">Gestiona tu información personal</p>
                 </div>
               </div>
-              <Button
+              <Button 
                 onClick={() => setIsEditingProfile(!isEditingProfile)}
                 variant={isEditingProfile ? "outline" : "default"}
                 className={!isEditingProfile ? "bg-blue-600 hover:bg-blue-700" : ""}
@@ -703,14 +469,14 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 </div>
                 {isEditingProfile && (
                   <div className="flex gap-2 pt-4">
-                    <Button
-                      variant="outline"
+                    <Button 
+                      variant="outline" 
                       onClick={() => setIsEditingProfile(false)}
                       className="flex-1"
                     >
                       Cancelar
                     </Button>
-                    <Button
+                    <Button 
                       onClick={handleUpdateProfile}
                       className="flex-1 bg-blue-600 hover:bg-blue-700"
                     >
@@ -724,23 +490,14 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
         );
 
       // Nuevo case 'motos' completo en vista tabla
-      case 'motos':
+case 'motos':
         return (
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Bike className="w-5 h-5 text-blue-600" />
-                  Listado de Motocicletas
-                </CardTitle>
-                <Button onClick={() => {
-                  resetMotoForm();
-                  setShowMotoModal(true);
-                }} size="sm" className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Agregar Moto
-                </Button>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <Bike className="w-5 h-5 text-blue-600" />
+                Listado de Motocicletas
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -932,8 +689,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
                     <div className="min-w-[200px] text-center">
-                      {format(currentDate, 'MMMM yyyy', { locale: es }).charAt(0).toUpperCase() +
-                        format(currentDate, 'MMMM yyyy', { locale: es }).slice(1)}
+                      {format(currentDate, 'MMMM yyyy', { locale: es }).charAt(0).toUpperCase() + 
+                       format(currentDate, 'MMMM yyyy', { locale: es }).slice(1)}
                     </div>
                     <Button
                       variant="outline"
@@ -952,7 +709,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                       {day}
                     </div>
                   ))}
-
+                  
                   {rows.map((week, weekIdx) => (
                     week.map((day, dayIdx) => {
                       const dayAppointments = getAppointmentsForDate(day);
@@ -962,7 +719,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                       const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                       const hasAppointment = dayAppointments.length > 0;
                       const isClickable = isCurrentMonth && !isWeekend && !hasAppointment;
-
+                      
                       return (
                         <div
                           key={`${weekIdx}-${dayIdx}`}
@@ -983,7 +740,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                               <Ban className="w-8 h-8 text-muted-foreground" />
                             </div>
                           )}
-
+                          
                           <div className={`text-sm mb-1 ${isTodayDate ? 'font-bold text-blue-600 dark:text-blue-400' : ''}`}>
                             {format(day, dateFormat)}
                           </div>
@@ -1053,17 +810,18 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
               <p className="text-xs text-blue-700 dark:text-blue-400">{currentUser.name}</p>
             </div>
           </SidebarHeader>
-
+          
           <SidebarContent className="p-4">
             <SidebarMenu>
               {clientMenuItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
+                  <SidebarMenuButton 
                     onClick={() => setActiveSection(item.id)}
-                    className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${activeSection === item.id
-                      ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                      : 'hover:bg-muted/50'
-                      }`}
+                    className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${
+                      activeSection === item.id 
+                        ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' 
+                        : 'hover:bg-muted/50'
+                    }`}
                   >
                     <item.icon className={`w-5 h-5 ${activeSection === item.id ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'}`} />
                     <span>{item.label}</span>
@@ -1072,11 +830,11 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
               ))}
             </SidebarMenu>
           </SidebarContent>
-
+          
           <SidebarFooter className="border-t border-border p-4">
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton
+                <SidebarMenuButton 
                   onClick={() => setShowLogoutConfirm(true)}
                   className="w-full justify-start gap-3 p-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                 >
@@ -1118,7 +876,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
               </div>
             </div>
           </header>
-
+          
           <div className="flex-1 p-6 bg-muted/30">
             {renderContent()}
           </div>
@@ -1205,9 +963,9 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
+              <Button 
+                type="button" 
+                variant="outline" 
                 onClick={() => {
                   setShowMotoModal(false);
                   resetMotoForm();
@@ -1243,8 +1001,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
             <div className="space-y-2">
               <Label htmlFor="motoSelect">Selecciona tu Moto *</Label>
-              <Select
-                value={agendarFormData.motoId.toString()}
+              <Select 
+                value={agendarFormData.motoId.toString()} 
                 onValueChange={(value) => setAgendarFormData(prev => ({ ...prev, motoId: parseInt(value) }))}
               >
                 <SelectTrigger>
@@ -1262,17 +1020,17 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
             <div className="space-y-2">
               <Label htmlFor="mecanico">Mecánico Preferido *</Label>
-              <Select
-                value={agendarFormData.mecanico}
+              <Select 
+                value={agendarFormData.mecanico} 
                 onValueChange={(value) => setAgendarFormData(prev => ({ ...prev, mecanico: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona un mecánico" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableMechanics.map((mechanic) => (
-                    <SelectItem key={mechanic.ID_Empleado} value={mechanic.ID_Empleado.toString()}>
-                      {mechanic.Nombre} {mechanic.Apellido}
+                  {mechanics.map((mechanic) => (
+                    <SelectItem key={mechanic} value={mechanic}>
+                      {mechanic}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1284,8 +1042,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 Hora de Inicio (Aproximada) *
               </Label>
-              <Select
-                value={agendarFormData.startTime}
+              <Select 
+                value={agendarFormData.startTime} 
                 onValueChange={(value) => setAgendarFormData(prev => ({ ...prev, startTime: value }))}
               >
                 <SelectTrigger>
@@ -1311,35 +1069,32 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
             <div className="space-y-2">
               <Label>Servicios a realizar *</Label>
               <div className="grid grid-cols-2 gap-3">
-                <div className="grid grid-cols-2 gap-3">
-                  {availableServices.map((service) => (
-                    <div key={service.ID_Servicio} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`service-${service.ID_Servicio}`}
-                        checked={agendarFormData.serviceTypes.includes(service.ID_Servicio.toString())}
-                        onChange={(e) => {
-                          const serviceId = service.ID_Servicio.toString();
-                          if (e.target.checked) {
-                            setAgendarFormData(prev => ({
-                              ...prev,
-                              serviceTypes: [...prev.serviceTypes, serviceId]
-                            }));
-                          } else {
-                            setAgendarFormData(prev => ({
-                              ...prev,
-                              serviceTypes: prev.serviceTypes.filter(s => s !== serviceId)
-                            }));
-                          }
-                        }}
-                        className="rounded border-gray-300"
-                      />
-                      <label htmlFor={`service-${service.ID_Servicio}`} className="text-sm cursor-pointer">
-                        {service.Nombre}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                {['Mantenimiento', 'Reparación', 'Revisión', 'Diagnóstico', 'Cambio de Aceite', 'Afinación'].map((service) => (
+                  <div key={service} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`service-${service}`}
+                      checked={agendarFormData.serviceTypes.includes(service)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setAgendarFormData(prev => ({
+                            ...prev,
+                            serviceTypes: [...prev.serviceTypes, service]
+                          }));
+                        } else {
+                          setAgendarFormData(prev => ({
+                            ...prev,
+                            serviceTypes: prev.serviceTypes.filter(s => s !== service)
+                          }));
+                        }
+                      }}
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor={`service-${service}`} className="text-sm cursor-pointer">
+                      {service}
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -1355,9 +1110,9 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
+              <Button 
+                type="button" 
+                variant="outline" 
                 onClick={() => setShowAgendarModal(false)}
                 className="flex-1"
               >
@@ -1380,7 +1135,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
               Detalles del Agendamiento
             </DialogTitle>
           </DialogHeader>
-
+          
           {selectedAppointment && (
             <div className="space-y-4 py-2">
               {/* Fecha */}
@@ -1489,7 +1244,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
         description={`¿Estás seguro de que deseas eliminar la moto "${selectedMoto?.marca} ${selectedMoto?.modelo}"? Esta acción no se puede deshacer.`}
         confirmText="Eliminar"
         onConfirm={confirmDeleteMoto}
-        variant="delete"
+        variant="destructive"
       />
     </SidebarProvider>
   );
