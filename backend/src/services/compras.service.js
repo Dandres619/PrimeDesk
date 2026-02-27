@@ -1,92 +1,100 @@
-const { getPool, sql } = require('../config/db');
+const { getPool } = require('../config/db');
 
 const getAll = async () => {
-    const pool = await getPool();
-    return (await pool.request().query(`
-    SELECT c.*, p.NombreEmpresa, m.Placa
-    FROM Compras c
-    INNER JOIN Proveedores p ON c.ID_Proveedor = p.ID_Proveedor
-    INNER JOIN Motocicletas m ON c.ID_Motocicleta = m.ID_Motocicleta
-    ORDER BY c.FechaCompra DESC
-  `)).recordset;
+  const sql = await getPool();
+  const rows = await sql`
+        SELECT c.id_compra AS "ID_Compra", c.id_proveedor AS "ID_Proveedor", 
+               c.id_motocicleta AS "ID_Motocicleta", c.fechacompra AS "FechaCompra", 
+               c.total AS "Total", c.notas AS "Notas", c.estado AS "Estado",
+               p.nombreempresa AS "NombreEmpresa", m.placa AS "Placa"
+        FROM compras c
+        INNER JOIN proveedores p ON c.id_proveedor = p.id_proveedor
+        INNER JOIN motocicletas m ON c.id_motocicleta = m.id_motocicleta
+        ORDER BY c.fechacompra DESC
+    `;
+  return rows;
 };
 
 const getById = async (id) => {
-    const pool = await getPool();
-    const r = await pool.request().input('id', sql.Int, id).query(`
-    SELECT c.*, p.NombreEmpresa, m.Placa
-    FROM Compras c
-    INNER JOIN Proveedores p ON c.ID_Proveedor = p.ID_Proveedor
-    INNER JOIN Motocicletas m ON c.ID_Motocicleta = m.ID_Motocicleta
-    WHERE c.ID_Compra = @id
-  `);
-    if (!r.recordset.length) throw { status: 404, message: 'Compra no encontrada.' };
+  const sql = await getPool();
+  const purchases = await sql`
+        SELECT c.id_compra AS "ID_Compra", c.id_proveedor AS "ID_Proveedor", 
+               c.id_motocicleta AS "ID_Motocicleta", c.fechacompra AS "FechaCompra", 
+               c.total AS "Total", c.notas AS "Notas", c.estado AS "Estado",
+               p.nombreempresa AS "NombreEmpresa", m.placa AS "Placa"
+        FROM compras c
+        INNER JOIN proveedores p ON c.id_proveedor = p.id_proveedor
+        INNER JOIN motocicletas m ON c.id_motocicleta = m.id_motocicleta
+        WHERE c.id_compra = ${id}
+    `;
+  if (purchases.length === 0) throw { status: 404, message: 'Compra no encontrada.' };
 
-    const detalle = await pool.request().input('id', sql.Int, id).query(`
-    SELECT dc.*, pr.Nombre AS NombreProducto
-    FROM Detalle_Compras dc
-    INNER JOIN Productos pr ON dc.ID_Producto = pr.ID_Producto
-    WHERE dc.ID_Compra = @id
-  `);
+  const detail = await sql`
+        SELECT dc.id_detallecompra AS "ID_DetalleCompra", dc.id_compra AS "ID_Compra", 
+               dc.id_producto AS "ID_Producto", dc.cantidad AS "Cantidad", 
+               dc.preciounitario AS "PrecioUnitario", dc.subtotal AS "Subtotal",
+               pr.nombre AS "NombreProducto"
+        FROM detalle_compras dc
+        INNER JOIN productos pr ON dc.id_producto = pr.id_producto
+        WHERE dc.id_compra = ${id}
+    `;
 
-    return { ...r.recordset[0], detalle: detalle.recordset };
+  return { ...purchases[0], detalle: detail };
 };
 
 const create = async ({ id_proveedor, id_motocicleta, total, notas, detalle }) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('id_proveedor', sql.Int, id_proveedor)
-        .input('id_motocicleta', sql.Int, id_motocicleta)
-        .input('total', sql.Decimal(10, 2), total)
-        .input('notas', sql.Text, notas || null)
-        .query(`
-      INSERT INTO Compras (ID_Proveedor, ID_Motocicleta, FechaCompra, Total, Notas, Estado)
-      OUTPUT INSERTED.*
-      VALUES (@id_proveedor, @id_motocicleta, GETDATE(), @total, @notas, 1)
-    `);
+  const sql = await getPool();
 
-    const compra = r.recordset[0];
+  try {
+    const result = await sql.begin(async (tx) => {
+      const [compra] = await tx`
+                INSERT INTO compras (id_proveedor, id_motocicleta, fechacompra, total, notas, estado)
+                VALUES (${id_proveedor}, ${id_motocicleta}, NOW(), ${total}, ${notas || null}, 1)
+                RETURNING id_compra AS "ID_Compra"
+            `;
 
-    if (detalle && detalle.length > 0) {
+      if (detalle && detalle.length > 0) {
+        const itemInserts = detalle.map(item => ({
+          id_compra: compra.ID_Compra,
+          id_producto: item.id_producto,
+          cantidad: item.cantidad,
+          preciounitario: item.precio_unitario,
+          subtotal: item.subtotal
+        }));
+
+        await tx`INSERT INTO detalle_compras ${sql(itemInserts, 'id_compra', 'id_producto', 'cantidad', 'preciounitario', 'subtotal')}`;
+
+        // Actualizar stock de los productos
         for (const item of detalle) {
-            await pool.request()
-                .input('id_compra', sql.Int, compra.ID_Compra)
-                .input('id_producto', sql.Int, item.id_producto)
-                .input('cantidad', sql.Int, item.cantidad)
-                .input('precio_unitario', sql.Decimal(10, 2), item.precio_unitario)
-                .input('subtotal', sql.Decimal(10, 2), item.subtotal)
-                .query(`
-          INSERT INTO Detalle_Compras (ID_Compra, ID_Producto, Cantidad, PrecioUnitario, Subtotal)
-          VALUES (@id_compra, @id_producto, @cantidad, @precio_unitario, @subtotal)
-        `);
-            // Actualizar stock del producto
-            await pool.request()
-                .input('id_producto', sql.Int, item.id_producto)
-                .input('cantidad', sql.Int, item.cantidad)
-                .query('UPDATE Productos SET Cantidad = Cantidad + @cantidad WHERE ID_Producto = @id_producto');
+          await tx`
+                        UPDATE productos 
+                        SET cantidad = cantidad + ${item.cantidad} 
+                        WHERE id_producto = ${item.id_producto}
+                    `;
         }
-    }
+      }
 
-    return compra;
+      return compra;
+    });
+
+    return result;
+  } catch (err) {
+    console.error('Error al crear compra:', err);
+    throw err;
+  }
 };
 
 const update = async (id, { id_proveedor, id_motocicleta, total, notas, estado }) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('id', sql.Int, id)
-        .input('id_proveedor', sql.Int, id_proveedor)
-        .input('id_motocicleta', sql.Int, id_motocicleta)
-        .input('total', sql.Decimal(10, 2), total)
-        .input('notas', sql.Text, notas || null)
-        .input('estado', sql.Bit, estado)
-        .query(`
-      UPDATE Compras SET ID_Proveedor=@id_proveedor, ID_Motocicleta=@id_motocicleta,
-        Total=@total, Notas=@notas, Estado=@estado
-      OUTPUT INSERTED.*
-      WHERE ID_Compra=@id
-    `);
-    if (!r.recordset.length) throw { status: 404, message: 'Compra no encontrada.' };
-    return r.recordset[0];
+  const sql = await getPool();
+  const [row] = await sql`
+        UPDATE compras 
+        SET id_proveedor = ${id_proveedor}, id_motocicleta = ${id_motocicleta},
+            total = ${total}, notas = ${notas || null}, estado = ${estado}
+        WHERE id_compra = ${id}
+        RETURNING id_compra AS "ID_Compra"
+    `;
+  if (!row) throw { status: 404, message: 'Compra no encontrada.' };
+  return row;
 };
 
 module.exports = { getAll, getById, create, update };

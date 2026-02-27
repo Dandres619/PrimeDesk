@@ -1,101 +1,108 @@
-const { getPool, sql } = require('../config/db');
+const { getPool } = require('../config/db');
 
 const getAll = async () => {
-    const pool = await getPool();
-    return (await pool.request().query(`
-    SELECT v.*,
-      e.Nombre AS NombreEmpleado, e.Apellido AS ApellidoEmpleado,
-      m.Placa, m.Marca AS MarcaMoto
-    FROM Ventas v
-    INNER JOIN Empleados e ON v.ID_Empleado = e.ID_Empleado
-    INNER JOIN Motocicletas m ON v.ID_Motocicleta = m.ID_Motocicleta
-    ORDER BY v.Fecha DESC
-  `)).recordset;
+  const sql = await getPool();
+  const rows = await sql`
+        SELECT v.id_venta AS "ID_Venta", v.id_reparacion AS "ID_Reparacion", 
+               v.id_empleado AS "ID_Empleado", v.id_motocicleta AS "ID_Motocicleta", 
+               v.fecha AS "Fecha", v.total AS "Total", v.observaciones AS "Observaciones", 
+               v.estado AS "Estado",
+               e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado",
+               m.placa AS "Placa", m.marca AS "MarcaMoto"
+        FROM ventas v
+        INNER JOIN empleados e ON v.id_empleado = e.id_empleado
+        INNER JOIN motocicletas m ON v.id_motocicleta = m.id_motocicleta
+        ORDER BY v.fecha DESC
+    `;
+  return rows;
 };
 
 const getById = async (id) => {
-    const pool = await getPool();
-    const r = await pool.request().input('id', sql.Int, id).query(`
-    SELECT v.*,
-      e.Nombre AS NombreEmpleado, e.Apellido AS ApellidoEmpleado,
-      m.Placa, m.Marca AS MarcaMoto
-    FROM Ventas v
-    INNER JOIN Empleados e ON v.ID_Empleado = e.ID_Empleado
-    INNER JOIN Motocicletas m ON v.ID_Motocicleta = m.ID_Motocicleta
-    WHERE v.ID_Venta = @id
-  `);
-    if (!r.recordset.length) throw { status: 404, message: 'Venta no encontrada.' };
+  const sql = await getPool();
+  const sales = await sql`
+        SELECT v.id_venta AS "ID_Venta", v.id_reparacion AS "ID_Reparacion", 
+               v.id_empleado AS "ID_Empleado", v.id_motocicleta AS "ID_Motocicleta", 
+               v.fecha AS "Fecha", v.total AS "Total", v.observaciones AS "Observaciones", 
+               v.estado AS "Estado",
+               e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado",
+               m.placa AS "Placa", m.marca AS "MarcaMoto"
+        FROM ventas v
+        INNER JOIN empleados e ON v.id_empleado = e.id_empleado
+        INNER JOIN motocicletas m ON v.id_motocicleta = m.id_motocicleta
+        WHERE v.id_venta = ${id}
+    `;
+  if (sales.length === 0) throw { status: 404, message: 'Venta no encontrada.' };
 
-    const servicios = await pool.request().input('id', sql.Int, id).query(`
-    SELECT vs.*, s.Nombre AS NombreServicio
-    FROM Ventas_Servicios vs
-    INNER JOIN Servicios s ON vs.ID_Servicio = s.ID_Servicio
-    WHERE vs.ID_Venta = @id
-  `);
+  const services = await sql`
+        SELECT vs.id_ventaservicio AS "ID_VentaServicio", vs.id_venta AS "ID_Venta", 
+               vs.id_servicio AS "ID_Servicio", vs.costoservicios AS "CostoServicios",
+               s.nombre AS "NombreServicio"
+        FROM ventas_servicios vs
+        INNER JOIN servicios s ON vs.id_servicio = s.id_servicio
+        WHERE vs.id_venta = ${id}
+    `;
 
-    const compras = await pool.request().input('id', sql.Int, id).query(`
-    SELECT vc.*, c.FechaCompra, c.Total AS TotalCompra
-    FROM Ventas_Compras vc
-    INNER JOIN Compras c ON vc.ID_Compra = c.ID_Compra
-    WHERE vc.ID_Venta = @id
-  `);
+  const purchases = await sql`
+        SELECT vc.id_ventacompra AS "ID_VentaCompra", vc.id_venta AS "ID_Venta", 
+               vc.id_compra AS "ID_Compra", vc.subtotal AS "Subtotal",
+               c.fechacompra AS "FechaCompra", c.total AS "TotalCompra"
+        FROM ventas_compras vc
+        INNER JOIN compras c ON vc.id_compra = c.id_compra
+        WHERE vc.id_venta = ${id}
+    `;
 
-    return { ...r.recordset[0], servicios: servicios.recordset, compras: compras.recordset };
+  return { ...sales[0], servicios: services, compras: purchases };
 };
 
 const create = async ({ id_reparacion, id_empleado, id_motocicleta, total, observaciones, servicios, compras }) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('id_reparacion', sql.Int, id_reparacion)
-        .input('id_empleado', sql.Int, id_empleado)
-        .input('id_motocicleta', sql.Int, id_motocicleta)
-        .input('total', sql.Decimal(10, 2), total)
-        .input('observaciones', sql.Text, observaciones || null)
-        .query(`
-      INSERT INTO Ventas (ID_Reparacion, ID_Empleado, ID_Motocicleta, Fecha, Total, Observaciones, Estado)
-      OUTPUT INSERTED.*
-      VALUES (@id_reparacion, @id_empleado, @id_motocicleta, GETDATE(), @total, @observaciones, 1)
-    `);
+  const sql = await getPool();
 
-    const venta = r.recordset[0];
+  try {
+    const result = await sql.begin(async (tx) => {
+      const [venta] = await tx`
+                INSERT INTO ventas (id_reparacion, id_empleado, id_motocicleta, fecha, total, observaciones, estado)
+                VALUES (${id_reparacion}, ${id_empleado}, ${id_motocicleta}, NOW(), ${total}, ${observaciones || null}, 1)
+                RETURNING id_venta AS "ID_Venta"
+            `;
 
-    if (servicios && servicios.length > 0) {
-        for (const svc of servicios) {
-            await pool.request()
-                .input('id_venta', sql.Int, venta.ID_Venta)
-                .input('id_servicio', sql.Int, svc.id_servicio)
-                .input('costo', sql.Decimal(10, 2), svc.costo)
-                .query('INSERT INTO Ventas_Servicios (ID_Venta, ID_Servicio, CostoServicios) VALUES (@id_venta, @id_servicio, @costo)');
-        }
-    }
+      if (servicios && servicios.length > 0) {
+        const serviceInserts = servicios.map(svc => ({
+          id_venta: venta.ID_Venta,
+          id_servicio: svc.id_servicio,
+          costoservicios: svc.costo
+        }));
+        await tx`INSERT INTO ventas_servicios ${sql(serviceInserts, 'id_venta', 'id_servicio', 'costoservicios')}`;
+      }
 
-    if (compras && compras.length > 0) {
-        for (const comp of compras) {
-            await pool.request()
-                .input('id_venta', sql.Int, venta.ID_Venta)
-                .input('id_compra', sql.Int, comp.id_compra)
-                .input('subtotal', sql.Decimal(10, 2), comp.subtotal)
-                .query('INSERT INTO Ventas_Compras (ID_Venta, ID_Compra, Subtotal) VALUES (@id_venta, @id_compra, @subtotal)');
-        }
-    }
+      if (compras && compras.length > 0) {
+        const purchaseInserts = compras.map(comp => ({
+          id_venta: venta.ID_Venta,
+          id_compra: comp.id_compra,
+          subtotal: comp.subtotal
+        }));
+        await tx`INSERT INTO ventas_compras ${sql(purchaseInserts, 'id_venta', 'id_compra', 'subtotal')}`;
+      }
 
-    return venta;
+      return venta;
+    });
+
+    return result;
+  } catch (err) {
+    console.error('Error al crear venta:', err);
+    throw err;
+  }
 };
 
 const update = async (id, { total, observaciones, estado }) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('id', sql.Int, id)
-        .input('total', sql.Decimal(10, 2), total)
-        .input('observaciones', sql.Text, observaciones || null)
-        .input('estado', sql.Bit, estado)
-        .query(`
-      UPDATE Ventas SET Total=@total, Observaciones=@observaciones, Estado=@estado
-      OUTPUT INSERTED.*
-      WHERE ID_Venta=@id
-    `);
-    if (!r.recordset.length) throw { status: 404, message: 'Venta no encontrada.' };
-    return r.recordset[0];
+  const sql = await getPool();
+  const [row] = await sql`
+        UPDATE ventas 
+        SET total = ${total}, observaciones = ${observaciones || null}, estado = ${estado}
+        WHERE id_venta = ${id}
+        RETURNING id_venta AS "ID_Venta"
+    `;
+  if (!row) throw { status: 404, message: 'Venta no encontrada.' };
+  return row;
 };
 
 module.exports = { getAll, getById, create, update };

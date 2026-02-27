@@ -1,6 +1,6 @@
 // LandingPage.tsx
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Bike,
   Wrench,
   Settings,
@@ -65,58 +65,51 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
   return (
     <div className="min-h-screen bg-white font-sans">
       {/* Navbar */}
-      <nav className={`fixed w-full z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/95 backdrop-blur-md shadow-lg py-3' : 'bg-transparent py-5'
-      }`}>
+      <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-lg py-3' : 'bg-transparent py-5'
+        }`}>
         <div className="container mx-auto px-4 lg:px-8">
           <div className="flex justify-between items-center">
             {/* Logo */}
             <div className="flex items-center space-x-2">
-              <span className={`font-bold text-xl ${
-                isScrolled ? 'text-gray-900' : 'text-white'
-              }`}>
+              <span className={`font-bold text-xl ${isScrolled ? 'text-gray-900' : 'text-white'
+                }`}>
                 RafaMotos
               </span>
             </div>
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#home" className={`font-medium transition-colors flex items-center gap-1 ${
-                isScrolled ? 'text-gray-700 hover:text-blue-600' : 'text-white hover:text-gray-200'
-              }`}>
+              <a href="#home" className={`font-medium transition-colors flex items-center gap-1 ${isScrolled ? 'text-gray-700 hover:text-blue-600' : 'text-white hover:text-gray-200'
+                }`}>
                 Inicio
               </a>
-              <a href="#services" className={`font-medium transition-colors flex items-center gap-1 ${
-                isScrolled ? 'text-gray-700 hover:text-blue-600' : 'text-white hover:text-gray-200'
-              }`}>
+              <a href="#services" className={`font-medium transition-colors flex items-center gap-1 ${isScrolled ? 'text-gray-700 hover:text-blue-600' : 'text-white hover:text-gray-200'
+                }`}>
                 Servicios
               </a>
-              <a href="#about" className={`font-medium transition-colors flex items-center gap-1 ${
-                isScrolled ? 'text-gray-700 hover:text-blue-600' : 'text-white hover:text-gray-200'
-              }`}>
+              <a href="#about" className={`font-medium transition-colors flex items-center gap-1 ${isScrolled ? 'text-gray-700 hover:text-blue-600' : 'text-white hover:text-gray-200'
+                }`}>
                 Nosotros
               </a>
-              <a href="#contact" className={`font-medium transition-colors flex items-center gap-1 ${
-                isScrolled ? 'text-gray-700 hover:text-blue-600' : 'text-white hover:text-gray-200'
-              }`}>
+              <a href="#contact" className={`font-medium transition-colors flex items-center gap-1 ${isScrolled ? 'text-gray-700 hover:text-blue-600' : 'text-white hover:text-gray-200'
+                }`}>
                 Contacto
               </a>
             </div>
 
             {/* Auth Buttons */}
             <div className="hidden md:flex items-center space-x-4">
-              <button 
+              <button
                 onClick={onLoginClick}
-                className={`px-5 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                  isScrolled 
-                    ? 'text-gray-700 hover:text-blue-600 hover:bg-gray-100' 
-                    : 'text-white hover:text-gray-200 hover:bg-white/10'
-                }`}
+                className={`px-5 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${isScrolled
+                  ? 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
+                  : 'text-white hover:text-gray-200 hover:bg-white/10'
+                  }`}
               >
                 <LogIn className="w-4 h-4" />
                 Iniciar Sesión
               </button>
-              <button 
+              <button
                 onClick={onRegisterClick}
                 className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
               >
@@ -126,7 +119,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
             </div>
 
             {/* Mobile Menu Button */}
-            <button 
+            <button
               className="md:hidden text-2xl"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
@@ -155,14 +148,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                   Contacto
                 </a>
                 <div className="pt-4 border-t border-gray-200 flex flex-col space-y-3">
-                  <button 
+                  <button
                     onClick={onLoginClick}
                     className="px-5 py-2 text-gray-700 hover:text-blue-600 font-medium flex items-center gap-2 justify-center"
                   >
                     <LogIn className="w-4 h-4" />
                     Iniciar Sesión
                   </button>
-                  <button 
+                  <button
                     onClick={onRegisterClick}
                     className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl flex items-center gap-2 justify-center"
                   >
@@ -181,8 +174,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/60 z-10"></div>
-          <img 
-            src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80" 
+          <img
+            src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
             alt="Motorcycle workshop"
             className="w-full h-full object-cover"
           />
@@ -199,11 +192,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               Servicio profesional, diagnóstico preciso y repuestos originales para tu moto
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-lg transition-all transform hover:scale-105 shadow-xl flex items-center gap-2 justify-center">
+              <button
+                onClick={onRegisterClick}
+                className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-lg transition-all transform hover:scale-105 shadow-xl flex items-center gap-2 justify-center"
+              >
                 <Calendar className="w-5 h-5" />
                 Agendar Cita
               </button>
-              <button className="px-8 py-4 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-lg font-semibold text-lg transition-all border-2 border-white/30 flex items-center gap-2 justify-center">
+              <button
+                onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-8 py-4 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-lg font-semibold text-lg transition-all border-2 border-white/30 flex items-center gap-2 justify-center"
+              >
                 <Wrench className="w-5 h-5" />
                 Conocer Servicios
               </button>
@@ -242,7 +241,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
             ].map((service, index) => {
               const IconComponent = service.icon;
               return (
-                <div 
+                <div
                   key={index}
                   className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-2"
                 >
@@ -267,12 +266,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 Sobre <span className="text-blue-600">RafaMotos</span>
               </h2>
               <p className="text-lg text-gray-700 mb-8 leading-relaxed">
-                Con más de 15 años de experiencia en el sector, somos líderes en mantenimiento 
-                y reparación de motocicletas de todas las marcas y cilindradas. Nuestro equipo 
-                de mecánicos certificados utiliza la tecnología más avanzada para garantizar 
+                Con más de 15 años de experiencia en el sector, somos líderes en mantenimiento
+                y reparación de motocicletas de todas las marcas y cilindradas. Nuestro equipo
+                de mecánicos certificados utiliza la tecnología más avanzada para garantizar
                 el mejor servicio.
               </p>
-              
+
               <div className="grid grid-cols-3 gap-6 mb-8">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-blue-600 mb-1 flex items-center justify-center gap-1">
@@ -350,8 +349,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
             {/* Contact Info */}
             <div className="space-y-6">
               {[
-                { icon: MapPin, title: 'Dirección', content: ['Av. Principal #123, Ciudad'] },
-                { icon: Phone, title: 'Teléfono', content: ['+52 123 456 7890'] },
+                { icon: MapPin, title: 'Dirección', content: ['Carrera 54 #96a-17'] },
+                { icon: Phone, title: 'Teléfono', content: ['+52 313 661 95 08'] },
                 { icon: Mail, title: 'Email', content: ['info@rafamotos.com'] },
                 { icon: Clock, title: 'Horario', content: ['Lun - Vie: 9:00 - 19:00', 'Sáb: 9:00 - 14:00'] }
               ].map((item, index) => {
@@ -381,24 +380,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
               <div className="space-y-4">
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     placeholder="Nombre completo"
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   />
                 </div>
                 <div className="relative">
                   <MailIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     placeholder="Correo electrónico"
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   />
                 </div>
                 <div className="relative">
                   <PhoneCall className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     placeholder="Teléfono"
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   />
@@ -410,7 +409,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                   <option value="diagnostic">Diagnóstico</option>
                   <option value="other">Otro</option>
                 </select>
-                <textarea 
+                <textarea
                   placeholder="Mensaje"
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition resize-none"
@@ -438,25 +437,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 Tu taller de confianza para el cuidado de tu motocicleta.
               </p>
               <div className="flex space-x-4">
-                <a 
+                <a
                   href="#"
                   className="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors"
                 >
                   <Facebook className="w-5 h-5" />
                 </a>
-                <a 
+                <a
                   href="#"
                   className="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors"
                 >
                   <Instagram className="w-5 h-5" />
                 </a>
-                <a 
+                <a
                   href="#"
                   className="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors"
                 >
                   <Twitter className="w-5 h-5" />
                 </a>
-                <a 
+                <a
                   href="#"
                   className="w-10 h-10 bg-gray-800 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors"
                 >
@@ -507,8 +506,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 Suscríbete para recibir ofertas especiales
               </p>
               <div className="flex">
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   placeholder="Tu email"
                   className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />

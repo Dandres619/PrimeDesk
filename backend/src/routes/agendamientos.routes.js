@@ -11,8 +11,8 @@ const validations = [
     body('id_motocicleta').isInt({ min: 1 }).withMessage('ID motocicleta inválido.'),
     body('id_empleado').isInt({ min: 1 }).withMessage('ID empleado inválido.'),
     body('dia').isDate().withMessage('Fecha inválida.'),
-    body('hora_inicio').notEmpty().withMessage('Hora de inicio requerida.'),
-    body('hora_fin').notEmpty().withMessage('Hora de fin requerida.'),
+    body('horainicio').notEmpty().withMessage('Hora de inicio requerida.'),
+    body('horafin').notEmpty().withMessage('Hora de fin requerida.'),
     handleValidation,
 ];
 

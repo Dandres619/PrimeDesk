@@ -1,78 +1,64 @@
 const bcrypt = require('bcryptjs');
-const { getPool, sql } = require('../config/db');
+const { getPool } = require('../config/db');
 
 const getAll = async () => {
-    const pool = await getPool();
-    const result = await pool.request().query(`
-    SELECT u.ID_Usuario, u.Correo, u.Estado, u.ID_Rol, r.Nombre AS NombreRol
-    FROM Usuarios u
-    INNER JOIN Roles r ON u.ID_Rol = r.ID_Rol
-    ORDER BY u.ID_Usuario
-  `);
-    return result.recordset;
+  const sql = await getPool();
+  return await sql`
+        SELECT u.id_usuario AS "ID_Usuario", u.correo AS "Correo", u.estado AS "Estado", u.id_rol AS "ID_Rol", r.nombre AS "NombreRol"
+        FROM usuarios u
+        INNER JOIN roles r ON u.id_rol = r.id_rol
+        ORDER BY u.id_usuario
+    `;
 };
 
 const getById = async (id) => {
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .query(`
-      SELECT u.ID_Usuario, u.Correo, u.Estado, u.ID_Rol, r.Nombre AS NombreRol
-      FROM Usuarios u
-      INNER JOIN Roles r ON u.ID_Rol = r.ID_Rol
-      WHERE u.ID_Usuario = @id
-    `);
-    if (!result.recordset.length) throw { status: 404, message: 'Usuario no encontrado.' };
-    return result.recordset[0];
+  const sql = await getPool();
+  const rows = await sql`
+        SELECT u.id_usuario AS "ID_Usuario", u.correo AS "Correo", u.estado AS "Estado", u.id_rol AS "ID_Rol", r.nombre AS "NombreRol"
+        FROM usuarios u
+        INNER JOIN roles r ON u.id_rol = r.id_rol
+        WHERE u.id_usuario = ${id}
+    `;
+  if (rows.length === 0) throw { status: 404, message: 'Usuario no encontrado.' };
+  return rows[0];
 };
 
 const create = async ({ correo, contrasena, id_rol }) => {
-    const pool = await getPool();
-    const existing = await pool.request()
-        .input('correo', sql.VarChar(255), correo)
-        .query('SELECT ID_Usuario FROM Usuarios WHERE Correo = @correo');
-    if (existing.recordset.length) throw { status: 409, message: 'El correo ya existe.' };
+  const sql = await getPool();
+  const existing = await sql`SELECT id_usuario FROM usuarios WHERE correo = ${correo}`;
+  if (existing.length > 0) throw { status: 409, message: 'El correo ya existe.' };
 
-    const hashed = await bcrypt.hash(contrasena, 10);
-    const result = await pool.request()
-        .input('id_rol', sql.Int, id_rol)
-        .input('correo', sql.VarChar(255), correo)
-        .input('contrasena', sql.VarChar(255), hashed)
-        .query(`
-      INSERT INTO Usuarios (ID_Rol, Correo, Contrasena, Estado)
-      OUTPUT INSERTED.ID_Usuario, INSERTED.Correo, INSERTED.ID_Rol, INSERTED.Estado
-      VALUES (@id_rol, @correo, @contrasena, 1)
-    `);
-    return result.recordset[0];
+  const hashed = await bcrypt.hash(contrasena, 10);
+  const [row] = await sql`
+        INSERT INTO usuarios (id_rol, correo, contrasena, estado)
+        VALUES (${id_rol}, ${correo}, ${hashed}, TRUE)
+        RETURNING id_usuario AS "ID_Usuario", correo AS "Correo", id_rol AS "ID_Rol", estado AS "Estado"
+    `;
+  return row;
 };
 
 const update = async (id, { id_rol, correo, estado }) => {
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .input('id_rol', sql.Int, id_rol)
-        .input('correo', sql.VarChar(255), correo)
-        .input('estado', sql.Bit, estado)
-        .query(`
-      UPDATE Usuarios SET ID_Rol=@id_rol, Correo=@correo, Estado=@estado
-      OUTPUT INSERTED.ID_Usuario, INSERTED.Correo, INSERTED.ID_Rol, INSERTED.Estado
-      WHERE ID_Usuario = @id
-    `);
-    if (!result.recordset.length) throw { status: 404, message: 'Usuario no encontrado.' };
-    return result.recordset[0];
+  const sql = await getPool();
+  const [row] = await sql`
+        UPDATE usuarios 
+        SET id_rol = ${id_rol}, correo = ${correo}, estado = ${estado}
+        WHERE id_usuario = ${id}
+        RETURNING id_usuario AS "ID_Usuario", correo AS "Correo", id_rol AS "ID_Rol", estado AS "Estado"
+    `;
+  if (!row) throw { status: 404, message: 'Usuario no encontrado.' };
+  return row;
 };
 
 const toggleEstado = async (id) => {
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .query(`
-      UPDATE Usuarios SET Estado = ~Estado
-      OUTPUT INSERTED.ID_Usuario, INSERTED.Estado
-      WHERE ID_Usuario = @id
-    `);
-    if (!result.recordset.length) throw { status: 404, message: 'Usuario no encontrado.' };
-    return result.recordset[0];
+  const sql = await getPool();
+  const [row] = await sql`
+        UPDATE usuarios 
+        SET estado = NOT estado
+        WHERE id_usuario = ${id}
+        RETURNING id_usuario AS "ID_Usuario", estado AS "Estado"
+    `;
+  if (!row) throw { status: 404, message: 'Usuario no encontrado.' };
+  return row;
 };
 
 module.exports = { getAll, getById, create, update, toggleEstado };

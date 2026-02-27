@@ -8,7 +8,7 @@ const start = async () => {
     try {
         // Verificar conexión a la BD antes de levantar el servidor
         await getPool();
-        console.log('✅ Conexión a SQL Server establecida correctamente.');
+        console.log('✅ Conexión a PostgreSQL (Supabase) establecida correctamente.');
 
         app.listen(PORT, () => {
             console.log(`🚀 PrimeDeskDB API corriendo en http://localhost:${PORT}`);

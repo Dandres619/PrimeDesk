@@ -23,7 +23,7 @@ const validations = [
 router.get('/', verifyToken, ctrl.getAll);
 router.get('/:id', verifyToken, ctrl.getById);
 router.post('/', verifyToken, requirePermiso('gestionar_clientes'), validations, ctrl.create);
-router.put('/:id', verifyToken, requirePermiso('gestionar_clientes'), validations, ctrl.update);
+router.put('/:id', verifyToken, requirePermiso('editar_perfil'), validations, ctrl.update);
 router.delete('/:id', verifyToken, requirePermiso('gestionar_clientes'), ctrl.remove);
 
 module.exports = router;

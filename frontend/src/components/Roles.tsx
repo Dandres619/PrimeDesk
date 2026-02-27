@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -19,44 +19,223 @@ export function Roles() {
   const [editingRole, setEditingRole] = useState<any>(null);
   const [viewingRole, setViewingRole] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'default' as any, onConfirm: () => {} });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'default' as any, onConfirm: () => { } });
 
-  const [roles, setRoles] = useState([
-    { id: 1, name: 'Administrador', description: 'Acceso completo al sistema', status: 'Activo', permissions: ['tablero', 'usuarios', 'roles', 'motocicletas', 'agendamientos', 'ventas', 'compras', 'proveedores'] },
-    { id: 2, name: 'Técnico', description: 'Acceso a servicios y reparaciones', status: 'Activo', permissions: ['tablero', 'motocicletas', 'agendamientos'] },
-    { id: 3, name: 'Recepcionista', description: 'Gestión de citas y clientes', status: 'Activo', permissions: ['tablero', 'clientes', 'agendamientos'] },
-    { id: 4, name: 'Cliente', description: 'Acceso limitado para clientes', status: 'Activo', permissions: ['motocicletas-cliente', 'agendamientos-cliente'] }
-  ]);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [allPermissions, setAllPermissions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const permissions = [
-    { id: 1, name: 'tablero', description: 'Ver dashboard principal', module: 'Dashboard', status: 'Activo' },
-    { id: 2, name: 'usuarios', description: 'Gestionar usuarios', module: 'Usuarios', status: 'Activo' },
-    { id: 3, name: 'roles', description: 'Gestionar roles y permisos', module: 'Roles', status: 'Activo' },
-    { id: 4, name: 'clientes', description: 'Gestionar clientes', module: 'Clientes', status: 'Activo' },
-    { id: 5, name: 'motocicletas', description: 'Gestionar motocicletas (Admin, Mecánico)', module: 'Motos', status: 'Activo' },
-    { id: 6, name: 'motocicletas-cliente', description: 'Ver motocicletas (Cliente)', module: 'Motos Cliente', status: 'Activo' },
-    { id: 7, name: 'agendamientos', description: 'Gestionar agendamientos (Admin, Mecánico)', module: 'Agendamientos', status: 'Activo' },
-    { id: 8, name: 'agendamientos-cliente', description: 'Gestionar agendamientos (Cliente)', module: 'Agendamientos Cliente', status: 'Activo' },
-    { id: 9, name: 'ventas', description: 'Gestionar ventas', module: 'Ventas', status: 'Activo' },
-    { id: 10, name: 'compras', description: 'Gestionar compras', module: 'Compras', status: 'Activo' },
-    { id: 11, name: 'proveedores', description: 'Gestionar proveedores', module: 'Proveedores', status: 'Activo' }
-  ];
+  // @ts-ignore
+  const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+  const token = localStorage.getItem('token');
 
-  const filteredRoles = roles.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()) || r.description.toLowerCase().includes(searchTerm.toLowerCase()));
-  const totalPages = Math.ceil(filteredRoles.length / 2);
-  const paginatedRoles = filteredRoles.slice((currentPage - 1) * 2, currentPage * 2);
+  const fetchRoles = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/roles`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Error al obtener los roles');
+      const data = await response.json();
 
-  const handleSaveRole = (data: any) => {
-    editingRole ? setRoles(roles.map(r => r.id === editingRole.id ? { ...r, ...data } : r)) : setRoles([...roles, { id: Date.now(), ...data, status: 'Activo' }]);
-    setIsRoleDialogOpen(false);
-    setEditingRole(null);
+      // Fetch permissions for each role to match the frontend structure
+      const rolesWithPermissions = await Promise.all(data.map(async (role: any) => {
+        const permRes = await fetch(`${API_URL}/roles/${role.ID_Rol}/permisos`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const perms = permRes.ok ? await permRes.json() : [];
+        return {
+          ...role,
+          id: role.ID_Rol,
+          name: role.Nombre,
+          description: role.Descripcion,
+          status: (role.Estado === true || role.Estado === 1) ? 'Activo' : 'Inactivo',
+          permissions: perms // This will be the full permission objects
+        };
+      }));
+
+      setRoles(rolesWithPermissions);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  }, [API_URL, token]);
+
+  const fetchAllPermissions = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/permisos`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Error al obtener los permisos');
+      const data = await response.json();
+      setAllPermissions(data.map((p: any) => ({
+        id: p.ID_Permiso,
+        name: p.Nombre,
+        description: p.Descripcion,
+        status: 'Activo' // Assuming all are active for now
+      })));
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  }, [API_URL, token]);
+
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchRoles(), fetchAllPermissions()]);
+      setIsLoading(false);
+    };
+    init();
+  }, [fetchRoles, fetchAllPermissions]);
+
+  const handleSaveRole = async (formData: any) => {
+    try {
+      const roleData = {
+        nombre: formData.name,
+        descripcion: formData.description,
+        estado: formData.status === 'Activo' // resolves to boolean true/false
+      };
+
+      let roleId = editingRole?.id;
+      let response;
+
+      if (editingRole) {
+        response = await fetch(`${API_URL}/roles/${roleId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(roleData)
+        });
+      } else {
+        response = await fetch(`${API_URL}/roles`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(roleData)
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al guardar el rol');
+      }
+
+      const savedRole = await response.json();
+      if (!savedRole.ID_Rol && !roleId) roleId = savedRole.id; // Just in case
+      const finalRoleId = roleId || savedRole.ID_Rol;
+
+      // Handle permissions
+      // For simplicity in this refactor, we'll sync permissions by removing all and adding current
+      // Get current permissions from backend
+      const currentPermsRes = await fetch(`${API_URL}/roles/${finalRoleId}/permisos`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const currentPerms = currentPermsRes.ok ? await currentPermsRes.json() : [];
+
+      // Find permissions to add and remove
+      const newPermIds = formData.permissions; // These are IDs now
+      const currentPermIds = currentPerms.map((p: any) => p.ID_Permiso);
+
+      const toAdd = newPermIds.filter((id: number) => !currentPermIds.includes(id));
+      const toRemove = currentPermIds.filter((id: number) => !newPermIds.includes(id));
+
+      await Promise.all([
+        ...toAdd.map((idPerm: number) => fetch(`${API_URL}/roles/${finalRoleId}/permisos`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ id_permiso: idPerm })
+        })),
+        ...toRemove.map((idPerm: number) => fetch(`${API_URL}/roles/${finalRoleId}/permisos/${idPerm}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        }))
+      ]);
+
+      toast.success(editingRole ? 'Rol actualizado exitosamente' : 'Rol creado exitosamente');
+      setIsRoleDialogOpen(false);
+      setEditingRole(null);
+      fetchRoles();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
   };
+
+  const handleDeleteRole = async (id: number) => {
+    try {
+      const response = await fetch(`${API_URL}/roles/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Error al eliminar el rol');
+      }
+      toast.success('Rol eliminado exitosamente');
+      fetchRoles();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const toggleRoleStatus = async (role: any) => {
+    try {
+      const newStatus = role.status === 'Activo' ? false : true;
+      const response = await fetch(`${API_URL}/roles/${role.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nombre: role.name,
+          descripcion: role.description,
+          estado: newStatus
+        })
+      });
+      if (!response.ok) throw new Error('Error al cambiar el estado del rol');
+      toast.success('Estado actualizado');
+      fetchRoles();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const filteredRoles = roles.filter(r =>
+    r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(filteredRoles.length / itemsPerPage);
+  const paginatedRoles = filteredRoles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const actions = [
     { icon: Eye, onClick: (r: any) => setViewingRole(r), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
     { icon: Edit, onClick: (r: any) => { setEditingRole(r); setIsRoleDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-    { icon: Trash2, onClick: (r: any) => setConfirmDialog({ open: true, title: 'Eliminar Rol', description: '¿Está seguro de que desea eliminar este rol? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setRoles(roles.filter(ro => ro.id !== r.id)); toast.success('Rol eliminado exitosamente'); } }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+    {
+      icon: Trash2, onClick: (r: any) => setConfirmDialog({
+        open: true,
+        title: 'Eliminar Rol',
+        description: '¿Está seguro de que desea eliminar este rol? Esta acción no se puede deshacer.',
+        confirmText: 'Eliminar',
+        variant: 'delete',
+        onConfirm: () => handleDeleteRole(r.id)
+      }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+    }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -72,7 +251,7 @@ export function Roles() {
               Nuevo Rol
             </Button>
           </DialogTrigger>
-          <RoleDialog role={editingRole} permissions={permissions} onSave={handleSaveRole} />
+          <RoleDialog role={editingRole} permissions={allPermissions} onSave={handleSaveRole} />
         </Dialog>
       </div>
 
@@ -93,57 +272,63 @@ export function Roles() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedRoles.map(r => (
-                <TableRow key={r.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{r.name}</p>
-                      <p className="text-sm text-muted-foreground">{r.description}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch checked={r.status === 'Activo'} onCheckedChange={() => setRoles(roles.map(ro => ro.id === r.id ? { ...ro, status: ro.status === 'Activo' ? 'Inactivo' : 'Activo' } : ro))} />
-                      <span className="text-sm">{r.status}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      {actions.map((a, i) => (
-                        <Button key={i} size="sm" variant="ghost" onClick={() => a.onClick(r)} className={a.color}>
-                          <a.icon className="w-4 h-4" />
-                        </Button>
-                      ))}
-                    </div>
+              {paginatedRoles.length > 0 ? (
+                paginatedRoles.map(r => (
+                  <TableRow key={r.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{r.name}</p>
+                        <p className="text-sm text-muted-foreground">{r.description}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Switch checked={r.status === 'Activo'} onCheckedChange={() => toggleRoleStatus(r)} />
+                        <span className="text-sm">{r.status}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        {actions.map((a, i) => (
+                          <Button key={i} size="sm" variant="ghost" onClick={() => a.onClick(r)} className={a.color}>
+                            <a.icon className="w-4 h-4" />
+                          </Button>
+                        ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                    No se encontraron roles.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
-          
-          <div className="mt-6 flex justify-center">
-            <Pagination>
-              <PaginationContent>
-                {totalPages > 1 && (
+
+          {totalPages > 1 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination>
+                <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
                   </PaginationItem>
-                )}
-                {Array.from({ length: Math.max(1, totalPages) }, (_, i) => i + 1).map(p => (
-                  <PaginationItem key={p}>
-                    <PaginationLink onClick={() => totalPages > 1 ? setCurrentPage(p) : undefined} isActive={currentPage === p} className={totalPages > 1 ? "cursor-pointer" : "cursor-default"}>
-                      {p}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                {totalPages > 1 && (
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                    <PaginationItem key={p}>
+                      <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">
+                        {p}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
                   <PaginationItem>
                     <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
                   </PaginationItem>
-                )}
-              </PaginationContent>
-            </Pagination>
-          </div>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -160,7 +345,7 @@ export function Roles() {
               </div>
               <div>
                 <Label>Descripción</Label>
-                <p>{viewingRole.description}</p>
+                <p>{viewingRole.description || 'Sin descripción'}</p>
               </div>
               <div>
                 <Label>Estado</Label>
@@ -171,9 +356,13 @@ export function Roles() {
               <div>
                 <Label>Permisos Asignados</Label>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {viewingRole.permissions.map((p: string) => (
-                    <Badge key={p} variant="secondary">{p}</Badge>
-                  ))}
+                  {viewingRole.permissions && viewingRole.permissions.length > 0 ? (
+                    viewingRole.permissions.map((p: any) => (
+                      <Badge key={p.ID_Permiso} variant="secondary">{p.Nombre}</Badge>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No tiene permisos asignados.</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -187,9 +376,32 @@ export function Roles() {
 }
 
 function RoleDialog({ role, permissions, onSave }: any) {
-  const [formData, setFormData] = useState({ name: role?.name || '', description: role?.description || '', permissions: role?.permissions || [] });
+  const [formData, setFormData] = useState({
+    name: role?.name || '',
+    description: role?.description || '',
+    status: role?.status || 'Activo',
+    permissions: role?.permissions ? role.permissions.map((p: any) => p.ID_Permiso) : []
+  });
 
-  const togglePermission = (p: string) => setFormData(prev => ({ ...prev, permissions: prev.permissions.includes(p) ? prev.permissions.filter((perm: string) => perm !== p) : [...prev.permissions, p] }));
+  useEffect(() => {
+    if (role) {
+      setFormData({
+        name: role.name,
+        description: role.description || '',
+        status: role.status,
+        permissions: role.permissions.map((p: any) => p.ID_Permiso)
+      });
+    } else {
+      setFormData({ name: '', description: '', status: 'Activo', permissions: [] });
+    }
+  }, [role]);
+
+  const togglePermission = (id: number) => setFormData(prev => ({
+    ...prev,
+    permissions: prev.permissions.includes(id)
+      ? prev.permissions.filter((pId: number) => pId !== id)
+      : [...prev.permissions, id]
+  }));
 
   return (
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -203,21 +415,34 @@ function RoleDialog({ role, permissions, onSave }: any) {
         </div>
         <div>
           <Label htmlFor="description">Descripción</Label>
-          <Input id="description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Descripción del rol" required />
+          <Input id="description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Descripción del rol" />
         </div>
         <div>
           <Label>Permisos</Label>
-          <div className="grid grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto">
-            {permissions.filter((p: any) => p.status === 'Activo').map((p: any) => (
-              <div key={p.id} className="flex items-center space-x-2">
-                <Checkbox id={p.name} checked={formData.permissions.includes(p.name)} onCheckedChange={() => togglePermission(p.name)} />
-                <Label htmlFor={p.name} className="text-sm">{p.name}</Label>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-2 mt-2 max-h-60 overflow-y-auto p-2 border rounded-md bg-muted/20">
+            {permissions.length > 0 ? (
+              permissions.map((p: any) => (
+                <div key={p.id} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors">
+                  <Checkbox
+                    id={`perm-${p.id}`}
+                    checked={formData.permissions.includes(p.id)}
+                    onCheckedChange={() => togglePermission(p.id)}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <Label htmlFor={`perm-${p.id}`} className="text-sm font-medium leading-none cursor-pointer">
+                      {p.name}
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">{p.description}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground col-span-2 text-center py-4">No hay permisos disponibles definidos en el sistema.</p>
+            )}
           </div>
         </div>
-        <div className="flex justify-end gap-2">
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+        <div className="flex justify-end gap-2 pt-4">
+          <Button type="submit" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto px-8">
             {role ? 'Actualizar' : 'Crear'} Rol
           </Button>
         </div>

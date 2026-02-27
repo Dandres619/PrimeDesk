@@ -11,19 +11,16 @@ const requirePermiso = (nombrePermiso) => {
                 return res.status(403).json({ message: 'Acceso denegado. Sin rol asignado.' });
             }
 
-            const pool = await getPool();
-            const result = await pool.request()
-                .input('id_rol', sql.Int, req.user.id_rol)
-                .input('nombre', sql.VarChar(50), nombrePermiso)
-                .query(`
-          SELECT 1
-          FROM Roles_Permisos rp
-          INNER JOIN Permisos p ON rp.ID_Permiso = p.ID_Permiso
-          WHERE rp.ID_Rol = @id_rol
-            AND p.Nombre = @nombre
-        `);
+            const sql = await getPool();
+            const rows = await sql`
+                SELECT 1
+                FROM roles_permisos rp
+                INNER JOIN permisos p ON rp.id_permiso = p.id_permiso
+                WHERE rp.id_rol = ${req.user.id_rol}
+                  AND p.nombre = ${nombrePermiso}
+            `;
 
-            if (result.recordset.length === 0) {
+            if (rows.length === 0) {
                 return res.status(403).json({
                     message: `Acceso denegado. Se requiere el permiso: ${nombrePermiso}`,
                 });

@@ -12,9 +12,9 @@ import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useTheme } from './ThemeProvider';
-import { 
-  User, 
-  Bike, 
+import {
+  User,
+  Bike,
   Calendar as CalendarIcon,
   LogOut,
   Menu,
@@ -31,7 +31,7 @@ import {
   Clock,
   Ban
 } from 'lucide-react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isToday } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isToday, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
@@ -82,6 +82,18 @@ interface Agendamiento {
   notes: string;
 }
 
+interface Employee {
+  id: number;
+  nombre: string;
+  apellido: string;
+}
+
+interface Service {
+  id: number;
+  nombre: string;
+  descripcion: string;
+}
+
 const clientMenuItems = [
   { id: 'perfil', label: 'Mi Perfil', icon: User },
   { id: 'motos', label: 'Mis Motos', icon: Bike },
@@ -89,7 +101,7 @@ const clientMenuItems = [
 ];
 
 interface ClientPanelProps {
-  currentUser: { username: string; name: string };
+  currentUser: { id?: number; id_cliente?: number; username: string; name: string };
   onLogout: () => void;
 }
 
@@ -100,41 +112,120 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
   // Estado del perfil
   const [clientData, setClientData] = useState<ClientData>({
-    nombre: 'Juan Carlos',
-    apellido: 'Pérez',
-    email: 'juan@email.com',
-    telefono: '3001234567',
-    documentType: 'CC',
-    document: '12345678',
-    direccion: 'Calle 123 #45-67',
-    barrio: 'Chapinero',
-    fechaNacimiento: '1985-05-15'
+    nombre: '',
+    apellido: '',
+    email: '',
+    telefono: '',
+    documentType: '',
+    document: '',
+    direccion: '',
+    barrio: '',
+    fechaNacimiento: ''
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
-  // Estado de las motos
-  const [motos, setMotos] = useState<Moto[]>([
-    {
-      id: 1,
-      marca: 'Yamaha',
-      modelo: 'FZ25',
-      ano: 2020,
-      placa: 'ABC123',
-      color: 'Azul',
-      cilindraje: '250cc',
-      kilometraje: 15000
-    },
-    {
-      id: 2,
-      marca: 'Honda',
-      modelo: 'CB160F',
-      ano: 2019,
-      placa: 'DEF456',
-      color: 'Rojo',
-      cilindraje: '160cc',
-      kilometraje: 22000
+  const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Cargar Perfil
+      fetch(`${API_URL}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          setClientData({
+            nombre: data.NombreCliente || '',
+            apellido: data.ApellidoCliente || '',
+            email: data.Correo || '',
+            telefono: data.Telefono || '',
+            documentType: data.TipoDocumento || '',
+            document: data.Documento || '',
+            direccion: data.Direccion || '',
+            barrio: data.Barrio || '',
+            fechaNacimiento: data.FechaNacimiento ? data.FechaNacimiento.split('T')[0] : ''
+          });
+
+          // Cargar Motos si tenemos el ID del cliente
+          if (data.ID_Cliente) {
+            // Cargar Motos
+            fetch(`${API_URL}/motocicletas?id_cliente=${data.ID_Cliente}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+              .then(res => res.json())
+              .then(motosData => {
+                const mappedMotos = motosData.map((m: any) => ({
+                  id: m.ID_Motocicleta,
+                  marca: m.Marca,
+                  modelo: m.Modelo,
+                  ano: m.Anio,
+                  placa: m.Placa,
+                  color: m.Color,
+                  cilindraje: m.Motor,
+                  kilometraje: m.Kilometraje
+                }));
+                setMotos(mappedMotos);
+              })
+              .catch(err => console.error('Error loading motos:', err));
+
+            // Cargar Agendamientos
+            fetch(`${API_URL}/agendamientos?id_cliente=${data.ID_Cliente}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+              .then(res => res.json())
+              .then(agData => {
+                const mappedAg = agData.map((a: any) => ({
+                  id: a.ID_Agendamiento,
+                  motoId: a.ID_Motocicleta,
+                  motoBrand: a.MarcaMoto,
+                  motoModel: a.Modelo,
+                  motoPlate: a.Placa,
+                  fecha: a.Dia.split('T')[0],
+                  startTime: a.HoraInicio,
+                  mechanicName: `${a.NombreEmpleado} ${a.ApellidoEmpleado}`,
+                  serviceTypes: a.Servicios || [],
+                  notes: a.Notas || ''
+                }));
+                setAgendamientos(mappedAg);
+              })
+              .catch(err => console.error('Error loading agendamientos:', err));
+          }
+
+          // Cargar Empleados (Mecánicos)
+          fetch(`${API_URL}/empleados`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+            .then(res => res.json())
+            .then(empData => {
+              setMechanics(empData.map((e: any) => ({
+                id: e.ID_Empleado,
+                nombre: e.Nombre,
+                apellido: e.Apellido
+              })));
+            })
+            .catch(err => console.error('Error loading employees:', err));
+
+          // Cargar Servicios
+          fetch(`${API_URL}/servicios`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+            .then(res => res.json())
+            .then(srvData => {
+              setAvailableServices(srvData.map((s: any) => ({
+                id: s.ID_Servicio,
+                nombre: s.Nombre,
+                descripcion: s.Descripcion
+              })));
+            })
+            .catch(err => console.error('Error loading services:', err));
+        })
+        .catch(err => console.error('Error loading profile:', err));
     }
-  ]);
+  }, []);
+
+  // Estado de las motos
+  const [motos, setMotos] = useState<Moto[]>([]);
 
   const [showMotoModal, setShowMotoModal] = useState(false);
   const [editingMoto, setEditingMoto] = useState<Moto | null>(null);
@@ -149,44 +240,10 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   });
 
   // Estado del historial de servicios
-  const [servicios, setServicios] = useState<ServicioHistorial[]>([
-    {
-      id: 1,
-      motoId: 1,
-      fecha: '2024-01-15',
-      tipoServicio: 'Mantenimiento',
-      descripcion: 'Cambio de aceite y filtros',
-      mecanico: 'Carlos Mécanico',
-      costo: 85000,
-      estado: 'completado'
-    },
-    {
-      id: 2,
-      motoId: 2,
-      fecha: '2024-01-10',
-      tipoServicio: 'Reparación',
-      descripcion: 'Ajuste de frenos delanteros',
-      mecanico: 'Carlos Mécanico',
-      costo: 120000,
-      estado: 'completado'
-    }
-  ]);
+  const [servicios] = useState<ServicioHistorial[]>([]);
 
   // Estado de agendamientos
-  const [agendamientos, setAgendamientos] = useState<Agendamiento[]>([
-    {
-      id: 1,
-      motoId: 1,
-      motoBrand: 'Yamaha',
-      motoModel: 'FZ25',
-      motoPlate: 'ABC123',
-      fecha: '2025-10-10',
-      startTime: '10:00',
-      mechanicName: 'Carlos Méndez',
-      serviceTypes: ['Mantenimiento', 'Cambio de Aceite'],
-      notes: 'Cambio de aceite y revisión general'
-    }
-  ]);
+  const [agendamientos, setAgendamientos] = useState<Agendamiento[]>([]);
   const [showAgendarModal, setShowAgendarModal] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -196,8 +253,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     motoId: 0,
     fecha: '',
     startTime: '',
-    mecanico: '',
-    serviceTypes: [] as string[],
+    mecanicoId: 0,
+    serviceIds: [] as number[],
     descripcion: ''
   });
 
@@ -205,12 +262,47 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   const [showDeleteMotoConfirm, setShowDeleteMotoConfirm] = useState(false);
   const [selectedMoto, setSelectedMoto] = useState<Moto | null>(null);
 
-  // Lista de mecánicos disponibles
-  const mechanics = ['Carlos Méndez', 'Luis Torres', 'Pedro Ramírez', 'Jorge Martínez'];
+  // Lista de mecánicos y servicios disponibles
+  const [mechanics, setMechanics] = useState<Employee[]>([]);
+  const [availableServices, setAvailableServices] = useState<Service[]>([]);
 
-  const handleUpdateProfile = () => {
-    toast.success('Perfil actualizado exitosamente');
-    setIsEditingProfile(false);
+  const handleUpdateProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || !currentUser?.id_cliente) {
+        toast.error('No se pudo identificar la sesión');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/clientes/${currentUser.id_cliente}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id_usuario: currentUser.id,
+          nombre: clientData.nombre,
+          apellido: clientData.apellido,
+          tipo_documento: clientData.documentType,
+          documento: clientData.document,
+          telefono: clientData.telefono,
+          barrio: clientData.barrio,
+          direccion: clientData.direccion,
+          fecha_nacimiento: clientData.fechaNacimiento
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Error al actualizar perfil');
+      }
+
+      toast.success('Perfil actualizado exitosamente');
+      setIsEditingProfile(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Error de conexión');
+    }
   };
 
   const resetMotoForm = () => {
@@ -226,32 +318,73 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     setEditingMoto(null);
   };
 
-  const handleSubmitMoto = (e: React.FormEvent) => {
+  const handleSubmitMoto = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!motoFormData.marca || !motoFormData.modelo || !motoFormData.placa) {
       toast.error('Por favor complete los campos obligatorios');
       return;
     }
 
-    if (editingMoto) {
-      setMotos(motos.map(moto => 
-        moto.id === editingMoto.id 
-          ? { ...moto, ...motoFormData }
-          : moto
-      ));
-      toast.success('Moto actualizada exitosamente');
-    } else {
-      const newMoto: Moto = {
-        id: Date.now(),
-        ...motoFormData
-      };
-      setMotos([...motos, newMoto]);
-      toast.success('Moto agregada exitosamente');
-    }
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || !currentUser?.id_cliente) {
+        toast.error('Sesión inválida');
+        return;
+      }
 
-    setShowMotoModal(false);
-    resetMotoForm();
+      const url = editingMoto
+        ? `${API_URL}/motocicletas/${editingMoto.id}`
+        : `${API_URL}/motocicletas`;
+
+      const method = editingMoto ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id_cliente: currentUser.id_cliente,
+          marca: motoFormData.marca,
+          modelo: motoFormData.modelo,
+          anio: parseInt(motoFormData.ano.toString()),
+          placa: motoFormData.placa,
+          color: motoFormData.color,
+          motor: parseInt(motoFormData.cilindraje.toString()) || 0,
+          kilometraje: motoFormData.kilometraje,
+          estado: true
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al guardar la motocicleta');
+      }
+
+      if (editingMoto) {
+        setMotos(motos.map(moto =>
+          moto.id === editingMoto.id
+            ? { ...moto, ...motoFormData }
+            : moto
+        ));
+        toast.success('Moto actualizada exitosamente');
+      } else {
+        const newMoto: Moto = {
+          id: data.ID_Motocicleta,
+          ...motoFormData
+        };
+        setMotos([...motos, newMoto]);
+        toast.success('Moto agregada exitosamente');
+      }
+
+      setShowMotoModal(false);
+      resetMotoForm();
+    } catch (error: any) {
+      toast.error(error.message || 'Error al conectar con el servidor');
+    }
   };
 
   const handleEditMoto = (moto: Moto) => {
@@ -265,50 +398,103 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     setShowDeleteMotoConfirm(true);
   };
 
-  const confirmDeleteMoto = () => {
-    if (selectedMoto) {
+  const confirmDeleteMoto = async () => {
+    if (!selectedMoto) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/motocicletas/${selectedMoto.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Error al eliminar la motocicleta');
+      }
+
       setMotos(motos.filter(m => m.id !== selectedMoto.id));
       toast.success('Moto eliminada exitosamente');
+    } catch (error: any) {
+      toast.error(error.message || 'Error de conexión');
+    } finally {
+      setShowDeleteMotoConfirm(false);
+      setSelectedMoto(null);
     }
-    setShowDeleteMotoConfirm(false);
-    setSelectedMoto(null);
   };
 
-  const handleSubmitAgendamiento = (e: React.FormEvent) => {
+  const handleSubmitAgendamiento = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!agendarFormData.motoId || !agendarFormData.fecha || !agendarFormData.startTime || !agendarFormData.mecanico || agendarFormData.serviceTypes.length === 0) {
+
+    if (!agendarFormData.motoId || !agendarFormData.fecha || !agendarFormData.startTime || !agendarFormData.mecanicoId || agendarFormData.serviceIds.length === 0) {
       toast.error('Por favor complete todos los campos obligatorios');
       return;
     }
 
-    const selectedMoto = motos.find(m => m.id === agendarFormData.motoId);
-    if (!selectedMoto) return;
+    try {
+      const token = localStorage.getItem('token');
 
-    const newAgendamiento: Agendamiento = {
-      id: Date.now(),
-      motoId: agendarFormData.motoId,
-      motoBrand: selectedMoto.marca,
-      motoModel: selectedMoto.modelo,
-      motoPlate: selectedMoto.placa,
-      fecha: agendarFormData.fecha,
-      startTime: agendarFormData.startTime,
-      mechanicName: agendarFormData.mecanico,
-      serviceTypes: agendarFormData.serviceTypes,
-      notes: agendarFormData.descripcion
-    };
+      // Calcular hora fin (+1 hora)
+      const [hours, minutes] = agendarFormData.startTime.split(':');
+      const endHour = (parseInt(hours) + 1).toString().padStart(2, '0');
+      const endTime = `${endHour}:${minutes}`;
 
-    setAgendamientos([...agendamientos, newAgendamiento]);
-    toast.success('Servicio agendado exitosamente. La hora es aproximada y puede ser reagendada.');
-    setShowAgendarModal(false);
-    setAgendarFormData({
-      motoId: 0,
-      fecha: '',
-      startTime: '',
-      mecanico: '',
-      serviceTypes: [],
-      descripcion: ''
-    });
+      const response = await fetch(`${API_URL}/agendamientos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id_motocicleta: agendarFormData.motoId,
+          id_empleado: agendarFormData.mecanicoId,
+          dia: agendarFormData.fecha,
+          horainicio: agendarFormData.startTime,
+          horafin: endTime,
+          notas: agendarFormData.descripcion,
+          servicios: agendarFormData.serviceIds
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Error al guardar agendamiento');
+      }
+
+      const savedAgData = await response.json();
+      const selectedMoto = motos.find(m => m.id === agendarFormData.motoId);
+      const selectedMechanic = mechanics.find(m => m.id === agendarFormData.mecanicoId);
+      const selectedServiceNames = availableServices
+        .filter(s => agendarFormData.serviceIds.includes(s.id))
+        .map(s => s.nombre);
+
+      const newAgendamiento: Agendamiento = {
+        id: savedAgData.ID_Agendamiento,
+        motoId: agendarFormData.motoId,
+        motoBrand: selectedMoto?.marca || '',
+        motoModel: selectedMoto?.modelo || '',
+        motoPlate: selectedMoto?.placa || '',
+        fecha: agendarFormData.fecha,
+        startTime: agendarFormData.startTime,
+        mechanicName: selectedMechanic ? `${selectedMechanic.nombre} ${selectedMechanic.apellido}` : '',
+        serviceTypes: selectedServiceNames,
+        notes: agendarFormData.descripcion
+      };
+
+      setAgendamientos([...agendamientos, newAgendamiento]);
+      toast.success('Servicio agendado exitosamente.');
+      setShowAgendarModal(false);
+      setAgendarFormData({
+        motoId: 0,
+        fecha: '',
+        startTime: '',
+        mecanicoId: 0,
+        serviceIds: [],
+        descripcion: ''
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Error de conexión');
+    }
   };
 
   const getMotoName = (motoId: number) => {
@@ -328,7 +514,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       confirmado: 'bg-blue-100 text-blue-800 border-blue-200',
       cancelado: 'bg-red-100 text-red-800 border-red-200'
     };
-    
+
     return (
       <Badge className={variants[estado as keyof typeof variants] || variants.pendiente}>
         {estado.charAt(0).toUpperCase() + estado.slice(1).replace('_', ' ')}
@@ -351,7 +537,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                   <p className="text-muted-foreground">Gestiona tu información personal</p>
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={() => setIsEditingProfile(!isEditingProfile)}
                 variant={isEditingProfile ? "outline" : "default"}
                 className={!isEditingProfile ? "bg-blue-600 hover:bg-blue-700" : ""}
@@ -469,14 +655,14 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 </div>
                 {isEditingProfile && (
                   <div className="flex gap-2 pt-4">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => setIsEditingProfile(false)}
                       className="flex-1"
                     >
                       Cancelar
                     </Button>
-                    <Button 
+                    <Button
                       onClick={handleUpdateProfile}
                       className="flex-1 bg-blue-600 hover:bg-blue-700"
                     >
@@ -490,13 +676,22 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
         );
 
       // Nuevo case 'motos' completo en vista tabla
-case 'motos':
+      case 'motos':
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bike className="w-5 h-5 text-blue-600" />
-                Listado de Motocicletas
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bike className="w-5 h-5 text-blue-600" />
+                  Listado de Motocicletas
+                </div>
+                <Button
+                  onClick={() => setShowMotoModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 h-9"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar Moto
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -644,6 +839,12 @@ case 'motos':
         };
 
         const handleDateClick = (date: Date) => {
+          // Validar que no sea antes del día actual
+          if (isBefore(startOfDay(date), startOfDay(new Date()))) {
+            toast.error('No se pueden agendar servicios en fechas pasadas');
+            return;
+          }
+
           // Validar que no sea fin de semana
           const dayOfWeek = date.getDay();
           if (dayOfWeek === 0 || dayOfWeek === 6) {
@@ -664,8 +865,8 @@ case 'motos':
             motoId: 0,
             fecha: dateStr,
             startTime: '',
-            mecanico: '',
-            serviceTypes: [],
+            mecanicoId: 0,
+            serviceIds: [],
             descripcion: ''
           });
           setShowAgendarModal(true);
@@ -689,8 +890,8 @@ case 'motos':
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
                     <div className="min-w-[200px] text-center">
-                      {format(currentDate, 'MMMM yyyy', { locale: es }).charAt(0).toUpperCase() + 
-                       format(currentDate, 'MMMM yyyy', { locale: es }).slice(1)}
+                      {format(currentDate, 'MMMM yyyy', { locale: es }).charAt(0).toUpperCase() +
+                        format(currentDate, 'MMMM yyyy', { locale: es }).slice(1)}
                     </div>
                     <Button
                       variant="outline"
@@ -709,7 +910,7 @@ case 'motos':
                       {day}
                     </div>
                   ))}
-                  
+
                   {rows.map((week, weekIdx) => (
                     week.map((day, dayIdx) => {
                       const dayAppointments = getAppointmentsForDate(day);
@@ -719,7 +920,7 @@ case 'motos':
                       const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                       const hasAppointment = dayAppointments.length > 0;
                       const isClickable = isCurrentMonth && !isWeekend && !hasAppointment;
-                      
+
                       return (
                         <div
                           key={`${weekIdx}-${dayIdx}`}
@@ -740,7 +941,7 @@ case 'motos':
                               <Ban className="w-8 h-8 text-muted-foreground" />
                             </div>
                           )}
-                          
+
                           <div className={`text-sm mb-1 ${isTodayDate ? 'font-bold text-blue-600 dark:text-blue-400' : ''}`}>
                             {format(day, dateFormat)}
                           </div>
@@ -810,18 +1011,17 @@ case 'motos':
               <p className="text-xs text-blue-700 dark:text-blue-400">{currentUser.name}</p>
             </div>
           </SidebarHeader>
-          
+
           <SidebarContent className="p-4">
             <SidebarMenu>
               {clientMenuItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     onClick={() => setActiveSection(item.id)}
-                    className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${
-                      activeSection === item.id 
-                        ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800' 
-                        : 'hover:bg-muted/50'
-                    }`}
+                    className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${activeSection === item.id
+                      ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                      : 'hover:bg-muted/50'
+                      }`}
                   >
                     <item.icon className={`w-5 h-5 ${activeSection === item.id ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'}`} />
                     <span>{item.label}</span>
@@ -830,11 +1030,11 @@ case 'motos':
               ))}
             </SidebarMenu>
           </SidebarContent>
-          
+
           <SidebarFooter className="border-t border-border p-4">
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onClick={() => setShowLogoutConfirm(true)}
                   className="w-full justify-start gap-3 p-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                 >
@@ -876,7 +1076,7 @@ case 'motos':
               </div>
             </div>
           </header>
-          
+
           <div className="flex-1 p-6 bg-muted/30">
             {renderContent()}
           </div>
@@ -963,9 +1163,9 @@ case 'motos':
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
                   setShowMotoModal(false);
                   resetMotoForm();
@@ -1001,8 +1201,8 @@ case 'motos':
 
             <div className="space-y-2">
               <Label htmlFor="motoSelect">Selecciona tu Moto *</Label>
-              <Select 
-                value={agendarFormData.motoId.toString()} 
+              <Select
+                value={agendarFormData.motoId.toString()}
                 onValueChange={(value) => setAgendarFormData(prev => ({ ...prev, motoId: parseInt(value) }))}
               >
                 <SelectTrigger>
@@ -1020,17 +1220,17 @@ case 'motos':
 
             <div className="space-y-2">
               <Label htmlFor="mecanico">Mecánico Preferido *</Label>
-              <Select 
-                value={agendarFormData.mecanico} 
-                onValueChange={(value) => setAgendarFormData(prev => ({ ...prev, mecanico: value }))}
+              <Select
+                value={agendarFormData.mecanicoId.toString()}
+                onValueChange={(value) => setAgendarFormData(prev => ({ ...prev, mecanicoId: parseInt(value) }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona un mecánico" />
                 </SelectTrigger>
                 <SelectContent>
                   {mechanics.map((mechanic) => (
-                    <SelectItem key={mechanic} value={mechanic}>
-                      {mechanic}
+                    <SelectItem key={mechanic.id} value={mechanic.id.toString()}>
+                      {mechanic.nombre} {mechanic.apellido}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1042,8 +1242,8 @@ case 'motos':
                 <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 Hora de Inicio (Aproximada) *
               </Label>
-              <Select 
-                value={agendarFormData.startTime} 
+              <Select
+                value={agendarFormData.startTime}
                 onValueChange={(value) => setAgendarFormData(prev => ({ ...prev, startTime: value }))}
               >
                 <SelectTrigger>
@@ -1069,29 +1269,29 @@ case 'motos':
             <div className="space-y-2">
               <Label>Servicios a realizar *</Label>
               <div className="grid grid-cols-2 gap-3">
-                {['Mantenimiento', 'Reparación', 'Revisión', 'Diagnóstico', 'Cambio de Aceite', 'Afinación'].map((service) => (
-                  <div key={service} className="flex items-center space-x-2">
+                {availableServices.map((service) => (
+                  <div key={service.id} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      id={`service-${service}`}
-                      checked={agendarFormData.serviceTypes.includes(service)}
+                      id={`service-${service.id}`}
+                      checked={agendarFormData.serviceIds.includes(service.id)}
                       onChange={(e) => {
                         if (e.target.checked) {
                           setAgendarFormData(prev => ({
                             ...prev,
-                            serviceTypes: [...prev.serviceTypes, service]
+                            serviceIds: [...prev.serviceIds, service.id]
                           }));
                         } else {
                           setAgendarFormData(prev => ({
                             ...prev,
-                            serviceTypes: prev.serviceTypes.filter(s => s !== service)
+                            serviceIds: prev.serviceIds.filter(id => id !== service.id)
                           }));
                         }
                       }}
                       className="rounded border-gray-300"
                     />
-                    <label htmlFor={`service-${service}`} className="text-sm cursor-pointer">
-                      {service}
+                    <label htmlFor={`service-${service.id}`} className="text-sm cursor-pointer">
+                      {service.nombre}
                     </label>
                   </div>
                 ))}
@@ -1110,9 +1310,9 @@ case 'motos':
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setShowAgendarModal(false)}
                 className="flex-1"
               >
@@ -1135,7 +1335,7 @@ case 'motos':
               Detalles del Agendamiento
             </DialogTitle>
           </DialogHeader>
-          
+
           {selectedAppointment && (
             <div className="space-y-4 py-2">
               {/* Fecha */}
@@ -1244,7 +1444,7 @@ case 'motos':
         description={`¿Estás seguro de que deseas eliminar la moto "${selectedMoto?.marca} ${selectedMoto?.modelo}"? Esta acción no se puede deshacer.`}
         confirmText="Eliminar"
         onConfirm={confirmDeleteMoto}
-        variant="destructive"
+        variant="delete"
       />
     </SidebarProvider>
   );

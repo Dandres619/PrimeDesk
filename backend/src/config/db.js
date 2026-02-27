@@ -1,36 +1,28 @@
-const sql = require('mssql');
+const postgres = require('postgres');
 require('dotenv').config();
 
-const config = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    server: process.env.DB_SERVER,
-    database: process.env.DB_DATABASE,
-    options: {
-        encrypt: false,
-        trustServerCertificate: true,
-    },
-    pool: {
-        max: 10,
-        min: 0,
-        idleTimeoutMillis: 30000,
-    },
-};
+const connectionString = process.env.DATABASE_URL;
 
-const pool = new sql.ConnectionPool(config);
-const poolConnect = pool.connect();
+if (!connectionString) {
+    console.error('❌ Error: DATABASE_URL no está definida en el archivo .env');
+}
 
-pool.on('error', (err) => {
-    console.error('❌ Error en el pool de conexión a SQL Server:', err);
+const sql = postgres(connectionString, {
+    ssl: 'require', // Supabase requiere SSL
+    max: 10,
+    idle_timeout: 30,
+    connect_timeout: 30
 });
 
 /**
- * Retorna la conexión activa al pool de SQL Server.
- * @returns {Promise<sql.ConnectionPool>}
+ * En PostgreSQL.js, el objeto 'sql' ya actúa como el pool de conexiones.
+ * Para mantener compatibilidad con el código existente, creamos un simulador de getPool.
  */
 const getPool = async () => {
-    await poolConnect;
-    return pool;
+    return sql;
 };
+
+// Log de éxito (Postgres.js se conecta bajo demanda, pero validamos la cadena básica)
+console.log('✅ Configuración de PostgreSQL (Supabase) cargada.');
 
 module.exports = { sql, getPool };

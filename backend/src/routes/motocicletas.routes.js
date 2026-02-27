@@ -21,8 +21,8 @@ const validations = [
 // ?id_cliente=X para filtrar por cliente
 router.get('/', verifyToken, motocicletasController.getAll);
 router.get('/:id', verifyToken, motocicletasController.getById);
-router.post('/', verifyToken, requirePermiso('gestionar_clientes'), validations, motocicletasController.create);
-router.put('/:id', verifyToken, requirePermiso('gestionar_clientes'), validations, motocicletasController.update);
-router.delete('/:id', verifyToken, requirePermiso('gestionar_clientes'), motocicletasController.remove);
+router.post('/', verifyToken, requirePermiso('gestionar_motos'), validations, motocicletasController.create);
+router.put('/:id', verifyToken, requirePermiso('gestionar_motos'), validations, motocicletasController.update);
+router.delete('/:id', verifyToken, requirePermiso('gestionar_motos'), motocicletasController.remove);
 
 module.exports = router;

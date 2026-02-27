@@ -4,15 +4,16 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Bike, Eye, EyeOff, Mail, Lock, User, CreditCard, MapPin, Calendar, Home } from 'lucide-react';
+import { Bike, Eye, EyeOff, Mail, Lock, CreditCard, MapPin, Calendar, Home } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LoginProps {
-  onLogin: (userData: { username: string; name: string; type: string }) => void;
+  onLogin: (userData: any) => void;
+  initialMode?: 'login' | 'register';
 }
 
-export function Login({ onLogin }: LoginProps) {
-  const [isLogin, setIsLogin] = useState(true);
+export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
@@ -20,10 +21,10 @@ export function Login({ onLogin }: LoginProps) {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [showResetNewPassword, setShowResetNewPassword] = useState(false);
   const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
-  
+
   // Login form state
   const [loginData, setLoginData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
 
@@ -38,60 +39,91 @@ export function Login({ onLogin }: LoginProps) {
     birthDate: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    phone: '' // Added phone field
   });
 
   // Forgot password state
   const [forgotEmail, setForgotEmail] = useState('');
-  
+
   // Reset password state
   const [resetPasswordData, setResetPasswordData] = useState({
     newPassword: '',
     confirmPassword: ''
   });
 
-  // Usuarios de prueba
-  const testUsers = [
-    {
-      username: 'admin',
-      password: 'admin123',
-      name: 'Administrador Sistema',
-      type: 'admin'
-    },
-    {
-      username: 'cliente',
-      password: 'cliente123',
-      name: 'Juan Carlos Pérez',
-      type: 'cliente'
-    }
-  ];
+  // @ts-ignore
+  const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!loginData.username || !loginData.password) {
+
+    if (!loginData.email || !loginData.password) {
       toast.error('Por favor complete todos los campos');
       return;
     }
 
-    // Verificar credenciales de los usuarios de prueba
-    const user = testUsers.find(u => u.username === loginData.username && u.password === loginData.password);
-    
-    if (user) {
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          correo: loginData.email,
+          contrasena: loginData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al iniciar sesión');
+      }
+
+      // Guardar token y datos
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.usuario));
+
       toast.success('¡Bienvenido al sistema!');
-      onLogin({ username: user.username, name: user.name, type: user.type });
-    } else {
-      toast.error('Usuario o contraseña incorrectos');
+
+      // Intentar obtener el perfil completo para tener el nombre real si es cliente
+      try {
+        const profileRes = await fetch(`${API_URL}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${data.token}` }
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          onLogin({
+            id: profileData.id_usuario,
+            id_cliente: profileData.ID_Cliente,
+            username: profileData.correo,
+            name: profileData.NombreCliente || profileData.NombreEmpleado || profileData.correo,
+            type: profileData.id_rol === 1 ? 'admin' : (profileData.id_rol === 2 ? 'empleado' : 'cliente')
+          });
+          return;
+        }
+      } catch (e) {
+        console.error('Error fetching profile', e);
+      }
+
+      onLogin({
+        id: data.usuario.id_usuario,
+        id_cliente: null,
+        username: data.usuario.correo,
+        name: data.usuario.correo,
+        type: data.usuario.id_rol === 1 ? 'admin' : (data.usuario.id_rol === 2 ? 'empleado' : 'cliente')
+      });
+
+    } catch (error: any) {
+      toast.error(error.message || 'Error de conexión con el servidor');
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!registerData.firstName || !registerData.lastName || !registerData.documentNumber || 
-        !registerData.neighborhood || !registerData.address || !registerData.birthDate || 
-        !registerData.email || !registerData.password || !registerData.confirmPassword) {
-      toast.error('Por favor complete todos los campos');
+
+    if (!registerData.firstName || !registerData.lastName || !registerData.documentNumber ||
+      !registerData.email || !registerData.password || !registerData.confirmPassword) {
+      toast.error('Por favor complete los campos obligatorios');
       return;
     }
 
@@ -105,26 +137,54 @@ export function Login({ onLogin }: LoginProps) {
       return;
     }
 
-    // Simular registro exitoso
-    toast.success('Registro exitoso. Ya puedes iniciar sesión');
-    setIsLogin(true);
-    setRegisterData({
-      firstName: '',
-      lastName: '',
-      documentType: 'CC',
-      documentNumber: '',
-      neighborhood: '',
-      address: '',
-      birthDate: '',
-      email: '',
-      password: '',
-      confirmPassword: ''
-    });
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          correo: registerData.email,
+          contrasena: registerData.password,
+          id_rol: 3, // Siempre cliente por defecto en el registro público
+          nombre: registerData.firstName,
+          apellido: registerData.lastName,
+          tipo_documento: registerData.documentType,
+          documento: registerData.documentNumber,
+          telefono: registerData.phone || '0000000',
+          barrio: registerData.neighborhood,
+          direccion: registerData.address,
+          fecha_nacimiento: registerData.birthDate
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error en el registro');
+      }
+
+      toast.success('Registro exitoso. Ya puedes iniciar sesión');
+      setIsLogin(true);
+      setRegisterData({
+        firstName: '',
+        lastName: '',
+        documentType: 'CC',
+        documentNumber: '',
+        neighborhood: '',
+        address: '',
+        birthDate: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+        phone: ''
+      });
+    } catch (error: any) {
+      toast.error(error.message || 'Error de conexión');
+    }
   };
 
   const handleForgotPassword = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!forgotEmail) {
       toast.error('Por favor ingrese su correo electrónico');
       return;
@@ -139,7 +199,7 @@ export function Login({ onLogin }: LoginProps) {
 
   const handleResetPassword = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!resetPasswordData.newPassword || !resetPasswordData.confirmPassword) {
       toast.error('Por favor complete todos los campos');
       return;
@@ -235,7 +295,7 @@ export function Login({ onLogin }: LoginProps) {
                   <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
                     Cambiar Contraseña
                   </Button>
-                  
+
                   <Button
                     type="button"
                     variant="outline"
@@ -287,15 +347,15 @@ export function Login({ onLogin }: LoginProps) {
               <>
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="username">Usuario</Label>
+                    <Label htmlFor="email">Correo Electrónico</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
-                        id="username"
-                        type="text"
-                        placeholder="Ingrese su usuario"
-                        value={loginData.username}
-                        onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
+                        id="email"
+                        type="email"
+                        placeholder="Ingrese su correo"
+                        value={loginData.email}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
                         className="pl-10"
                       />
                     </div>
@@ -358,14 +418,6 @@ export function Login({ onLogin }: LoginProps) {
                   </Button>
                 </div>
 
-                {/* Credenciales de prueba */}
-                <div className="mt-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm font-medium text-blue-800 mb-2">Credenciales de prueba:</p>
-                  <div className="space-y-1">
-                    <p className="text-xs text-blue-700"><strong>Admin:</strong> admin / admin123</p>
-                    <p className="text-xs text-blue-700"><strong>Cliente:</strong> cliente / cliente123</p>
-                  </div>
-                </div>
               </>
             ) : (
               // Formulario de Registro
@@ -425,18 +477,32 @@ export function Login({ onLogin }: LoginProps) {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="neighborhood">Barrio</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="neighborhood"
-                        type="text"
-                        placeholder="Ingrese su barrio"
-                        value={registerData.neighborhood}
-                        onChange={(e) => setRegisterData(prev => ({ ...prev, neighborhood: e.target.value }))}
-                        className="pl-10"
-                      />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="neighborhood">Barrio</Label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="neighborhood"
+                          type="text"
+                          placeholder="Ingrese su barrio"
+                          value={registerData.neighborhood}
+                          onChange={(e) => setRegisterData(prev => ({ ...prev, neighborhood: e.target.value }))}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Teléfono</Label>
+                      <div className="relative">
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="Ingrese su teléfono"
+                          value={registerData.phone}
+                          onChange={(e) => setRegisterData(prev => ({ ...prev, phone: e.target.value }))}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -567,7 +633,7 @@ export function Login({ onLogin }: LoginProps) {
               <p className="text-sm text-gray-600">
                 Ingrese su correo electrónico y le enviaremos un enlace para restablecer su contraseña.
               </p>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="forgot-email">Correo electrónico</Label>
                 <div className="relative">
@@ -584,9 +650,9 @@ export function Login({ onLogin }: LoginProps) {
               </div>
 
               <div className="flex gap-2 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setShowForgotPasswordModal(false)}
                   className="flex-1"
                 >

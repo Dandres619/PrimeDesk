@@ -1,54 +1,46 @@
-const { getPool, sql } = require('../config/db');
+const { getPool } = require('../config/db');
 
 const getAll = async () => {
-    const pool = await getPool();
-    const result = await pool.request().query('SELECT * FROM Permisos ORDER BY ID_Permiso');
-    return result.recordset;
+    const sql = await getPool();
+    return await sql`SELECT id_permiso AS "ID_Permiso", nombre AS "Nombre", descripcion AS "Descripcion" FROM permisos ORDER BY id_permiso`;
 };
 
 const getById = async (id) => {
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .query('SELECT * FROM Permisos WHERE ID_Permiso = @id');
-    if (!result.recordset.length) throw { status: 404, message: 'Permiso no encontrado.' };
-    return result.recordset[0];
+    const sql = await getPool();
+    const rows = await sql`SELECT id_permiso AS "ID_Permiso", nombre AS "Nombre", descripcion AS "Descripcion" FROM permisos WHERE id_permiso = ${id}`;
+    if (rows.length === 0) throw { status: 404, message: 'Permiso no encontrado.' };
+    return rows[0];
 };
 
 const create = async ({ nombre, descripcion }) => {
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('nombre', sql.VarChar(50), nombre)
-        .input('descripcion', sql.Text, descripcion || null)
-        .query(`
-      INSERT INTO Permisos (Nombre, Descripcion)
-      OUTPUT INSERTED.*
-      VALUES (@nombre, @descripcion)
-    `);
-    return result.recordset[0];
+    const sql = await getPool();
+    const [row] = await sql`
+        INSERT INTO permisos (nombre, descripcion)
+        VALUES (${nombre}, ${descripcion || null})
+        RETURNING id_permiso AS "ID_Permiso", nombre AS "Nombre", descripcion AS "Descripcion"
+    `;
+    return row;
 };
 
 const update = async (id, { nombre, descripcion }) => {
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .input('nombre', sql.VarChar(50), nombre)
-        .input('descripcion', sql.Text, descripcion || null)
-        .query(`
-      UPDATE Permisos SET Nombre=@nombre, Descripcion=@descripcion
-      OUTPUT INSERTED.*
-      WHERE ID_Permiso = @id
-    `);
-    if (!result.recordset.length) throw { status: 404, message: 'Permiso no encontrado.' };
-    return result.recordset[0];
+    const sql = await getPool();
+    const [row] = await sql`
+        UPDATE permisos SET nombre = ${nombre}, descripcion = ${descripcion || null}
+        WHERE id_permiso = ${id}
+        RETURNING id_permiso AS "ID_Permiso", nombre AS "Nombre", descripcion AS "Descripcion"
+    `;
+    if (!row) throw { status: 404, message: 'Permiso no encontrado.' };
+    return row;
 };
 
 const remove = async (id) => {
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .query('DELETE FROM Permisos OUTPUT DELETED.ID_Permiso WHERE ID_Permiso = @id');
-    if (!result.recordset.length) throw { status: 404, message: 'Permiso no encontrado.' };
+    const sql = await getPool();
+    const [row] = await sql`
+        DELETE FROM permisos 
+        WHERE id_permiso = ${id}
+        RETURNING id_permiso AS "ID_Permiso"
+    `;
+    if (!row) throw { status: 404, message: 'Permiso no encontrado.' };
     return { message: 'Permiso eliminado.' };
 };
 

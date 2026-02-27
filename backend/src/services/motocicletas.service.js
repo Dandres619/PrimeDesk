@@ -1,82 +1,84 @@
-const { getPool, sql } = require('../config/db');
+const { getPool } = require('../config/db');
 
 const getAll = async (id_cliente = null) => {
-    const pool = await getPool();
-    const request = pool.request();
-    let query = `
-    SELECT m.*, c.Nombre AS NombreCliente, c.Apellido AS ApellidoCliente
-    FROM Motocicletas m
-    INNER JOIN Clientes c ON m.ID_Cliente = c.ID_Cliente
+  const sql = await getPool();
+
+  if (id_cliente) {
+    return await sql`
+        SELECT m.id_motocicleta AS "ID_Motocicleta", m.id_cliente AS "ID_Cliente", m.marca AS "Marca", 
+               m.modelo AS "Modelo", m.anio AS "Anio", m.placa AS "Placa", m.color AS "Color", 
+               m.motor AS "Motor", m.kilometraje AS "Kilometraje", m.estado AS "Estado",
+               c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente"
+        FROM motocicletas m
+        INNER JOIN clientes c ON m.id_cliente = c.id_cliente
+        WHERE m.id_cliente = ${id_cliente} 
+        ORDER BY m.id_motocicleta
+    `;
+  }
+
+  return await sql`
+        SELECT m.id_motocicleta AS "ID_Motocicleta", m.id_cliente AS "ID_Cliente", m.marca AS "Marca", 
+               m.modelo AS "Modelo", m.anio AS "Anio", m.placa AS "Placa", m.color AS "Color", 
+               m.motor AS "Motor", m.kilometraje AS "Kilometraje", m.estado AS "Estado",
+               c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente"
+        FROM motocicletas m
+        INNER JOIN clientes c ON m.id_cliente = c.id_cliente
+        ORDER BY m.id_motocicleta
   `;
-    if (id_cliente) {
-        request.input('id_cliente', sql.Int, id_cliente);
-        query += ' WHERE m.ID_Cliente = @id_cliente';
-    }
-    query += ' ORDER BY m.ID_Motocicleta';
-    return (await request.query(query)).recordset;
 };
 
 const getById = async (id) => {
-    const pool = await getPool();
-    const r = await pool.request().input('id', sql.Int, id).query(`
-    SELECT m.*, c.Nombre AS NombreCliente, c.Apellido AS ApellidoCliente
-    FROM Motocicletas m
-    INNER JOIN Clientes c ON m.ID_Cliente = c.ID_Cliente
-    WHERE m.ID_Motocicleta = @id
-  `);
-    if (!r.recordset.length) throw { status: 404, message: 'Motocicleta no encontrada.' };
-    return r.recordset[0];
+  const sql = await getPool();
+  const rows = await sql`
+        SELECT m.id_motocicleta AS "ID_Motocicleta", m.id_cliente AS "ID_Cliente", m.marca AS "Marca", 
+               m.modelo AS "Modelo", m.anio AS "Anio", m.placa AS "Placa", m.color AS "Color", 
+               m.motor AS "Motor", m.kilometraje AS "Kilometraje", m.estado AS "Estado",
+               c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente"
+        FROM motocicletas m
+        INNER JOIN clientes c ON m.id_cliente = c.id_cliente
+        WHERE m.id_motocicleta = ${id}
+    `;
+  if (rows.length === 0) throw { status: 404, message: 'Motocicleta no encontrada.' };
+  return rows[0];
 };
 
 const create = async ({ id_cliente, marca, modelo, anio, placa, color, motor, kilometraje }) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('id_cliente', sql.Int, id_cliente)
-        .input('marca', sql.VarChar(50), marca)
-        .input('modelo', sql.VarChar(50), modelo)
-        .input('anio', sql.Int, anio)
-        .input('placa', sql.VarChar(10), placa)
-        .input('color', sql.VarChar(20), color)
-        .input('motor', sql.Int, motor)
-        .input('kilometraje', sql.Int, kilometraje || 0)
-        .query(`
-      INSERT INTO Motocicletas (ID_Cliente, Marca, Modelo, Anio, Placa, Color, Motor, Kilometraje, Estado)
-      OUTPUT INSERTED.*
-      VALUES (@id_cliente, @marca, @modelo, @anio, @placa, @color, @motor, @kilometraje, 1)
-    `);
-    return r.recordset[0];
+  const sql = await getPool();
+  const [row] = await sql`
+        INSERT INTO motocicletas (id_cliente, marca, modelo, anio, placa, color, motor, kilometraje, estado)
+        VALUES (${id_cliente}, ${marca}, ${modelo}, ${anio}, ${placa}, ${color}, ${motor}, ${kilometraje || 0}, TRUE)
+        RETURNING id_motocicleta AS "ID_Motocicleta", id_cliente AS "ID_Cliente", marca AS "Marca", 
+                  modelo AS "Modelo", anio AS "Anio", placa AS "Placa", color AS "Color", 
+                  motor AS "Motor", kilometraje AS "Kilometraje", estado AS "Estado"
+    `;
+  return row;
 };
 
 const update = async (id, { id_cliente, marca, modelo, anio, placa, color, motor, kilometraje, estado }) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('id', sql.Int, id)
-        .input('id_cliente', sql.Int, id_cliente)
-        .input('marca', sql.VarChar(50), marca)
-        .input('modelo', sql.VarChar(50), modelo)
-        .input('anio', sql.Int, anio)
-        .input('placa', sql.VarChar(10), placa)
-        .input('color', sql.VarChar(20), color)
-        .input('motor', sql.Int, motor)
-        .input('kilometraje', sql.Int, kilometraje)
-        .input('estado', sql.Bit, estado)
-        .query(`
-      UPDATE Motocicletas SET ID_Cliente=@id_cliente, Marca=@marca, Modelo=@modelo,
-        Anio=@anio, Placa=@placa, Color=@color, Motor=@motor,
-        Kilometraje=@kilometraje, Estado=@estado
-      OUTPUT INSERTED.*
-      WHERE ID_Motocicleta=@id
-    `);
-    if (!r.recordset.length) throw { status: 404, message: 'Motocicleta no encontrada.' };
-    return r.recordset[0];
+  const sql = await getPool();
+  const [row] = await sql`
+        UPDATE motocicletas 
+        SET id_cliente = ${id_cliente}, marca = ${marca}, modelo = ${modelo},
+            anio = ${anio}, placa = ${placa}, color = ${color}, motor = ${motor},
+            kilometraje = ${kilometraje}, estado = ${estado}
+        WHERE id_motocicleta = ${id}
+        RETURNING id_motocicleta AS "ID_Motocicleta", id_cliente AS "ID_Cliente", marca AS "Marca", 
+                  modelo AS "Modelo", anio AS "Anio", placa AS "Placa", color AS "Color", 
+                  motor AS "Motor", kilometraje AS "Kilometraje", estado AS "Estado"
+    `;
+  if (!row) throw { status: 404, message: 'Motocicleta no encontrada.' };
+  return row;
 };
 
 const remove = async (id) => {
-    const pool = await getPool();
-    const r = await pool.request().input('id', sql.Int, id)
-        .query('DELETE FROM Motocicletas OUTPUT DELETED.ID_Motocicleta WHERE ID_Motocicleta=@id');
-    if (!r.recordset.length) throw { status: 404, message: 'Motocicleta no encontrada.' };
-    return { message: 'Motocicleta eliminada.' };
+  const sql = await getPool();
+  const [row] = await sql`
+        DELETE FROM motocicletas 
+        WHERE id_motocicleta = ${id}
+        RETURNING id_motocicleta
+    `;
+  if (!row) throw { status: 404, message: 'Motocicleta no encontrada.' };
+  return { message: 'Motocicleta eliminada.' };
 };
 
 module.exports = { getAll, getById, create, update, remove };

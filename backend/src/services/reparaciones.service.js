@@ -1,129 +1,145 @@
-const { getPool, sql } = require('../config/db');
+const { getPool } = require('../config/db');
 
-const getAll = async () => {
-    const pool = await getPool();
-    const r = await pool.request().query(`
-    SELECT rep.*,
-      m.Placa, m.Marca AS MarcaMoto, m.Modelo,
-      a.Dia AS DiaAgendamiento
-    FROM Reparaciones rep
-    INNER JOIN Motocicletas m ON rep.ID_Motocicleta = m.ID_Motocicleta
-    INNER JOIN Agendamientos a ON rep.ID_Agendamiento = a.ID_Agendamiento
-    ORDER BY rep.Fecha DESC
-  `);
-    return r.recordset;
+const getAll = async (id_cliente = null) => {
+  const sql = await getPool();
+  const rows = await sql`
+        SELECT rep.id_reparacion AS "ID_Reparacion", rep.id_motocicleta AS "ID_Motocicleta", 
+               rep.id_agendamiento AS "ID_Agendamiento", rep.fecha AS "Fecha", 
+               rep.observaciones AS "Observaciones", rep.tiposervicio AS "TipoServicio", 
+               rep.estado AS "Estado",
+               m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "Modelo",
+               a.dia AS "DiaAgendamiento"
+        FROM reparaciones rep
+        INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
+        INNER JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
+        ${id_cliente ? sql`WHERE m.id_cliente = ${id_cliente}` : sql``}
+        ORDER BY rep.fecha DESC
+    `;
+  return rows;
 };
 
 const getById = async (id) => {
-    const pool = await getPool();
-    const r = await pool.request().input('id', sql.Int, id).query(`
-    SELECT rep.*,
-      m.Placa, m.Marca AS MarcaMoto, m.Modelo,
-      a.Dia AS DiaAgendamiento
-    FROM Reparaciones rep
-    INNER JOIN Motocicletas m ON rep.ID_Motocicleta = m.ID_Motocicleta
-    INNER JOIN Agendamientos a ON rep.ID_Agendamiento = a.ID_Agendamiento
-    WHERE rep.ID_Reparacion = @id
-  `);
-    if (!r.recordset.length) throw { status: 404, message: 'Reparación no encontrada.' };
+  const sql = await getPool();
+  const appointments = await sql`
+        SELECT rep.id_reparacion AS "ID_Reparacion", rep.id_motocicleta AS "ID_Motocicleta", 
+               rep.id_agendamiento AS "ID_Agendamiento", rep.fecha AS "Fecha", 
+               rep.observaciones AS "Observaciones", rep.tiposervicio AS "TipoServicio", 
+               rep.estado AS "Estado",
+               m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "Modelo",
+               a.dia AS "DiaAgendamiento"
+        FROM reparaciones rep
+        INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
+        INNER JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
+        WHERE rep.id_reparacion = ${id}
+    `;
+  if (appointments.length === 0) throw { status: 404, message: 'Reparación no encontrada.' };
 
-    const servicios = await pool.request().input('id', sql.Int, id).query(`
-    SELECT s.ID_Servicio, s.Nombre FROM Reparaciones_Servicios rs
-    INNER JOIN Servicios s ON rs.ID_Servicio = s.ID_Servicio
-    WHERE rs.ID_Reparacion = @id
-  `);
+  const services = await sql`
+        SELECT s.id_servicio AS "ID_Servicio", s.nombre AS "Nombre" 
+        FROM reparaciones_servicios rs
+        INNER JOIN servicios s ON rs.id_servicio = s.id_servicio
+        WHERE rs.id_reparacion = ${id}
+    `;
 
-    const avances = await pool.request().input('id', sql.Int, id).query(`
-    SELECT ra.*, e.Nombre AS NombreEmpleado, e.Apellido AS ApellidoEmpleado
-    FROM Reparaciones_Avances ra
-    INNER JOIN Empleados e ON ra.ID_Empleado = e.ID_Empleado
-    WHERE ra.ID_Reparacion = @id
-    ORDER BY ra.Fecha DESC
-  `);
+  const progress = await sql`
+        SELECT ra.id_reparacionavance AS "ID_ReparacionAvance", ra.id_reparacion AS "ID_Reparacion", 
+               ra.id_empleado AS "ID_Empleado", ra.descripcion AS "Descripcion", ra.fecha AS "Fecha",
+               e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado"
+        FROM reparaciones_avances ra
+        INNER JOIN empleados e ON ra.id_empleado = e.id_empleado
+        WHERE ra.id_reparacion = ${id}
+        ORDER BY ra.fecha DESC
+    `;
 
-    return { ...r.recordset[0], servicios: servicios.recordset, avances: avances.recordset };
+  return { ...appointments[0], servicios: services, avances: progress };
 };
 
 const create = async ({ id_motocicleta, id_agendamiento, observaciones, tipo_servicio, estado, servicios }) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('id_motocicleta', sql.Int, id_motocicleta)
-        .input('id_agendamiento', sql.Int, id_agendamiento)
-        .input('observaciones', sql.Text, observaciones || null)
-        .input('tipo_servicio', sql.VarChar(50), tipo_servicio || 'Directo')
-        .input('estado', sql.VarChar(30), estado || 'Activo')
-        .query(`
-      INSERT INTO Reparaciones (ID_Motocicleta, ID_Agendamiento, Fecha, Observaciones, TipoServicio, Estado)
-      OUTPUT INSERTED.*
-      VALUES (@id_motocicleta, @id_agendamiento, GETDATE(), @observaciones, @tipo_servicio, @estado)
-    `);
+  const sql = await getPool();
 
-    const reparacion = r.recordset[0];
+  try {
+    const result = await sql.begin(async (tx) => {
+      const [reparacion] = await tx`
+                INSERT INTO reparaciones (id_motocicleta, id_agendamiento, fecha, observaciones, tiposervicio, estado)
+                VALUES (${id_motocicleta}, ${id_agendamiento}, NOW(), ${observaciones || null}, ${tipo_servicio || 'Directo'}, ${estado || 'Activo'})
+                RETURNING id_reparacion AS "ID_Reparacion", id_motocicleta AS "ID_Motocicleta", id_agendamiento AS "ID_Agendamiento"
+            `;
 
-    if (servicios && servicios.length > 0) {
-        for (const id_servicio of servicios) {
-            await pool.request()
-                .input('id_reparacion', sql.Int, reparacion.ID_Reparacion)
-                .input('id_servicio', sql.Int, id_servicio)
-                .query('INSERT INTO Reparaciones_Servicios (ID_Reparacion, ID_Servicio) VALUES (@id_reparacion, @id_servicio)');
-        }
-    }
+      if (servicios && servicios.length > 0) {
+        const serviceInserts = servicios.map(id_servicio => ({
+          id_reparacion: reparacion.ID_Reparacion,
+          id_servicio: id_servicio
+        }));
 
-    return reparacion;
+        await tx`
+                    INSERT INTO reparaciones_servicios ${sql(serviceInserts, 'id_reparacion', 'id_servicio')}
+                `;
+      }
+
+      return reparacion;
+    });
+
+    return result;
+  } catch (err) {
+    console.error('Error al crear reparación:', err);
+    throw err;
+  }
 };
 
 const update = async (id, { observaciones, tipo_servicio, estado }) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('id', sql.Int, id)
-        .input('observaciones', sql.Text, observaciones || null)
-        .input('tipo_servicio', sql.VarChar(50), tipo_servicio)
-        .input('estado', sql.VarChar(30), estado)
-        .query(`
-      UPDATE Reparaciones SET Observaciones=@observaciones, TipoServicio=@tipo_servicio, Estado=@estado
-      OUTPUT INSERTED.*
-      WHERE ID_Reparacion=@id
-    `);
-    if (!r.recordset.length) throw { status: 404, message: 'Reparación no encontrada.' };
-    return r.recordset[0];
+  const sql = await getPool();
+  const [row] = await sql`
+        UPDATE reparaciones 
+        SET observaciones = ${observaciones || null}, tiposervicio = ${tipo_servicio}, estado = ${estado}
+        WHERE id_reparacion = ${id}
+        RETURNING id_reparacion AS "ID_Reparacion"
+    `;
+  if (!row) throw { status: 404, message: 'Reparación no encontrada.' };
+  return row;
 };
 
 const addAvance = async (id_reparacion, id_empleado, descripcion) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('id_reparacion', sql.Int, id_reparacion)
-        .input('id_empleado', sql.Int, id_empleado)
-        .input('descripcion', sql.Text, descripcion)
-        .query(`
-      INSERT INTO Reparaciones_Avances (ID_Reparacion, ID_Empleado, Descripcion, Fecha)
-      OUTPUT INSERTED.*
-      VALUES (@id_reparacion, @id_empleado, @descripcion, GETDATE())
-    `);
-    return r.recordset[0];
+  const sql = await getPool();
+  const [row] = await sql`
+        INSERT INTO reparaciones_avances (id_reparacion, id_empleado, descripcion, fecha)
+        VALUES (${id_reparacion}, ${id_empleado}, ${descripcion}, NOW())
+        RETURNING id_reparacionavance AS "ID_ReparacionAvance"
+    `;
+  return row;
 };
 
 const addServicio = async (id_reparacion, id_servicio) => {
-    const pool = await getPool();
-    const exists = await pool.request()
-        .input('id_reparacion', sql.Int, id_reparacion)
-        .input('id_servicio', sql.Int, id_servicio)
-        .query('SELECT 1 FROM Reparaciones_Servicios WHERE ID_Reparacion=@id_reparacion AND ID_Servicio=@id_servicio');
-    if (exists.recordset.length) throw { status: 409, message: 'El servicio ya está en esta reparación.' };
-    await pool.request()
-        .input('id_reparacion', sql.Int, id_reparacion)
-        .input('id_servicio', sql.Int, id_servicio)
-        .query('INSERT INTO Reparaciones_Servicios (ID_Reparacion, ID_Servicio) VALUES (@id_reparacion, @id_servicio)');
-    return { message: 'Servicio agregado a la reparación.' };
+  const sql = await getPool();
+  const exists = await sql`
+        SELECT 1 FROM reparaciones_servicios 
+        WHERE id_reparacion = ${id_reparacion} AND id_servicio = ${id_servicio}
+    `;
+  if (exists.length > 0) throw { status: 409, message: 'El servicio ya está en esta reparación.' };
+
+  await sql`
+        INSERT INTO reparaciones_servicios (id_reparacion, id_servicio) 
+        VALUES (${id_reparacion}, ${id_servicio})
+    `;
+  return { message: 'Servicio agregado a la reparación.' };
 };
 
 const remove = async (id) => {
-    const pool = await getPool();
-    await pool.request().input('id', sql.Int, id).query('DELETE FROM Reparaciones_Servicios WHERE ID_Reparacion=@id');
-    await pool.request().input('id', sql.Int, id).query('DELETE FROM Reparaciones_Avances WHERE ID_Reparacion=@id');
-    const r = await pool.request().input('id', sql.Int, id)
-        .query('DELETE FROM Reparaciones OUTPUT DELETED.ID_Reparacion WHERE ID_Reparacion=@id');
-    if (!r.recordset.length) throw { status: 404, message: 'Reparación no encontrada.' };
+  const sql = await getPool();
+  try {
+    await sql.begin(async (tx) => {
+      await tx`DELETE FROM reparaciones_servicios WHERE id_reparacion = ${id}`;
+      await tx`DELETE FROM reparaciones_avances WHERE id_reparacion = ${id}`;
+      const [deleted] = await tx`
+                DELETE FROM reparaciones 
+                WHERE id_reparacion = ${id}
+                RETURNING id_reparacion AS "ID_Reparacion"
+            `;
+      if (!deleted) throw { status: 404, message: 'Reparación no encontrada.' };
+    });
     return { message: 'Reparación eliminada.' };
+  } catch (err) {
+    throw err;
+  }
 };
 
 module.exports = { getAll, getById, create, update, addAvance, addServicio, remove };

@@ -1,43 +1,47 @@
-const { getPool, sql } = require('../config/db');
+const { getPool } = require('../config/db');
 
 const getAll = async () => {
-    const pool = await getPool();
-    return (await pool.request().query('SELECT * FROM Servicios ORDER BY ID_Servicio')).recordset;
+    const sql = await getPool();
+    return await sql`SELECT id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", estado AS "Estado" FROM servicios ORDER BY id_servicio`;
 };
 
 const getById = async (id) => {
-    const pool = await getPool();
-    const r = await pool.request().input('id', sql.Int, id).query('SELECT * FROM Servicios WHERE ID_Servicio=@id');
-    if (!r.recordset.length) throw { status: 404, message: 'Servicio no encontrado.' };
-    return r.recordset[0];
+    const sql = await getPool();
+    const rows = await sql`SELECT id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", estado AS "Estado" FROM servicios WHERE id_servicio = ${id}`;
+    if (rows.length === 0) throw { status: 404, message: 'Servicio no encontrado.' };
+    return rows[0];
 };
 
 const create = async ({ nombre, descripcion }) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('nombre', sql.VarChar(100), nombre)
-        .input('descripcion', sql.Text, descripcion || null)
-        .query('INSERT INTO Servicios (Nombre, Descripcion, Estado) OUTPUT INSERTED.* VALUES (@nombre, @descripcion, 1)');
-    return r.recordset[0];
+    const sql = await getPool();
+    const [row] = await sql`
+        INSERT INTO servicios (nombre, descripcion, estado) 
+        VALUES (${nombre}, ${descripcion || null}, TRUE)
+        RETURNING id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", estado AS "Estado"
+    `;
+    return row;
 };
 
 const update = async (id, { nombre, descripcion, estado }) => {
-    const pool = await getPool();
-    const r = await pool.request()
-        .input('id', sql.Int, id)
-        .input('nombre', sql.VarChar(100), nombre)
-        .input('descripcion', sql.Text, descripcion || null)
-        .input('estado', sql.Bit, estado)
-        .query('UPDATE Servicios SET Nombre=@nombre, Descripcion=@descripcion, Estado=@estado OUTPUT INSERTED.* WHERE ID_Servicio=@id');
-    if (!r.recordset.length) throw { status: 404, message: 'Servicio no encontrado.' };
-    return r.recordset[0];
+    const sql = await getPool();
+    const [row] = await sql`
+        UPDATE servicios 
+        SET nombre = ${nombre}, descripcion = ${descripcion || null}, estado = ${estado} 
+        WHERE id_servicio = ${id}
+        RETURNING id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", estado AS "Estado"
+    `;
+    if (!row) throw { status: 404, message: 'Servicio no encontrado.' };
+    return row;
 };
 
 const remove = async (id) => {
-    const pool = await getPool();
-    const r = await pool.request().input('id', sql.Int, id)
-        .query('DELETE FROM Servicios OUTPUT DELETED.ID_Servicio WHERE ID_Servicio=@id');
-    if (!r.recordset.length) throw { status: 404, message: 'Servicio no encontrado.' };
+    const sql = await getPool();
+    const [row] = await sql`
+        DELETE FROM servicios 
+        WHERE id_servicio = ${id}
+        RETURNING id_servicio
+    `;
+    if (!row) throw { status: 404, message: 'Servicio no encontrado.' };
     return { message: 'Servicio eliminado.' };
 };
 

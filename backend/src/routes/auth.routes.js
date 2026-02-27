@@ -38,6 +38,21 @@ router.post(
 // GET /api/auth/me (protegida)
 router.get('/me', verifyToken, authController.getMe);
 
+// PUT /api/auth/profile (protegida)
+router.put(
+    '/profile',
+    verifyToken,
+    [
+        body('nombre').notEmpty().withMessage('Nombre requerido.'),
+        body('apellido').notEmpty().withMessage('Apellido requerido.'),
+        body('tipo_documento').notEmpty().withMessage('Tipo de documento requerido.'),
+        body('documento').notEmpty().withMessage('Documento requerido.'),
+        body('telefono').notEmpty().withMessage('Teléfono requerido.'),
+        handleValidation,
+    ],
+    authController.updateProfile
+);
+
 // POST /api/auth/change-password (protegida)
 router.post(
     '/change-password',

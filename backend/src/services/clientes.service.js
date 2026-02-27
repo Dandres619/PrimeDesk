@@ -1,90 +1,80 @@
-const { getPool, sql } = require('../config/db');
+const { getPool } = require('../config/db');
 
 const getAll = async () => {
-    const pool = await getPool();
-    const result = await pool.request().query(`
-    SELECT c.*, u.Correo
-    FROM Clientes c
-    INNER JOIN Usuarios u ON c.ID_Usuario = u.ID_Usuario
-    ORDER BY c.ID_Cliente
-  `);
-    return result.recordset;
+  const sql = await getPool();
+  return await sql`
+        SELECT c.id_cliente AS "ID_Cliente", c.id_usuario AS "ID_Usuario", c.nombre AS "Nombre", 
+               c.apellido AS "Apellido", c.tipodocumento AS "TipoDocumento", c.documento AS "Documento",
+               c.telefono AS "Telefono", c.barrio AS "Barrio", c.direccion AS "Direccion", 
+               c.fechanacimiento AS "FechaNacimiento", c.foto AS "Foto", u.correo AS "Correo"
+        FROM clientes c
+        INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
+        ORDER BY c.id_cliente
+    `;
 };
 
 const getById = async (id) => {
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .query(`
-      SELECT c.*, u.Correo
-      FROM Clientes c
-      INNER JOIN Usuarios u ON c.ID_Usuario = u.ID_Usuario
-      WHERE c.ID_Cliente = @id
-    `);
-    if (!result.recordset.length) throw { status: 404, message: 'Cliente no encontrado.' };
-    return result.recordset[0];
+  const sql = await getPool();
+  const rows = await sql`
+        SELECT c.id_cliente AS "ID_Cliente", c.id_usuario AS "ID_Usuario", c.nombre AS "Nombre", 
+               c.apellido AS "Apellido", c.tipodocumento AS "TipoDocumento", c.documento AS "Documento",
+               c.telefono AS "Telefono", c.barrio AS "Barrio", c.direccion AS "Direccion", 
+               c.fechanacimiento AS "FechaNacimiento", c.foto AS "Foto", u.correo AS "Correo"
+        FROM clientes c
+        INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
+        WHERE c.id_cliente = ${id}
+    `;
+  if (rows.length === 0) throw { status: 404, message: 'Cliente no encontrado.' };
+  return rows[0];
 };
 
 const create = async (data) => {
-    const pool = await getPool();
-    const { id_usuario, nombre, apellido, tipo_documento, documento, telefono,
-        barrio, direccion, fecha_nacimiento, foto } = data;
+  const sql = await getPool();
+  const { id_usuario, nombre, apellido, tipo_documento, documento, telefono,
+    barrio, direccion, fecha_nacimiento, foto } = data;
 
-    const result = await pool.request()
-        .input('id_usuario', sql.Int, id_usuario)
-        .input('nombre', sql.VarChar(50), nombre)
-        .input('apellido', sql.VarChar(50), apellido)
-        .input('tipo_documento', sql.VarChar(20), tipo_documento)
-        .input('documento', sql.VarChar(20), documento)
-        .input('telefono', sql.VarChar(10), telefono)
-        .input('barrio', sql.VarChar(60), barrio)
-        .input('direccion', sql.VarChar(100), direccion)
-        .input('fecha_nacimiento', sql.Date, fecha_nacimiento)
-        .input('foto', sql.VarChar(255), foto || null)
-        .query(`
-      INSERT INTO Clientes (ID_Usuario, Nombre, Apellido, TipoDocumento, Documento,
-        Telefono, Barrio, Direccion, FechaNacimiento, Foto)
-      OUTPUT INSERTED.*
-      VALUES (@id_usuario, @nombre, @apellido, @tipo_documento, @documento,
-        @telefono, @barrio, @direccion, @fecha_nacimiento, @foto)
-    `);
-    return result.recordset[0];
+  const [row] = await sql`
+        INSERT INTO clientes (id_usuario, nombre, apellido, tipodocumento, documento,
+            telefono, barrio, direccion, fechanacimiento, foto)
+        VALUES (${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento},
+            ${telefono}, ${barrio}, ${direccion}, ${fecha_nacimiento}, ${foto || null})
+        RETURNING id_cliente AS "ID_Cliente", id_usuario AS "ID_Usuario", nombre AS "Nombre", 
+                  apellido AS "Apellido", tipodocumento AS "TipoDocumento", documento AS "Documento",
+                  telefono AS "Telefono", barrio AS "Barrio", direccion AS "Direccion", 
+                  fechanacimiento AS "FechaNacimiento", foto AS "Foto"
+    `;
+  return row;
 };
 
 const update = async (id, data) => {
-    const pool = await getPool();
-    const { nombre, apellido, tipo_documento, documento, telefono,
-        barrio, direccion, fecha_nacimiento, foto } = data;
+  const sql = await getPool();
+  const { nombre, apellido, tipo_documento, documento, telefono,
+    barrio, direccion, fecha_nacimiento, foto } = data;
 
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .input('nombre', sql.VarChar(50), nombre)
-        .input('apellido', sql.VarChar(50), apellido)
-        .input('tipo_documento', sql.VarChar(20), tipo_documento)
-        .input('documento', sql.VarChar(20), documento)
-        .input('telefono', sql.VarChar(10), telefono)
-        .input('barrio', sql.VarChar(60), barrio)
-        .input('direccion', sql.VarChar(100), direccion)
-        .input('fecha_nacimiento', sql.Date, fecha_nacimiento)
-        .input('foto', sql.VarChar(255), foto || null)
-        .query(`
-      UPDATE Clientes SET Nombre=@nombre, Apellido=@apellido, TipoDocumento=@tipo_documento,
-        Documento=@documento, Telefono=@telefono, Barrio=@barrio, Direccion=@direccion,
-        FechaNacimiento=@fecha_nacimiento, Foto=@foto
-      OUTPUT INSERTED.*
-      WHERE ID_Cliente = @id
-    `);
-    if (!result.recordset.length) throw { status: 404, message: 'Cliente no encontrado.' };
-    return result.recordset[0];
+  const [row] = await sql`
+        UPDATE clientes 
+        SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
+            documento = ${documento}, telefono = ${telefono}, barrio = ${barrio}, 
+            direccion = ${direccion}, fechanacimiento = ${fecha_nacimiento}, foto = ${foto || null}
+        WHERE id_cliente = ${id}
+        RETURNING id_cliente AS "ID_Cliente", id_usuario AS "ID_Usuario", nombre AS "Nombre", 
+                  apellido AS "Apellido", tipodocumento AS "TipoDocumento", documento AS "Documento",
+                  telefono AS "Telefono", barrio AS "Barrio", direccion AS "Direccion", 
+                  fechanacimiento AS "FechaNacimiento", foto AS "Foto"
+    `;
+  if (!row) throw { status: 404, message: 'Cliente no encontrado.' };
+  return row;
 };
 
 const remove = async (id) => {
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('id', sql.Int, id)
-        .query('DELETE FROM Clientes OUTPUT DELETED.ID_Cliente WHERE ID_Cliente = @id');
-    if (!result.recordset.length) throw { status: 404, message: 'Cliente no encontrado.' };
-    return { message: 'Cliente eliminado.' };
+  const sql = await getPool();
+  const [row] = await sql`
+        DELETE FROM clientes 
+        WHERE id_cliente = ${id}
+        RETURNING id_cliente
+    `;
+  if (!row) throw { status: 404, message: 'Cliente no encontrado.' };
+  return { message: 'Cliente eliminado.' };
 };
 
 module.exports = { getAll, getById, create, update, remove };
