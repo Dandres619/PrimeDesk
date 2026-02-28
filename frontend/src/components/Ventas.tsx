@@ -11,11 +11,11 @@ import { Checkbox } from './ui/checkbox';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
 import { PDFPreviewDialog } from './PDFPreviewDialog';
-import { 
-  Plus, 
-  Search, 
-  Eye, 
-  FileText, 
+import {
+  Plus,
+  Search,
+  Eye,
+  FileText,
   DollarSign,
   TrendingUp,
   XCircle
@@ -28,11 +28,11 @@ export function Ventas() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewingSale, setViewingSale] = useState<any>(null);
-  
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 2;
-  
+
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     title: string;
@@ -46,9 +46,9 @@ export function Ventas() {
     description: '',
     confirmText: '',
     variant: 'default',
-    onConfirm: () => {}
+    onConfirm: () => { }
   });
-  
+
   const [pdfPreview, setPdfPreview] = useState<{
     open: boolean;
     data: any;
@@ -60,8 +60,8 @@ export function Ventas() {
   });
 
   const [sales, setSales] = useState([
-    { 
-      id: 1, 
+    {
+      id: 1,
       date: '2024-01-16',
       invoiceNumber: 'VEN-001',
       serviceOrderId: 1,
@@ -93,8 +93,8 @@ export function Ventas() {
       notes: 'Mantenimiento según programación',
       anulada: false
     },
-    { 
-      id: 2, 
+    {
+      id: 2,
       date: '2024-01-22',
       invoiceNumber: 'VEN-002',
       serviceOrderId: 2,
@@ -141,27 +141,27 @@ export function Ventas() {
   ];
 
   const purchases = [
-    { 
-      id: 1, 
-      invoiceNumber: 'COMP-001', 
+    {
+      id: 1,
+      invoiceNumber: 'COMP-001',
       total: 40000, // 25000 + 15000
       items: [
         { id: 1, product: 'Aceite Motor 10W-40', category: 'Lubricantes', quantity: 1, unitCost: 25000 },
         { id: 2, product: 'Filtro de Aceite', category: 'Filtros', quantity: 1, unitCost: 15000 }
       ]
     },
-    { 
-      id: 2, 
-      invoiceNumber: 'COMP-002', 
+    {
+      id: 2,
+      invoiceNumber: 'COMP-002',
       total: 200000, // 80000 + 120000
       items: [
         { id: 1, product: 'Pastillas de Freno R6', category: 'Frenos', quantity: 1, unitCost: 80000 },
         { id: 2, product: 'Disco de Freno Delantero', category: 'Frenos', quantity: 1, unitCost: 120000 }
       ]
     },
-    { 
-      id: 3, 
-      invoiceNumber: 'COMP-003', 
+    {
+      id: 3,
+      invoiceNumber: 'COMP-003',
       total: 235000, // 150000 + 85000
       items: [
         { id: 1, product: 'Cadena de Transmisión', category: 'Transmisión', quantity: 1, unitCost: 150000 },
@@ -184,7 +184,7 @@ export function Ventas() {
 
   // Pedidos de servicio disponibles para vincular con ventas
   const serviceOrders = [
-    { 
+    {
       id: 1,
       orderNumber: 'OS-001',
       clientId: 1,
@@ -197,7 +197,7 @@ export function Ventas() {
       status: 'completado',
       associatedSaleId: 1
     },
-    { 
+    {
       id: 2,
       orderNumber: 'OS-002',
       clientId: 2,
@@ -210,7 +210,7 @@ export function Ventas() {
       status: 'completado',
       associatedSaleId: 2
     },
-    { 
+    {
       id: 3,
       orderNumber: 'OS-003',
       clientId: 1,
@@ -223,7 +223,7 @@ export function Ventas() {
       status: 'completado',
       associatedSaleId: null
     },
-    { 
+    {
       id: 4,
       orderNumber: 'OS-004',
       clientId: 3,
@@ -238,7 +238,7 @@ export function Ventas() {
     }
   ];
 
-  const filteredSales = sales.filter(sale => 
+  const filteredSales = sales.filter(sale =>
     sale.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sale.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sale.motorcycleBrand.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -255,10 +255,10 @@ export function Ventas() {
     const client = clients.find(c => c.id === parseInt(saleData.clientId));
     const motorcycle = motorcycles.find(m => m.id === parseInt(saleData.motorcycleId));
     const serviceOrder = serviceOrders.find(so => so.id === parseInt(saleData.serviceOrderId));
-    
+
     // Obtener productos de las compras seleccionadas
     const selectedPurchases = purchases.filter(p => saleData.selectedPurchases.includes(p.id));
-    const allProducts = selectedPurchases.flatMap(purchase => 
+    const allProducts = selectedPurchases.flatMap(purchase =>
       purchase.items.map(item => ({
         ...item,
         purchaseInvoice: purchase.invoiceNumber,
@@ -266,7 +266,7 @@ export function Ventas() {
         total: item.unitCost * 1
       }))
     );
-    
+
     // Calcular totales
     const partsCost = allProducts.reduce((sum: number, part: any) => sum + (part.quantity * part.unitCost), 0);
     const partsTotal = allProducts.reduce((sum: number, part: any) => sum + part.total, 0);
@@ -274,7 +274,7 @@ export function Ventas() {
     const tax = subtotal * 0.19;
     const total = subtotal + tax;
 
-    const purchaseInvoices = saleData.selectedPurchases.map((id: number) => 
+    const purchaseInvoices = saleData.selectedPurchases.map((id: number) =>
       purchases.find((p: any) => p.id === id)?.invoiceNumber || ''
     );
 
@@ -303,8 +303,8 @@ export function Ventas() {
       anulada: false
     };
 
-    const newSale = { 
-      id: Date.now(), 
+    const newSale = {
+      id: Date.now(),
       ...completeData,
       invoiceNumber: `VEN-${(sales.length + 1).toString().padStart(3, '0')}`
     };
@@ -325,8 +325,8 @@ export function Ventas() {
   };
 
   const cancelSale = (saleId: number) => {
-    setSales(sales.map(sale => 
-      sale.id === saleId 
+    setSales(sales.map(sale =>
+      sale.id === saleId
         ? { ...sale, anulada: true }
         : sale
     ));
@@ -366,7 +366,7 @@ export function Ventas() {
               Nueva Venta
             </Button>
           </DialogTrigger>
-          <SaleDialog 
+          <SaleDialog
             clients={clients}
             motorcycles={motorcycles}
             purchases={purchases}
@@ -475,28 +475,28 @@ export function Ventas() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="ghost"
                         onClick={() => setViewingSale(sale)}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="ghost"
                         onClick={() => showPDFPreview(sale.id)}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                       >
                         <FileText className="w-4 h-4" />
                       </Button>
                       {!sale.anulada && (
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           variant="ghost"
                           onClick={() => showCancelConfirm(sale.id)}
-                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
                         >
                           <XCircle className="w-4 h-4" />
                         </Button>
@@ -507,20 +507,20 @@ export function Ventas() {
               ))}
             </TableBody>
           </Table>
-          
+
           {/* Paginación */}
           <div className="mt-6 flex justify-center">
             <Pagination>
               <PaginationContent>
                 {totalPages > 1 && (
                   <PaginationItem>
-                    <PaginationPrevious 
+                    <PaginationPrevious
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
                 )}
-                
+
                 {Array.from({ length: Math.max(1, totalPages) }, (_, i) => i + 1).map((page) => (
                   <PaginationItem key={page}>
                     <PaginationLink
@@ -532,10 +532,10 @@ export function Ventas() {
                     </PaginationLink>
                   </PaginationItem>
                 ))}
-                
+
                 {totalPages > 1 && (
                   <PaginationItem>
-                    <PaginationNext 
+                    <PaginationNext
                       onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                       className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
@@ -578,7 +578,7 @@ export function Ventas() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h4 className="font-semibold mb-3">Cliente y Motocicleta</h4>
                   <div className="space-y-2">
@@ -716,9 +716,9 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.serviceOrderId || !formData.clientId || !formData.motorcycleId || formData.selectedPurchases.length === 0 || 
-        formData.selectedServices.length === 0 || !formData.serviceCost) {
+
+    if (!formData.serviceOrderId || !formData.clientId || !formData.motorcycleId || formData.selectedPurchases.length === 0 ||
+      formData.selectedServices.length === 0 || !formData.serviceCost) {
       toast.error('Por favor complete todos los campos obligatorios');
       return;
     }
@@ -756,7 +756,7 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
 
   const handleServiceOrderChange = (serviceOrderId: string) => {
     const selectedOrder = serviceOrders.find((order: any) => order.id === parseInt(serviceOrderId));
-    
+
     setFormData(prev => ({
       ...prev,
       serviceOrderId,
@@ -788,10 +788,10 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
             id="serviceOrderId"
             value={formData.serviceOrderId}
             onChange={(e) => handleServiceOrderChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             required
           >
-            <option value="">Seleccionar pedido de servicio</option>
+            <option value="" className="bg-background text-foreground">Seleccionar pedido de servicio</option>
             {serviceOrders
               .filter((order: any) => !order.associatedSaleId) // Solo mostrar pedidos sin venta asociada
               .map((order: any) => (
@@ -817,13 +817,13 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
               id="clientId"
               value={formData.clientId}
               onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={true}
               required
             >
-              <option value="">Seleccionar cliente</option>
+              <option value="" className="bg-background text-foreground">Seleccionar cliente</option>
               {clients.map((client: any) => (
-                <option key={client.id} value={client.id}>
+                <option key={client.id} value={client.id} className="bg-background text-foreground">
                   {client.name}
                 </option>
               ))}
@@ -835,15 +835,15 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
               id="motorcycleId"
               value={formData.motorcycleId}
               onChange={(e) => setFormData(prev => ({ ...prev, motorcycleId: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={true}
               required
             >
-              <option value="">Seleccionar motocicleta</option>
+              <option value="" className="bg-background text-foreground">Seleccionar motocicleta</option>
               {motorcycles
                 .filter((m: any) => !formData.clientId || m.clientId === parseInt(formData.clientId))
                 .map((moto: any) => (
-                  <option key={moto.id} value={moto.id}>
+                  <option key={moto.id} value={moto.id} className="bg-background text-foreground">
                     {moto.brand} {moto.model} - {moto.plate}
                   </option>
                 ))
@@ -945,7 +945,7 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
                   ))}
                 </div>
               )}
-              
+
               {/* Costo de servicios */}
               {formData.serviceCost && (
                 <div className="flex justify-between items-center text-sm">
@@ -953,14 +953,14 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
                   <span className="font-medium">${parseInt(formData.serviceCost || '0').toLocaleString()}</span>
                 </div>
               )}
-              
+
               {/* Total general */}
               <div className="border-t pt-2 mt-2">
                 <div className="flex justify-between items-center font-bold text-lg">
                   <span>Total:</span>
                   <span className="text-blue-600">
                     ${(
-                      getSelectedPurchaseProducts().reduce((sum: number, p: any) => sum + p.total, 0) + 
+                      getSelectedPurchaseProducts().reduce((sum: number, p: any) => sum + p.total, 0) +
                       parseInt(formData.serviceCost || '0')
                     ).toLocaleString()}
                   </span>

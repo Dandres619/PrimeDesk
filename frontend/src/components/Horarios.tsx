@@ -35,12 +35,12 @@ export function Horarios() {
   const [editingSchedule, setEditingSchedule] = useState<any>(null);
   const [viewingSchedule, setViewingSchedule] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => {} });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
   const [schedules, setSchedules] = useState(initialSchedules);
 
   const getEnabledDays = (s: any) => daysOfWeek.filter(d => s.daySchedules[d]?.enabled);
   const formatDays = (s: any) => { const enabled = getEnabledDays(s); return enabled.length === 5 ? 'Lunes a Viernes' : enabled.length <= 2 ? enabled.join(', ') : `${enabled.slice(0, 2).join(', ')} +${enabled.length - 2}`; };
-  
+
   const filteredSchedules = schedules.filter(s => s.mechanicName.toLowerCase().includes(searchTerm.toLowerCase()) || getEnabledDays(s).some(d => d.toLowerCase().includes(searchTerm.toLowerCase())));
   const totalPages = Math.ceil(filteredSchedules.length / 2);
   const paginatedSchedules = filteredSchedules.slice((currentPage - 1) * 2, currentPage * 2);
@@ -62,9 +62,9 @@ export function Horarios() {
   ];
 
   const actions = [
-    { icon: Eye, onClick: (s: any) => setViewingSchedule(s), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30' },
-    { icon: Edit, onClick: (s: any) => { setEditingSchedule(s); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30' },
-    { icon: Trash2, onClick: (s: any) => setConfirmDialog({ open: true, title: 'Eliminar Horario', description: '¿Está seguro de que desea eliminar este horario? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setSchedules(schedules.filter(sc => sc.id !== s.id)); toast.success('Horario eliminado exitosamente'); } }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30' }
+    { icon: Eye, onClick: (s: any) => setViewingSchedule(s), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { icon: Edit, onClick: (s: any) => { setEditingSchedule(s); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { icon: Trash2, onClick: (s: any) => setConfirmDialog({ open: true, title: 'Eliminar Horario', description: '¿Está seguro de que desea eliminar este horario? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setSchedules(schedules.filter(sc => sc.id !== s.id)); toast.success('Horario eliminado exitosamente'); } }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
   ];
 
   return (
@@ -193,7 +193,7 @@ export function Horarios() {
                 </div>
                 <div>
                   <Label>Estado</Label>
-                  <Badge className={viewingSchedule.status === 'Activo' ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-300'}>{viewingSchedule.status}</Badge>
+                  <Badge className={viewingSchedule.status === 'Activo' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}>{viewingSchedule.status}</Badge>
                 </div>
               </div>
               <div>
@@ -208,7 +208,7 @@ export function Horarios() {
                     return (
                       <div key={day} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
                         <div className="flex items-center gap-3">
-                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-300">{day}</Badge>
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">{day}</Badge>
                           <div>
                             <p className="font-medium text-foreground">{daySchedule.startTime} - {daySchedule.endTime}</p>
                             <p className="text-sm text-muted-foreground">{hours}h de trabajo</p>
@@ -271,9 +271,9 @@ function ScheduleDialog({ schedule, mechanics, daysOfWeek, onSave }: any) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <Label htmlFor="mechanicId">Mecánico *</Label>
-          <select id="mechanicId" value={formData.mechanicId} onChange={(e) => setFormData(prev => ({ ...prev, mechanicId: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-background text-foreground" required>
-            <option value="">Seleccionar mecánico</option>
-            {mechanics.map((m: any) => <option key={m.id} value={m.id.toString()}>{m.name}</option>)}
+          <select id="mechanicId" value={formData.mechanicId} onChange={(e) => setFormData(prev => ({ ...prev, mechanicId: e.target.value }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" required>
+            <option value="" className="bg-background text-foreground">Seleccionar mecánico</option>
+            {mechanics.map((m: any) => <option key={m.id} value={m.id.toString()} className="bg-background text-foreground">{m.name}</option>)}
           </select>
         </div>
         <div>

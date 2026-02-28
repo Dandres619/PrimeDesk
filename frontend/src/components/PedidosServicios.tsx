@@ -57,7 +57,7 @@ export function PedidosServicios() {
   const [editingServiceOrder, setEditingServiceOrder] = useState<any>(null);
   const [viewingServiceOrder, setViewingServiceOrder] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'cancel' as any, onConfirm: () => {} });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'cancel' as any, onConfirm: () => { } });
   const [pdfPreview, setPdfPreview] = useState({ open: false, data: null as any, type: 'service-order' as const });
   const [serviceOrders, setServiceOrders] = useState(initialOrders);
 
@@ -69,7 +69,7 @@ export function PedidosServicios() {
     const client = clients.find(c => c.id === parseInt(data.clientId));
     const motorcycle = motorcycles.find(m => m.id === parseInt(data.motorcycleId));
     const completeData = { ...data, clientName: client?.name || '', clientPhone: client?.phone || '', clientDocument: client?.document || '', motorcycleBrand: motorcycle?.brand || '', motorcycleModel: motorcycle?.model || '', motorcyclePlate: motorcycle?.plate || '', motorcycleYear: motorcycle?.year || '', progress: data.progress || [], associatedSaleId: null };
-    
+
     editingServiceOrder ? setServiceOrders(serviceOrders.map(o => o.id === editingServiceOrder.id ? { ...completeData, id: editingServiceOrder.id, anulado: o.anulado } : o)) : setServiceOrders([...serviceOrders, { id: Date.now(), ...completeData, orderNumber: `OS-${(serviceOrders.length + 1).toString().padStart(3, '0')}`, anulado: false }]);
     toast.success(`Reparación ${editingServiceOrder ? 'actualizado' : 'creado'} exitosamente`);
     setIsDialogOpen(false);
@@ -83,11 +83,11 @@ export function PedidosServicios() {
   ];
 
   const actions = (o: any) => [
-    { icon: Eye, onClick: () => setViewingServiceOrder(o), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30' },
-    { icon: FileText, onClick: () => setPdfPreview({ open: true, data: o, type: 'service-order' }), color: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30' },
+    { icon: Eye, onClick: () => setViewingServiceOrder(o), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { icon: FileText, onClick: () => setPdfPreview({ open: true, data: o, type: 'service-order' }), color: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20' },
     ...(o.anulado ? [] : [
-      { icon: Edit2, onClick: () => { setEditingServiceOrder(o); setIsDialogOpen(true); }, color: 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30' },
-      { icon: XCircle, onClick: () => { if (o.associatedSaleId) { toast.error('No se puede anular una reparación que ya tiene una venta asociada'); return; } setConfirmDialog({ open: true, title: 'Anular Reparación', description: '¿Está seguro de que desea anular esta reparación? Esta acción no se puede deshacer.', confirmText: 'Anular', variant: 'cancel', onConfirm: () => { setServiceOrders(serviceOrders.map(or => or.id === o.id ? { ...or, anulado: true } : or)); toast.success('Reparación anulada exitosamente'); } }); }, color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30' }
+      { icon: Edit2, onClick: () => { setEditingServiceOrder(o); setIsDialogOpen(true); }, color: 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20' },
+      { icon: XCircle, onClick: () => { if (o.associatedSaleId) { toast.error('No se puede anular una reparación que ya tiene una venta asociada'); return; } setConfirmDialog({ open: true, title: 'Anular Reparación', description: '¿Está seguro de que desea anular esta reparación? Esta acción no se puede deshacer.', confirmText: 'Anular', variant: 'cancel', onConfirm: () => { setServiceOrders(serviceOrders.map(or => or.id === o.id ? { ...or, anulado: true } : or)); toast.success('Reparación anulada exitosamente'); } }); }, color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
     ])
   ];
 
@@ -210,7 +210,7 @@ export function PedidosServicios() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 {[
-                  { title: 'Información de la Reparación', fields: [['Número de la Reparación', viewingServiceOrder.orderNumber], ['Fecha de Recepción', format(new Date(viewingServiceOrder.date), 'PPP', { locale: es })], ['Estado', viewingServiceOrder.anulado ? <Badge key="status" className="bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-300">Anulado</Badge> : viewingServiceOrder.associatedSaleId ? <Badge key="status" className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-300">Facturado</Badge> : <Badge key="status" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-300">Pendiente</Badge>]] },
+                  { title: 'Información de la Reparación', fields: [['Número de la Reparación', viewingServiceOrder.orderNumber], ['Fecha de Recepción', format(new Date(viewingServiceOrder.date), 'PPP', { locale: es })], ['Estado', viewingServiceOrder.anulado ? <Badge key="status" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Anulado</Badge> : viewingServiceOrder.associatedSaleId ? <Badge key="status" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Facturado</Badge> : <Badge key="status" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Pendiente</Badge>]] },
                   { title: 'Cliente y Motocicleta', fields: [['Cliente', <div key="client"><p className="font-medium text-foreground">{viewingServiceOrder.clientName}</p><p className="text-sm text-muted-foreground">{viewingServiceOrder.clientPhone}</p></div>], ['Motocicleta', <div key="moto"><p className="font-medium text-foreground">{viewingServiceOrder.motorcycleBrand} {viewingServiceOrder.motorcycleModel}</p><p className="text-sm text-muted-foreground">Placa: {viewingServiceOrder.motorcyclePlate}</p><p className="text-sm text-muted-foreground">Año: {viewingServiceOrder.motorcycleYear}</p></div>]] }
                 ].map((section, i) => (
                   <div key={i}>
@@ -300,9 +300,9 @@ function ServiceOrderDialog({ clients, motorcycles, mechanics, editingOrder, onS
           ].map(field => (
             <div key={field.id}>
               <Label htmlFor={field.id}>{field.label}</Label>
-              <select id={field.id} value={formData[field.id as keyof typeof formData]} onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-background text-foreground" required>
-                <option value="">Seleccionar {field.label.replace(' *', '').toLowerCase()}</option>
-                {field.options.map((opt: any) => <option key={opt.id} value={opt.id}>{field.displayFn ? field.displayFn(opt) : opt.name}</option>)}
+              <select id={field.id} value={formData[field.id as keyof typeof formData]} onChange={(e) => setFormData(prev => ({ ...prev, [field.id]: e.target.value }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" required>
+                <option value="" className="bg-background text-foreground">Seleccionar {field.label.replace(' *', '').toLowerCase()}</option>
+                {field.options.map((opt: any) => <option key={opt.id} value={opt.id} className="bg-background text-foreground">{field.displayFn ? field.displayFn(opt) : opt.name}</option>)}
               </select>
             </div>
           ))}
@@ -346,9 +346,9 @@ function ServiceOrderDialog({ clients, motorcycles, mechanics, editingOrder, onS
               <Input value={newProgress.description} onChange={(e) => setNewProgress(prev => ({ ...prev, description: e.target.value }))} placeholder="Descripción del avance..." />
             </div>
             <div className="flex gap-2">
-              <select value={newProgress.technician} onChange={(e) => setNewProgress(prev => ({ ...prev, technician: e.target.value }))} className="flex-1 px-3 py-2 border rounded-md">
-                <option value="">Seleccionar técnico</option>
-                {mechanics.map((m: any) => <option key={m.id} value={m.name}>{m.name}</option>)}
+              <select value={newProgress.technician} onChange={(e) => setNewProgress(prev => ({ ...prev, technician: e.target.value }))} className="flex-1 px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="" className="bg-background text-foreground">Seleccionar técnico</option>
+                {mechanics.map((m: any) => <option key={m.id} value={m.name} className="bg-background text-foreground">{m.name}</option>)}
               </select>
               <Button type="button" size="sm" onClick={addProgress}>Agregar</Button>
             </div>

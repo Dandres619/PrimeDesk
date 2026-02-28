@@ -217,8 +217,9 @@ export function Usuarios() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>ID</TableHead>
                 <TableHead>Correo Electrónico</TableHead>
-                <TableHead>Tipo / Rol</TableHead>
+                <TableHead>Rol</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -228,8 +229,10 @@ export function Usuarios() {
                 paginatedUsers.map(u => (
                   <TableRow key={u.ID_Usuario}>
                     <TableCell>
+                      <div className="font-medium">{u.ID_Usuario}</div>
+                    </TableCell>
+                    <TableCell>
                       <div className="font-medium">{u.Correo}</div>
-                      <div className="text-xs text-muted-foreground italic">ID: #{u.ID_Usuario}</div>
                     </TableCell>
                     <TableCell>
                       <Badge className={tipoBadges[u.NombreRol]?.class || 'bg-gray-100'}>

@@ -70,7 +70,7 @@ export function PDFPreviewDialog({
             )}
           </div>
         </div>
-        
+
         <div>
           <h3 className="font-semibold mb-3">PROVEEDOR</h3>
           <div className="space-y-1 text-sm">
@@ -173,7 +173,7 @@ export function PDFPreviewDialog({
             )}
           </div>
         </div>
-        
+
         <div>
           <h3 className="font-semibold mb-3 text-lg">DATOS DEL CLIENTE</h3>
           <div className="space-y-1 text-sm">
@@ -226,7 +226,7 @@ export function PDFPreviewDialog({
           <div>
             <h3 className="font-semibold mb-3 text-lg">REPUESTOS UTILIZADOS</h3>
             <p className="text-sm text-muted-foreground mb-3">Provenientes de las siguientes compras: {data.purchaseInvoices.join(', ')}</p>
-            
+
             {data?.parts && data?.parts.length > 0 && (
               <Table>
                 <TableHeader>
@@ -320,7 +320,7 @@ export function PDFPreviewDialog({
       )}
 
       <Separator />
-      
+
       <div className="text-center text-xs text-muted-foreground">
         <p>Documento generado el {format(new Date(), 'PPP pp', { locale: es })}</p>
         <p>Rafa Motos - Sistema de Gestión Administrativa v1.0</p>
@@ -398,7 +398,7 @@ export function PDFPreviewDialog({
             )}
           </div>
         </div>
-        
+
         <div>
           <h3 className="font-semibold mb-3 text-lg">DATOS DEL CLIENTE</h3>
           <div className="space-y-1 text-sm">
@@ -476,7 +476,7 @@ export function PDFPreviewDialog({
       </div>
 
       <Separator />
-      
+
       <div className="text-center text-xs text-muted-foreground">
         <p>Documento generado el {format(new Date(), 'PPP pp', { locale: es })}</p>
         <p>Rafa Motos - Sistema de Gestión Administrativa v1.0</p>
@@ -508,8 +508,8 @@ export function PDFPreviewDialog({
             Vista Previa del PDF
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm overflow-y-auto max-h-[calc(98vh-8rem)]">
+
+        <div className="border border-gray-200 rounded-lg p-8 bg-white text-slate-950 shadow-sm overflow-y-auto max-h-[calc(98vh-8rem)] light">
           {renderContent()}
         </div>
 

@@ -97,7 +97,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
             id_cliente: profileData.ID_Cliente,
             username: profileData.correo,
             name: profileData.NombreCliente || profileData.NombreEmpleado || profileData.correo,
-            type: profileData.id_rol === 1 ? 'admin' : (profileData.id_rol === 2 ? 'empleado' : 'cliente')
+            type: profileData.id_rol === 1 ? 'admin' : (profileData.id_rol === 2 ? 'empleado' : 'cliente'),
+            permisos: profileData.permisos || []
           });
           return;
         }
@@ -110,7 +111,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
         id_cliente: null,
         username: data.usuario.correo,
         name: data.usuario.correo,
-        type: data.usuario.id_rol === 1 ? 'admin' : (data.usuario.id_rol === 2 ? 'empleado' : 'cliente')
+        type: data.usuario.id_rol === 1 ? 'admin' : (data.usuario.id_rol === 2 ? 'empleado' : 'cliente'),
+        permisos: data.usuario.permisos || []
       });
 
     } catch (error: any) {
@@ -226,22 +228,22 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
   if (showResetPassword) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-blue-50 dark:from-slate-900 dark:via-background dark:to-slate-900 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           {/* Logo y título */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
               <Bike className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Rafa Motos</h1>
-            <p className="text-gray-600">Restablecer contraseña</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Rafa Motos</h1>
+            <p className="text-muted-foreground">Restablecer contraseña</p>
           </div>
 
           {/* Formulario de nueva contraseña */}
-          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <Card className="shadow-xl border-border bg-card/80 backdrop-blur-sm">
             <CardHeader className="space-y-1 text-center pb-4">
-              <CardTitle className="text-2xl">Nueva Contraseña</CardTitle>
-              <p className="text-gray-600">
+              <CardTitle className="text-2xl text-foreground">Nueva Contraseña</CardTitle>
+              <p className="text-muted-foreground">
                 Ingrese su nueva contraseña
               </p>
             </CardHeader>
@@ -320,24 +322,24 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-blue-50 dark:from-slate-900 dark:via-background dark:to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo y título */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
             <Bike className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Rafa Motos</h1>
-          <p className="text-gray-600">Sistema de Gestión</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Rafa Motos</h1>
+          <p className="text-muted-foreground">Sistema de Gestión</p>
         </div>
 
         {/* Formulario de Login o Registro */}
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+        <Card className="shadow-xl border-border bg-card/80 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center pb-4">
-            <CardTitle className="text-2xl">
+            <CardTitle className="text-2xl text-foreground">
               {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
             </CardTitle>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {isLogin ? 'Accede a tu cuenta para continuar' : 'Completa los datos para registrarte'}
             </p>
           </CardHeader>
@@ -401,10 +403,10 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
+                      <span className="w-full border-t border-border" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-gray-500">O</span>
+                      <span className="bg-background px-2 text-muted-foreground">O</span>
                     </div>
                   </div>
 
@@ -453,7 +455,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                         id="documentType"
                         value={registerData.documentType}
                         onChange={(e) => setRegisterData(prev => ({ ...prev, documentType: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:border-border"
                       >
                         <option value="CC">Cédula de Ciudadanía</option>
                         <option value="CE">Cédula de Extranjería</option>
@@ -602,10 +604,10 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                 <div className="space-y-4 mt-4">
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
+                      <span className="w-full border-t border-border" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-gray-500">O</span>
+                      <span className="bg-background px-2 text-muted-foreground">O</span>
                     </div>
                   </div>
 
@@ -630,7 +632,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
               <DialogTitle>Recuperar contraseña</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleForgotPassword} className="space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Ingrese su correo electrónico y le enviaremos un enlace para restablecer su contraseña.
               </p>
 

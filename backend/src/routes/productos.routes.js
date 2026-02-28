@@ -16,12 +16,12 @@ const validations = [
 
 router.get('/', verifyToken, productosController.getAll);
 router.get('/:id', verifyToken, productosController.getById);
-router.post('/', verifyToken, requirePermiso('gestionar_inventario'), validations, productosController.create);
-router.put('/:id', verifyToken, requirePermiso('gestionar_inventario'), validations, productosController.update);
-router.patch('/:id/stock', verifyToken, requirePermiso('gestionar_inventario'),
+router.post('/', verifyToken, requirePermiso('gestionar_productos'), validations, productosController.create);
+router.put('/:id', verifyToken, requirePermiso('gestionar_productos'), validations, productosController.update);
+router.patch('/:id/stock', verifyToken, requirePermiso('gestionar_productos'),
     [body('cantidad').isInt({ min: 0 }).withMessage('Cantidad inválida.'), handleValidation],
     productosController.updateStock
 );
-router.delete('/:id', verifyToken, requirePermiso('gestionar_inventario'), productosController.remove);
+router.delete('/:id', verifyToken, requirePermiso('gestionar_productos'), productosController.remove);
 
 module.exports = router;

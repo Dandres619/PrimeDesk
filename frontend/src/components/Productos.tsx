@@ -31,7 +31,7 @@ export function Productos() {
   const [viewingProduct, setViewingProduct] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [products, setProducts] = useState(initialProducts);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => {} });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.description.toLowerCase().includes(searchTerm.toLowerCase()) || p.categoryName.toLowerCase().includes(searchTerm.toLowerCase()) || p.brand.toLowerCase().includes(searchTerm.toLowerCase()));
   const paginated = filtered.slice((currentPage - 1) * 2, currentPage * 2);
@@ -77,9 +77,9 @@ export function Productos() {
                   <TableCell><p className="font-medium">${p.unitPrice.toLocaleString()}</p></TableCell>
                   <TableCell><div className="flex items-center gap-2"><Switch checked={p.status === 'Activo'} onCheckedChange={() => { setProducts(products.map(prod => prod.id === p.id ? { ...prod, status: prod.status === 'Activo' ? 'Inactivo' : 'Activo' } : prod)); toast.success('Estado actualizado'); }} /><span className="text-sm">{p.status}</span></div></TableCell>
                   <TableCell className="text-right"><div className="flex justify-end gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => setViewingProduct(p)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"><Eye className="w-4 h-4" /></Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setEditingProduct(p); setIsDialogOpen(true); }} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"><Edit className="w-4 h-4" /></Button>
-                    <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({ open: true, title: 'Eliminar Producto', description: '¿Confirmar?', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setProducts(products.filter(prod => prod.id !== p.id)); toast.success('Producto eliminado'); } })} className="text-red-600 hover:text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => setViewingProduct(p)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"><Eye className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setEditingProduct(p); setIsDialogOpen(true); }} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"><Edit className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({ open: true, title: 'Eliminar Producto', description: '¿Confirmar?', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setProducts(products.filter(prod => prod.id !== p.id)); toast.success('Producto eliminado'); } })} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-4 h-4" /></Button>
                   </div></TableCell>
                 </TableRow>
               ))}
@@ -111,7 +111,7 @@ export function Productos() {
           )}
         </DialogContent>
       </Dialog>
-      <ConfirmDialog open={confirmDialog.open} onOpenChange={o => setConfirmDialog(p => ({ ...p, open: o }))} {...confirmDialog} />
+      <ConfirmDialog onOpenChange={o => setConfirmDialog(p => ({ ...p, open: o }))} {...confirmDialog} />
     </div>
   );
 }
@@ -124,11 +124,11 @@ function ProductDialog({ product, onSave }: any) {
       <form onSubmit={e => { e.preventDefault(); onSave(form); }} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div><Label>Nombre</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
-          <div><Label>Marca</Label><select value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="w-full h-10 px-3 border rounded-md bg-background" required>
-            <option value="">Marca...</option>{brands.map(b => <option key={b} value={b}>{b}</option>)}
+          <div><Label>Marca</Label><select value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" required>
+            <option value="" className="bg-background text-foreground">Marca...</option>{brands.map(b => <option key={b} value={b} className="bg-background text-foreground">{b}</option>)}
           </select></div>
-          <div><Label>Categoría</Label><select value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })} className="w-full h-10 px-3 border rounded-md bg-background" required>
-            <option value="">Categoría...</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          <div><Label>Categoría</Label><select value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })} className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" required>
+            <option value="" className="bg-background text-foreground">Categoría...</option>{categories.map(c => <option key={c.id} value={c.id} className="bg-background text-foreground">{c.name}</option>)}
           </select></div>
           <div><Label>Cantidad</Label><Input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} required /></div>
         </div>

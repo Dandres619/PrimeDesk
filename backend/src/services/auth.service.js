@@ -132,7 +132,19 @@ const getMe = async (id_usuario) => {
         throw { status: 404, message: 'Usuario no encontrado.' };
     }
 
-    return users[0];
+    const unUsuario = users[0];
+
+    // Obtener los permisos del rol del usuario
+    const permisos = await sql`
+        SELECT p.nombre 
+        FROM roles_permisos rp
+        INNER JOIN permisos p ON rp.id_permiso = p.id_permiso
+        WHERE rp.id_rol = ${unUsuario.id_rol}
+    `;
+
+    unUsuario.permisos = permisos.map(p => p.nombre);
+
+    return unUsuario;
 };
 
 /**

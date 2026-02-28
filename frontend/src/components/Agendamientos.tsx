@@ -36,7 +36,7 @@ export function Agendamientos() {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [moreApts, setMoreApts] = useState<any[]>([]);
   const [appointments, setAppointments] = useState(initialAppointments);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => {} });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
 
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 });
@@ -88,7 +88,7 @@ export function Agendamientos() {
               const dayApts = appointments.filter(a => a.date === format(day, 'yyyy-MM-dd'));
               const isClick = isCurr && !isEnd && (day >= new Date() || isToday(day));
               return (
-                <div key={i} onClick={() => isClick && (setSelectedDate(day), setEditingApt(null), setIsModalOpen(true))} className={`min-h-[100px] p-2 rounded-xl border-2 transition-all relative group ${!isCurr ? 'bg-muted/30 opacity-60' : 'bg-card border-border'} ${isEnd ? 'bg-muted/50' : ''} ${isToday(day) ? 'bg-blue-50/50 border-blue-400' : ''} ${isClick ? 'hover:shadow-lg hover:scale-[1.02] cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
+                <div key={i} onClick={() => isClick && (setSelectedDate(day), setEditingApt(null), setIsModalOpen(true))} className={`min-h-[100px] p-2 rounded-xl border-2 transition-all relative group ${!isCurr ? 'bg-muted/30 opacity-60' : 'bg-card border-border'} ${isEnd ? 'bg-muted/50' : ''} ${isToday(day) ? 'bg-blue-500/10 border-blue-400 dark:bg-blue-900/20' : ''} ${isClick ? 'hover:shadow-lg hover:scale-[1.02] cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
                   {isToday(day) && <div className="absolute top-0 right-0 w-0 h-0 border-t-[24px] border-r-[24px] border-t-blue-500 border-r-transparent" />}
                   <div className={`font-semibold mb-2 flex items-center justify-between ${isToday(day) ? 'text-blue-700' : ''}`}>
                     <span className={isToday(day) ? 'w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center' : ''}>{format(day, 'd')}</span>
@@ -130,7 +130,7 @@ export function Agendamientos() {
                 <div><Label className="text-muted-foreground">Fecha</Label><p>{selectedApt.date}</p></div>
                 <div><Label className="text-muted-foreground">Hora</Label><p>{selectedApt.startTime} - {selectedApt.endTime}</p></div>
                 <div className="col-span-2"><Label className="text-muted-foreground">Mecánico</Label><p>{selectedApt.mechanicName}</p></div>
-                <div className="col-span-2"><Label className="text-muted-foreground">Servicios</Label><div className="flex flex-wrap gap-1 mt-1">{selectedApt.serviceTypes.map((s:any) => <Badge key={s} variant="secondary">{s}</Badge>)}</div></div>
+                <div className="col-span-2"><Label className="text-muted-foreground">Servicios</Label><div className="flex flex-wrap gap-1 mt-1">{selectedApt.serviceTypes.map((s: any) => <Badge key={s} variant="secondary">{s}</Badge>)}</div></div>
               </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => { setEditingApt(selectedApt); setIsDetailsOpen(false); setIsModalOpen(true); }}><Edit className="w-4 h-4 mr-2" /> Editar</Button>
@@ -151,7 +151,7 @@ export function Agendamientos() {
           ))}</div>
         </DialogContent>
       </Dialog>
-      <ConfirmDialog open={confirmDialog.open} onOpenChange={o => setConfirmDialog(p => ({ ...p, open: o }))} {...confirmDialog} />
+      <ConfirmDialog onOpenChange={o => setConfirmDialog(p => ({ ...p, open: o }))} {...confirmDialog} />
     </div>
   );
 }
@@ -163,14 +163,14 @@ function AptForm({ apt, date, onSave }: any) {
       <div className="col-span-2 space-y-1"><Label>Fecha</Label><Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required /></div>
       <div className="space-y-1"><Label>Inicio</Label><Input type="time" value={form.startTime} onChange={e => setForm({ ...form, startTime: e.target.value })} required /></div>
       <div className="space-y-1"><Label>Fin</Label><Input type="time" value={form.endTime} onChange={e => setForm({ ...form, endTime: e.target.value })} required /></div>
-      <div className="space-y-1"><Label>Cliente</Label><select value={form.clientId} onChange={e => setForm({ ...form, clientId: e.target.value })} className="w-full h-10 px-3 border rounded-md" required>
-        <option value="">Seleccionar...</option>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+      <div className="space-y-1"><Label>Cliente</Label><select value={form.clientId} onChange={e => setForm({ ...form, clientId: e.target.value })} className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" required>
+        <option value="" className="bg-background text-foreground text-sm">Seleccionar...</option>{clients.map(c => <option key={c.id} value={c.id} className="bg-background text-foreground text-sm">{c.name}</option>)}
       </select></div>
-      <div className="space-y-1"><Label>Moto</Label><select value={form.motorcycleId} onChange={e => setForm({ ...form, motorcycleId: e.target.value })} className="w-full h-10 px-3 border rounded-md" required>
-        <option value="">Seleccionar...</option>{motorcycles.filter(m => !form.clientId || m.clientId === parseInt(form.clientId)).map(m => <option key={m.id} value={m.id}>{m.plate} - {m.model}</option>)}
+      <div className="space-y-1"><Label>Moto</Label><select value={form.motorcycleId} onChange={e => setForm({ ...form, motorcycleId: e.target.value })} className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" required>
+        <option value="" className="bg-background text-foreground text-sm">Seleccionar...</option>{motorcycles.filter(m => !form.clientId || m.clientId === parseInt(form.clientId)).map(m => <option key={m.id} value={m.id} className="bg-background text-foreground text-sm">{m.plate} - {m.model}</option>)}
       </select></div>
-      <div className="col-span-2 space-y-1"><Label>Mecánico</Label><select value={form.mechanicId} onChange={e => setForm({ ...form, mechanicId: e.target.value })} className="w-full h-10 px-3 border rounded-md" required>
-        <option value="">Seleccionar...</option>{mechanics.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+      <div className="col-span-2 space-y-1"><Label>Mecánico</Label><select value={form.mechanicId} onChange={e => setForm({ ...form, mechanicId: e.target.value })} className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" required>
+        <option value="" className="bg-background text-foreground text-sm">Seleccionar...</option>{mechanics.map(m => <option key={m.id} value={m.id} className="bg-background text-foreground text-sm">{m.name}</option>)}
       </select></div>
       <div className="col-span-2 space-y-1"><Label>Servicios</Label><div className="flex flex-wrap gap-2 p-2 border rounded-md">
         {serviceTypes.map(s => (

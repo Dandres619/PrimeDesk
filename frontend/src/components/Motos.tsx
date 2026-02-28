@@ -43,7 +43,7 @@ export function Motos() {
   const [editingMoto, setEditingMoto] = useState<any>(null);
   const [viewingMoto, setViewingMoto] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => {} });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
   const [motos, setMotos] = useState(initialMotos);
 
   const filteredMotos = motos.filter(m => m.brand.toLowerCase().includes(searchTerm.toLowerCase()) || m.model.toLowerCase().includes(searchTerm.toLowerCase()) || m.plate.toLowerCase().includes(searchTerm.toLowerCase()) || m.clientName.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -65,9 +65,9 @@ export function Motos() {
   ];
 
   const actions = [
-    { icon: Eye, onClick: (m: any) => setViewingMoto(m), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-    { icon: Edit, onClick: (m: any) => { setEditingMoto(m); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-    { icon: Trash2, onClick: (m: any) => setConfirmDialog({ open: true, title: 'Eliminar Motocicleta', description: '¿Está seguro de que desea eliminar esta motocicleta? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setMotos(motos.filter(mo => mo.id !== m.id)); toast.success('Motocicleta eliminada exitosamente'); } }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+    { icon: Eye, onClick: (m: any) => setViewingMoto(m), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { icon: Edit, onClick: (m: any) => { setEditingMoto(m); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { icon: Trash2, onClick: (m: any) => setConfirmDialog({ open: true, title: 'Eliminar Motocicleta', description: '¿Está seguro de que desea eliminar esta motocicleta? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setMotos(motos.filter(mo => mo.id !== m.id)); toast.success('Motocicleta eliminada exitosamente'); } }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
   ];
 
   return (
@@ -177,7 +177,7 @@ export function Motos() {
                 <TabsTrigger value="info">Información</TabsTrigger>
                 <TabsTrigger value="history">Historial de Servicios</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="info" className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   {[
@@ -197,7 +197,7 @@ export function Motos() {
                   ))}
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="history">
                 <div className="space-y-4">
                   <h4 className="flex items-center gap-2">
@@ -206,7 +206,7 @@ export function Motos() {
                   </h4>
                   <div className="space-y-3">
                     {serviceHistory.filter(s => s.motoId === viewingMoto.id).map(s => (
-                      <div key={s.id} className="p-4 border border-gray-200 rounded-lg">
+                      <div key={s.id} className="p-4 border border-border rounded-lg">
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <p className="font-medium">{s.type}</p>
@@ -263,9 +263,9 @@ function MotoDialog({ moto, clients, onSave }: any) {
         </div>
         <div>
           <Label htmlFor="clientId">Propietario</Label>
-          <select id="clientId" value={formData.clientId} onChange={(e) => setFormData(prev => ({ ...prev, clientId: parseInt(e.target.value) }))} className="w-full px-3 py-2 border border-gray-300 rounded-md" required>
-            <option value="">Seleccionar cliente</option>
-            {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          <select id="clientId" value={formData.clientId} onChange={(e) => setFormData(prev => ({ ...prev, clientId: parseInt(e.target.value) }))} className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-ring" required>
+            <option value="" className="bg-background text-foreground text-sm">Seleccionar cliente</option>
+            {clients.map((c: any) => <option key={c.id} value={c.id} className="bg-background text-foreground text-sm">{c.name}</option>)}
           </select>
         </div>
         {fields.filter(f => f.full).map(f => (

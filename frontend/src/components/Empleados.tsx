@@ -33,7 +33,7 @@ export function Empleados() {
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [viewingEmployee, setViewingEmployee] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => {} });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
   const [employees, setEmployees] = useState(initialEmployees);
 
   const filteredEmployees = employees.filter(e => e.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || e.apellido.toLowerCase().includes(searchTerm.toLowerCase()) || e.email.toLowerCase().includes(searchTerm.toLowerCase()) || e.phone.includes(searchTerm) || e.document.includes(searchTerm) || e.role.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -55,9 +55,9 @@ export function Empleados() {
   ];
 
   const actions = [
-    { icon: Eye, onClick: (e: any) => setViewingEmployee(e), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30' },
-    { icon: Edit, onClick: (e: any) => { setEditingEmployee(e); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30' },
-    { icon: Trash2, onClick: (e: any) => setConfirmDialog({ open: true, title: 'Eliminar Empleado', description: '¿Está seguro de que desea eliminar este empleado? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setEmployees(employees.filter(emp => emp.id !== e.id)); toast.success('Empleado eliminado exitosamente'); } }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30' }
+    { icon: Eye, onClick: (e: any) => setViewingEmployee(e), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { icon: Edit, onClick: (e: any) => { setEditingEmployee(e); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { icon: Trash2, onClick: (e: any) => setConfirmDialog({ open: true, title: 'Eliminar Empleado', description: '¿Está seguro de que desea eliminar este empleado? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setEmployees(employees.filter(emp => emp.id !== e.id)); toast.success('Empleado eliminado exitosamente'); } }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
   ];
 
   return (
@@ -253,7 +253,7 @@ function EmployeeDialog({ employee, onSave }: any) {
             <Input id={f.id} type={f.type || 'text'} value={formData[f.id as keyof typeof formData]} onChange={(e) => setFormData(prev => ({ ...prev, [f.id]: e.target.value }))} placeholder={f.placeholder} required={f.required} />
           </div>
         ) : null)}
-        
+
         <div className="grid grid-cols-2 gap-4">
           {fields.filter(f => !f.full).map(f => (
             <div key={f.id}>
@@ -266,8 +266,8 @@ function EmployeeDialog({ employee, onSave }: any) {
             {employee ? (
               <Input value={formData.documentType} disabled className="bg-muted/50" />
             ) : (
-              <select id="documentType" value={formData.documentType} onChange={(e) => setFormData(prev => ({ ...prev, documentType: e.target.value }))} className="w-full px-3 py-2 border rounded-md bg-input-background dark:bg-input/30">
-                {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              <select id="documentType" value={formData.documentType} onChange={(e) => setFormData(prev => ({ ...prev, documentType: e.target.value }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k} className="bg-background text-foreground text-sm">{v}</option>)}
               </select>
             )}
           </div>
@@ -277,9 +277,9 @@ function EmployeeDialog({ employee, onSave }: any) {
           </div>
           <div>
             <Label htmlFor="role">Rol</Label>
-            <select id="role" value={formData.role} onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))} className="w-full px-3 py-2 border rounded-md bg-input-background dark:bg-input/30" required>
-              <option value="Administrador">Administrador</option>
-              <option value="Mecánico">Mecánico</option>
+            <select id="role" value={formData.role} onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" required>
+              <option value="Administrador" className="bg-background text-foreground text-sm">Administrador</option>
+              <option value="Mecánico" className="bg-background text-foreground text-sm">Mecánico</option>
             </select>
           </div>
           <div>

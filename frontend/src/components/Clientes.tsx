@@ -26,7 +26,7 @@ export function Clientes() {
   const [editingClient, setEditingClient] = useState<any>(null);
   const [viewingClient, setViewingClient] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => {} });
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
   const [clients, setClients] = useState(initialClients);
 
   const filteredClients = clients.filter(c => c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || c.apellido.toLowerCase().includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone.includes(searchTerm) || c.document.includes(searchTerm));
@@ -48,9 +48,9 @@ export function Clientes() {
   ];
 
   const actions = [
-    { icon: Eye, onClick: (c: any) => setViewingClient(c), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-    { icon: Edit, onClick: (c: any) => { setEditingClient(c); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-    { icon: Trash2, onClick: (c: any) => setConfirmDialog({ open: true, title: 'Eliminar Cliente', description: '¿Está seguro de que desea eliminar este cliente? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setClients(clients.filter(cl => cl.id !== c.id)); toast.success('Cliente eliminado exitosamente'); } }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+    { icon: Eye, onClick: (c: any) => setViewingClient(c), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { icon: Edit, onClick: (c: any) => { setEditingClient(c); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { icon: Trash2, onClick: (c: any) => setConfirmDialog({ open: true, title: 'Eliminar Cliente', description: '¿Está seguro de que desea eliminar este cliente? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setClients(clients.filter(cl => cl.id !== c.id)); toast.success('Cliente eliminado exitosamente'); } }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
   ];
 
   return (
@@ -245,7 +245,7 @@ function ClientDialog({ client, onSave }: any) {
             <Input id={f.id} type={f.type || 'text'} value={formData[f.id as keyof typeof formData]} onChange={(e) => setFormData(prev => ({ ...prev, [f.id]: e.target.value }))} placeholder={f.placeholder} required={f.required} />
           </div>
         ))}
-        
+
         <div className="grid grid-cols-2 gap-4">
           {fields.filter(f => !f.full).map(f => (
             <div key={f.id}>
@@ -258,8 +258,8 @@ function ClientDialog({ client, onSave }: any) {
             {client ? (
               <Input value={formData.documentType} disabled className="bg-muted/50" />
             ) : (
-              <select id="documentType" value={formData.documentType} onChange={(e) => setFormData(prev => ({ ...prev, documentType: e.target.value }))} className="w-full px-3 py-2 border rounded-md bg-input-background dark:bg-input/30">
-                {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              <select id="documentType" value={formData.documentType} onChange={(e) => setFormData(prev => ({ ...prev, documentType: e.target.value }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k} className="bg-background text-foreground text-sm">{v}</option>)}
               </select>
             )}
           </div>

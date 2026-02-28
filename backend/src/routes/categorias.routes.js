@@ -20,14 +20,14 @@ const router = Router();
 
 router.get('/', verifyToken, ctrl.getAll);
 router.get('/:id', verifyToken, ctrl.getById);
-router.post('/', verifyToken, requirePermiso('gestionar_inventario'),
+router.post('/', verifyToken, requirePermiso('gestionar_categorias'),
     [body('nombre').notEmpty().withMessage('Nombre requerido.'), handleValidation],
     ctrl.create
 );
-router.put('/:id', verifyToken, requirePermiso('gestionar_inventario'),
+router.put('/:id', verifyToken, requirePermiso('gestionar_categorias'),
     [body('nombre').notEmpty().withMessage('Nombre requerido.'), handleValidation],
     ctrl.update
 );
-router.delete('/:id', verifyToken, requirePermiso('gestionar_inventario'), ctrl.remove);
+router.delete('/:id', verifyToken, requirePermiso('gestionar_categorias'), ctrl.remove);
 
 module.exports = router;

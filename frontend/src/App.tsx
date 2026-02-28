@@ -51,22 +51,22 @@ import { toast } from 'sonner';
 const EmpleadosIcon = UserCheck;
 
 const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'mi-perfil', label: 'Mi Perfil', icon: UserCircle },
-    { id: 'roles', label: 'Roles', icon: Shield },
-    { id: 'usuarios', label: 'Usuarios', icon: User },
-    { id: 'empleados', label: 'Empleados', icon: EmpleadosIcon },
-    { id: 'clientes', label: 'Clientes', icon: Users },
-    { id: 'motos', label: 'Motos', icon: Bike },
-    { id: 'servicios', label: 'Servicios', icon: Wrench },
-    { id: 'reparaciones', label: 'Reparaciones', icon: ClipboardList },
-    { id: 'horarios', label: 'Horarios', icon: Clock },
-    { id: 'agendamientos', label: 'Agendamientos', icon: Calendar },
-    { id: 'categorias-productos', label: 'Categorías', icon: Tag },
-    { id: 'productos', label: 'Productos', icon: Package },
-    { id: 'proveedores', label: 'Proveedores', icon: Truck },
-    { id: 'compras', label: 'Compras', icon: ShoppingCart },
-    { id: 'ventas', label: 'Ventas', icon: DollarSign },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'gestionar_dashboard' },
+    { id: 'mi-perfil', label: 'Mi Perfil', icon: UserCircle, permission: 'ver_perfil' },
+    { id: 'roles', label: 'Roles', icon: Shield, permission: 'gestionar_roles' },
+    { id: 'usuarios', label: 'Usuarios', icon: User, permission: 'gestionar_usuarios' },
+    { id: 'empleados', label: 'Empleados', icon: EmpleadosIcon, permission: 'gestionar_empleados' },
+    { id: 'clientes', label: 'Clientes', icon: Users, permission: 'gestionar_clientes' },
+    { id: 'motos', label: 'Motos', icon: Bike, permission: 'gestionar_motos' },
+    { id: 'servicios', label: 'Servicios', icon: Wrench, permission: 'gestionar_servicios' },
+    { id: 'reparaciones', label: 'Reparaciones', icon: ClipboardList, permission: 'gestionar_reparaciones' },
+    { id: 'horarios', label: 'Horarios', icon: Clock, permission: 'gestionar_horarios' },
+    { id: 'agendamientos', label: 'Agendamientos', icon: Calendar, permission: 'gestionar_agendamientos' },
+    { id: 'categorias-productos', label: 'Categorías', icon: Tag, permission: 'gestionar_categorias' },
+    { id: 'productos', label: 'Productos', icon: Package, permission: 'gestionar_productos' },
+    { id: 'proveedores', label: 'Proveedores', icon: Truck, permission: 'gestionar_proveedores' },
+    { id: 'compras', label: 'Compras', icon: ShoppingCart, permission: 'gestionar_compras' },
+    { id: 'ventas', label: 'Ventas', icon: DollarSign, permission: 'gestionar_ventas' },
 ];
 
 function AppContent() {
@@ -76,7 +76,7 @@ function AppContent() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [showLanding, setShowLanding] = useState(true);
     const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-    const [currentUser, setCurrentUser] = useState<{ id?: number; id_cliente?: number; username: string; name: string; type: string } | null>(null);
+    const [currentUser, setCurrentUser] = useState<{ id?: number; id_cliente?: number; username: string; name: string; type: string; permisos: string[] } | null>(null);
 
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -85,7 +85,6 @@ function AppContent() {
         const storedUser = localStorage.getItem('user');
 
         if (token && storedUser) {
-            const parsedUser = JSON.parse(storedUser);
             setIsAuthenticated(true);
             setShowLanding(false);
 
@@ -94,13 +93,23 @@ function AppContent() {
             })
                 .then(res => res.json())
                 .then(profileData => {
+                    const type = profileData.id_rol === 1 ? 'admin' : (profileData.id_rol === 2 ? 'empleado' : 'cliente');
+                    const permisos = profileData.permisos || [];
+
                     setCurrentUser({
                         id: profileData.id_usuario,
                         id_cliente: profileData.ID_Cliente,
                         username: profileData.correo,
                         name: profileData.NombreCliente || profileData.NombreEmpleado || profileData.correo,
-                        type: profileData.id_rol === 1 ? 'admin' : (profileData.id_rol === 2 ? 'empleado' : 'cliente')
+                        type,
+                        permisos
                     });
+
+                    // Set first available section if dashboard is not allowed
+                    if (type !== 'cliente' && permisos.length > 0 && !permisos.includes('gestionar_dashboard')) {
+                        const firstItem = menuItems.find(item => permisos.includes(item.permission));
+                        if (firstItem) setActiveSection(firstItem.id);
+                    }
                 })
                 .catch(() => {
                     localStorage.removeItem('token');
@@ -112,6 +121,17 @@ function AppContent() {
     }, [API_URL]);
 
     const renderContent = () => {
+        const activeItem = menuItems.find(item => item.id === activeSection);
+        if (activeItem && currentUser?.permisos && !currentUser.permisos.includes(activeItem.permission)) {
+            return (
+                <div className="flex flex-col items-center justify-center p-12 text-center h-full">
+                    <Shield className="w-16 h-16 text-red-500 mb-4" />
+                    <h2 className="text-2xl font-bold mb-2">Acceso Denegado</h2>
+                    <p className="text-muted-foreground">No tienes los permisos necesarios para ver este módulo.</p>
+                </div>
+            );
+        }
+
         switch (activeSection) {
             case 'dashboard': return <Dashboard />;
             case 'mi-perfil': return <MiPerfil />;
@@ -137,6 +157,14 @@ function AppContent() {
         setCurrentUser(userData);
         setIsAuthenticated(true);
         setShowLanding(false);
+
+        // Auto-redirect to first available section if no dashboard permission
+        if (userData.type !== 'cliente' && userData.permisos && userData.permisos.length > 0) {
+            if (!userData.permisos.includes('gestionar_dashboard')) {
+                const firstItem = menuItems.find(item => userData.permisos.includes(item.permission));
+                if (firstItem) setActiveSection(firstItem.id);
+            }
+        }
     };
 
     const handleLogout = () => {
@@ -150,7 +178,7 @@ function AppContent() {
         setCurrentUser(null);
         setActiveSection('dashboard');
         setShowLanding(true);
-        toast.success('Sesión cerrada exitosamente');
+        toast.success('Sesión cerrada exitosamente', { duration: 4000 });
         setShowLogoutConfirm(false);
     };
 
@@ -167,7 +195,7 @@ function AppContent() {
         return (
             <>
                 <LandingPage onLoginClick={handleLandingLoginClick} onRegisterClick={handleLandingRegisterClick} />
-                <Toaster position="top-right" />
+                <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
             </>
         );
     }
@@ -176,10 +204,10 @@ function AppContent() {
         return (
             <>
                 <Login onLogin={handleLogin} initialMode={authMode} />
-                <Button variant="ghost" onClick={() => setShowLanding(true)} className="fixed top-4 left-4">
+                <Button variant="ghost" onClick={() => setShowLanding(true)} className="fixed top-4 left-4 z-50 bg-background/50 hover:bg-background/80 backdrop-blur-sm">
                     ← Volver al inicio
                 </Button>
-                <Toaster position="top-right" />
+                <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
             </>
         );
     }
@@ -198,7 +226,7 @@ function AppContent() {
                         setShowLanding(true);
                     }}
                 />
-                <Toaster position="top-right" />
+                <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
             </>
         );
     }
@@ -221,28 +249,30 @@ function AppContent() {
                         {currentUser && (
                             <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
                                 <p className="text-base font-bold text-blue-900 dark:text-blue-200">Bienvenido</p>
-                                <p className="text-sm font-medium text-blue-700 dark:text-blue-400">Administrador</p>
-                                <p className="text-sm text-blue-600 dark:text-blue-500">Sistema</p>
+                                <p className="text-sm font-medium text-blue-700 dark:text-blue-400">{currentUser.name}</p>
+                                <p className="text-sm text-blue-600 dark:text-blue-500 capitalize">{currentUser.type}</p>
                             </div>
                         )}
                     </SidebarHeader>
 
                     <SidebarContent className="p-4">
                         <SidebarMenu>
-                            {menuItems.map((item) => (
-                                <SidebarMenuItem key={item.id}>
-                                    <SidebarMenuButton
-                                        onClick={() => setActiveSection(item.id)}
-                                        className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${activeSection === item.id
-                                            ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                                            : 'hover:bg-muted/50'
-                                            }`}
-                                    >
-                                        <item.icon className={`w-5 h-5 ${activeSection === item.id ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'}`} />
-                                        <span>{item.label}</span>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {menuItems
+                                .filter(item => currentUser?.permisos?.includes(item.permission))
+                                .map((item) => (
+                                    <SidebarMenuItem key={item.id}>
+                                        <SidebarMenuButton
+                                            onClick={() => setActiveSection(item.id)}
+                                            className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${activeSection === item.id
+                                                ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                                : 'hover:bg-muted/50'
+                                                }`}
+                                        >
+                                            <item.icon className={`w-5 h-5 ${activeSection === item.id ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'}`} />
+                                            <span>{item.label}</span>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
                         </SidebarMenu>
                     </SidebarContent>
 
@@ -309,8 +339,7 @@ function AppContent() {
                 onConfirm={confirmLogout}
                 variant="default"
             />
-
-            <Toaster position="top-right" />
+            <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
         </SidebarProvider>
     );
 }
