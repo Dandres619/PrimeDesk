@@ -16,7 +16,7 @@ import { Productos } from '@/components/Productos';
 import { PedidosServicios } from '@/components/PedidosServicios';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Login } from '@/components/Login';
-import LandingPage from '@/components/landingPage';
+import LandingPage from '@/components/LandingPage';
 import { ClientPanel } from '@/components/ClientPanel';
 import { MiPerfil } from '@/components/MiPerfil';
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
