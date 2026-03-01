@@ -6,9 +6,9 @@ async function createAdmin() {
         console.log('Creando admin por defecto...');
         const hashed = await bcrypt.hash('admin123', 10);
         await sql.unsafe(`
-            INSERT INTO usuarios (id_rol, correo, contrasena, estado) 
-            VALUES (1, 'admin@primedesk.com', '${hashed}', true) 
-            ON CONFLICT (correo) DO NOTHING
+            INSERT INTO usuarios (id_rol, correo, contrasena, estado, correo_verificado) 
+            VALUES (1, 'admin@primedesk.com', '${hashed}', true, true) 
+            ON CONFLICT (correo) DO UPDATE SET correo_verificado = true
         `);
         console.log('✅ Admin creado/verificado (admin@primedesk.com / admin123).');
     } catch (err) {

@@ -24,7 +24,7 @@ const register = async (req, res) => {
             barrio, direccion, fecha_nacimiento
         });
 
-        res.status(201).json({ message: 'Usuario registrado correctamente.', usuario: data });
+        res.status(201).json({ message: 'Usuario registrado correctamente. Revisa tu correo para verificar la cuenta.', usuario: data });
     } catch (err) {
         res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
     }
@@ -58,4 +58,34 @@ const changePassword = async (req, res) => {
     }
 };
 
-module.exports = { login, register, getMe, updateProfile, changePassword };
+const forgotPassword = async (req, res) => {
+    try {
+        const { correo } = req.body;
+        await authService.requestPasswordReset(correo);
+        res.status(200).json({ message: 'Si el correo existe, se envió un email con instrucciones.' });
+    } catch (err) {
+        res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    try {
+        const { token, nueva_contrasena } = req.body;
+        await authService.resetPassword(token, nueva_contrasena);
+        res.status(200).json({ message: 'Contraseña restablecida correctamente.' });
+    } catch (err) {
+        res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
+    }
+};
+
+const verify = async (req, res) => {
+    try {
+        const { token } = req.body;
+        const data = await authService.verifyEmailToken(token);
+        res.status(200).json(data);
+    } catch (err) {
+        res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
+    }
+};
+
+module.exports = { login, register, getMe, updateProfile, changePassword, forgotPassword, resetPassword, verify };

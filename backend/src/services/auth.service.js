@@ -1,7 +1,13 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { getPool } = require('../config/db');
 const jwtConfig = require('../config/jwt');
+const emailService = require('./email.service');
+
+require('dotenv').config();
+
+const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
 /**
  * Login: verifica correo/contraseña y devuelve JWT + datos del usuario.
@@ -10,7 +16,7 @@ const login = async (correo, contrasena) => {
     const sql = await getPool();
 
     const users = await sql`
-        SELECT u.id_usuario, u.correo, u.contrasena, u.id_rol, u.estado,
+        SELECT u.id_usuario, u.correo, u.contrasena, u.id_rol, u.estado, u.correo_verificado,
                r.nombre AS nombre_rol
         FROM usuarios u
         INNER JOIN roles r ON u.id_rol = r.id_rol
@@ -25,6 +31,10 @@ const login = async (correo, contrasena) => {
 
     if (!user.estado) {
         throw { status: 403, message: 'Usuario inactivo. Contacte al administrador.' };
+    }
+
+    if (!user.correo_verificado) {
+        throw { status: 403, message: 'Su correo no ha sido verificado. Por favor, revise su bandeja de entrada.' };
     }
 
     const passwordMatch = await bcrypt.compare(contrasena, user.contrasena);
@@ -98,6 +108,23 @@ const register = async (data) => {
             return newUser;
         });
 
+        // Generar token de verificación y enviarlo
+        try {
+            const userEmail = result.correo || data.correo;
+            const token = crypto.randomBytes(32).toString('hex');
+            const tokenHash = await bcrypt.hash(token, 10);
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+            await sql`
+                INSERT INTO email_verifications (id_usuario, token_hash, expires_at, used)
+                VALUES (${result.id_usuario}, ${tokenHash}, ${expiresAt}, FALSE)
+            `;
+
+            await emailService.sendVerificationEmail(userEmail, token, data.nombre || data.correo);
+        } catch (e) {
+            console.warn('No se pudo enviar email de verificación:', e.message || e);
+        }
+
         return result;
 
     } catch (err) {
@@ -113,7 +140,7 @@ const getMe = async (id_usuario) => {
     const sql = await getPool();
 
     const users = await sql`
-      SELECT u.id_usuario, u.correo AS "Correo", u.estado, u.id_rol,
+      SELECT u.id_usuario, u.correo AS "Correo", u.estado, u.id_rol, u.correo_verificado,
              r.nombre AS "NombreRol", r.descripcion AS "DescripcionRol",
              e.id_empleado AS "ID_Empleado", e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado",
              e.tipodocumento AS "TipoDocEmpleado", e.documento AS "DocEmpleado", e.telefono AS "TelEmpleado",
@@ -207,4 +234,95 @@ const changePassword = async (id_usuario, contrasenaActual, nuevaContrasena) => 
     return { message: 'Contraseña actualizada correctamente.' };
 };
 
-module.exports = { login, register, getMe, updateProfile, changePassword };
+/**
+ * Solicitar restablecimiento de contraseña: genera token, lo guarda y envía email.
+ */
+const requestPasswordReset = async (correo) => {
+    const sql = await getPool();
+
+    const users = await sql`SELECT id_usuario, correo FROM usuarios WHERE correo = ${correo}`;
+    if (users.length === 0) {
+        // No revelar información: devolver sin error
+        return;
+    }
+
+    const user = users[0];
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = await bcrypt.hash(token, 10);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    await sql.begin(async (tx) => {
+        // Insertar registro de token
+        await tx`INSERT INTO password_resets (id_usuario, token_hash, expires_at, used)
+                 VALUES (${user.id_usuario}, ${tokenHash}, ${expiresAt}, FALSE)`;
+    });
+
+    const resetLink = `${FRONTEND_URL}/reset-password?token=${token}`;
+
+    try {
+        await emailService.sendResetPasswordEmail(user.correo, null, resetLink);
+    } catch (e) {
+        console.warn('Error enviando email de reset:', e.message || e);
+    }
+};
+
+/**
+ * Restablecer contraseña con token público.
+ */
+const resetPassword = async (token, nuevaContrasena) => {
+    const sql = await getPool();
+
+    // Buscar tokens no usados y no expirados
+    const rows = await sql`SELECT id, id_usuario, token_hash, expires_at, used
+                           FROM password_resets
+                           WHERE used = FALSE AND expires_at > NOW()`;
+
+    // Buscar el token coincidente
+    let match = null;
+    for (const r of rows) {
+        const ok = await bcrypt.compare(token, r.token_hash);
+        if (ok) {
+            match = r;
+            break;
+        }
+    }
+
+    if (!match) {
+        throw { status: 400, message: 'Token inválido o expirado.' };
+    }
+
+    const hashed = await bcrypt.hash(nuevaContrasena, 10);
+
+    await sql.begin(async (tx) => {
+        await tx`UPDATE usuarios SET contrasena = ${hashed} WHERE id_usuario = ${match.id_usuario}`;
+        await tx`UPDATE password_resets SET used = TRUE WHERE id = ${match.id}`;
+    });
+};
+
+/**
+ * Verificar email usando token público.
+ */
+const verifyEmailToken = async (token) => {
+    const sql = await getPool();
+
+    const rows = await sql`SELECT id, id_usuario, token_hash, expires_at, used FROM email_verifications WHERE used = FALSE AND expires_at > NOW()`;
+
+    let match = null;
+    for (const r of rows) {
+        const ok = await bcrypt.compare(token, r.token_hash);
+        if (ok) { match = r; break; }
+    }
+
+    if (!match) {
+        throw { status: 400, message: 'Token de verificación inválido o expirado.' };
+    }
+
+    await sql.begin(async (tx) => {
+        await tx`UPDATE usuarios SET correo_verificado = TRUE WHERE id_usuario = ${match.id_usuario}`;
+        await tx`UPDATE email_verifications SET used = TRUE WHERE id = ${match.id}`;
+    });
+
+    return { message: 'Correo verificado correctamente.' };
+};
+
+module.exports = { login, register, getMe, updateProfile, changePassword, requestPasswordReset, resetPassword, verifyEmailToken };

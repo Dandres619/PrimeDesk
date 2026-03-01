@@ -21,6 +21,7 @@ import { ClientPanel } from '@/components/ClientPanel';
 import { MiPerfil } from '@/components/MiPerfil';
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { Empleados } from '@/components/Empleados';
+import { Verify } from '@/components/Verify';
 import {
     LayoutDashboard,
     Shield,
@@ -47,6 +48,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
+import ResetPassword from '@/components/ResetPassword';
 
 const EmpleadosIcon = UserCheck;
 
@@ -119,6 +121,26 @@ function AppContent() {
                 });
         }
     }, [API_URL]);
+
+    // Si la ruta es /reset-password, renderizamos el componente de restablecimiento
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    if (path && path.startsWith('/reset-password')) {
+        return (
+            <>
+                <ResetPassword />
+                <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
+            </>
+        );
+    }
+
+    if (path && path.startsWith('/verify')) {
+        return (
+            <>
+                <Verify />
+                <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
+            </>
+        );
+    }
 
     const renderContent = () => {
         const activeItem = menuItems.find(item => item.id === activeSection);
@@ -205,7 +227,7 @@ function AppContent() {
             <>
                 <Login onLogin={handleLogin} initialMode={authMode} />
                 <Button variant="ghost" onClick={() => setShowLanding(true)} className="fixed top-4 left-4 z-50 bg-background/50 hover:bg-background/80 backdrop-blur-sm">
-                    ← Volver al inicio
+                    ← Volver
                 </Button>
                 <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
             </>

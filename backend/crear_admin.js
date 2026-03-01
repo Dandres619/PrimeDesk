@@ -13,9 +13,9 @@ async function crearEmpleados() {
             const hashedPassword = await bcrypt.hash(emp.password, 10);
 
             const [user] = await sql`
-                INSERT INTO usuarios (correo, contrasena, id_rol, estado)
-                VALUES (${emp.correo}, ${hashedPassword}, ${emp.id_rol}, TRUE)
-                ON CONFLICT (correo) DO UPDATE SET contrasena = ${hashedPassword}
+                INSERT INTO usuarios (correo, contrasena, id_rol, estado, correo_verificado)
+                VALUES (${emp.correo}, ${hashedPassword}, ${emp.id_rol}, TRUE, TRUE)
+                ON CONFLICT (correo) DO UPDATE SET contrasena = ${hashedPassword}, correo_verificado = TRUE
                 RETURNING id_usuario
             `;
 

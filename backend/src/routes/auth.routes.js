@@ -38,6 +38,37 @@ router.post(
 // GET /api/auth/me (protegida)
 router.get('/me', verifyToken, authController.getMe);
 
+// POST /api/auth/forgot-password
+router.post(
+    '/forgot-password',
+    [
+        body('correo').isEmail().withMessage('Correo inválido.'),
+        handleValidation,
+    ],
+    authController.forgotPassword
+);
+
+// POST /api/auth/reset-password
+router.post(
+    '/reset-password',
+    [
+        body('token').notEmpty().withMessage('Token requerido.'),
+        body('nueva_contrasena').isLength({ min: 6 }).withMessage('La nueva contraseña debe tener al menos 6 caracteres.'),
+        handleValidation,
+    ],
+    authController.resetPassword
+);
+
+// POST /api/auth/verify
+router.post(
+    '/verify',
+    [
+        body('token').notEmpty().withMessage('Token requerido.'),
+        handleValidation,
+    ],
+    authController.verify
+);
+
 // PUT /api/auth/profile (protegida)
 router.put(
     '/profile',
