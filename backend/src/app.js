@@ -9,7 +9,11 @@ const app = express();
 
 // ── Middlewares globales ────────────────────────────────────────────────────
 app.use(cors({
-    origin: process.env.CLIENT_ORIGIN || '*',
+    origin: [
+        "https://localhost:5173",
+        "https://primedesk-frontend.vercel.app"
+    ],
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
