@@ -599,7 +599,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
           </div>
 
           <div className="pt-12 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-6 text-slate-500 text-xs font-bold uppercase tracking-widest">
-            <p>&copy; 2026 Rafa Motos Center. Todos los derechos reservados.</p>
+            <p>&copy; 2026 Rafa Motos. Todos los derechos reservados.</p>
             <div className="flex gap-8">
               <a href="#" className="hover:text-white">Privacidad</a>
               <a href="#" className="hover:text-white">Términos</a>

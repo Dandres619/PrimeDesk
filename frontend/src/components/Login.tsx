@@ -20,7 +20,8 @@ import {
   ChevronRight,
   Sparkles,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,6 +40,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
   const [showResetNewPassword, setShowResetNewPassword] = useState(false);
   const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Login form state
   const [loginData, setLoginData] = useState({
@@ -80,6 +82,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       return;
     }
 
+    setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
@@ -122,8 +125,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       }
 
       onLogin({
-        id: data.usuario.id_usuario,
-        id_cliente: null,
+        id_cliente: data.usuario.id_cliente || null,
         username: data.usuario.correo,
         name: data.usuario.correo,
         type: data.usuario.id_rol === 1 ? 'admin' : (data.usuario.id_rol === 2 ? 'empleado' : 'cliente'),
@@ -132,6 +134,9 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
     } catch (error: any) {
       toast.error(error.message || 'Error de conexión con el servidor');
+      setLoginData({ ...loginData, password: '' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -158,6 +163,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       toast.error('La contraseña debe tener al menos 6 caracteres');
       return;
     }
+
+    setIsLoading(true);
 
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
@@ -202,6 +209,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       setActiveStep(1);
     } catch (error: any) {
       toast.error(error.message || 'Error de conexión');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -212,6 +221,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       toast.error('Por favor ingrese su correo electrónico');
       return;
     }
+
+    setIsLoading(true);
 
     try {
       const response = await fetch(`${API_URL}/auth/forgot-password`, {
@@ -233,6 +244,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       setForgotEmail('');
     } catch (error: any) {
       toast.error(error.message || 'Error de conexión');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -525,10 +538,20 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
                     <Button
                       type="submit"
+                      disabled={isLoading}
                       className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-12 shadow-lg shadow-indigo-200"
                     >
-                      Iniciar Sesión
-                      <ArrowRight className="w-4 h-4 ml-2" />
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Iniciando sesión...
+                        </>
+                      ) : (
+                        <>
+                          Iniciar Sesión
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </>
+                      )}
                     </Button>
 
                     <div className="relative">
@@ -812,10 +835,20 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                       ) : (
                         <Button
                           type="submit"
+                          disabled={isLoading}
                           className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-12 shadow-lg shadow-indigo-200"
                         >
-                          Completar Registro
-                          <CheckCircle className="w-4 h-4 ml-2" />
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Registrando...
+                            </>
+                          ) : (
+                            <>
+                              Completar Registro
+                              <CheckCircle className="w-4 h-4 ml-2" />
+                            </>
+                          )}
                         </Button>
                       )}
                     </div>
@@ -856,9 +889,17 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
             <div className="flex flex-col gap-3 pt-2">
               <Button
                 type="submit"
+                disabled={isLoading}
                 className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-11"
               >
-                Enviar instrucciones
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  'Enviar instrucciones'
+                )}
               </Button>
               <Button
                 type="button"

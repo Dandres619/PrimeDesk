@@ -8,11 +8,24 @@ const routes = require('./routes/index');
 const app = express();
 
 // ── Middlewares globales ────────────────────────────────────────────────────
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://localhost:5173',
+    'https://primedesk-frontend.vercel.app',
+    process.env.CLIENT_ORIGIN,
+    process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-    origin: [
-        "https://localhost:5173",
-        "https://primedesk-frontend.vercel.app"
-    ],
+    origin: function (origin, callback) {
+        // Permitir peticiones sin origen (como mobile apps o curl)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+            callback(null, true);
+        } else {
+            callback(new Error('No permitido por CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
