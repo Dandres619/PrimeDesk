@@ -140,32 +140,30 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRegister = async () => {
+    if (activeStep !== 3) return;
 
-    if (activeStep < 3) {
-      return nextStep();
-    }
+    if (activeStep === 3) {
+      if (!registerData.email) {
+        toast.error('Falta el correo electrónico del paso anterior');
+        setActiveStep(2);
+        return;
+      }
 
-    if (!registerData.email) {
-      toast.error('Falta el correo electrónico de los pasos anteriores');
-      setActiveStep(2);
-      return;
-    }
+      if (!registerData.password || !registerData.confirmPassword) {
+        toast.error('Por favor complete todos los campos de contraseña en este último paso');
+        return;
+      }
 
-    if (!registerData.password || !registerData.confirmPassword) {
-      toast.error('Por favor complete los campos de contraseña');
-      return;
-    }
+      if (registerData.password !== registerData.confirmPassword) {
+        toast.error('Las contraseñas no coinciden');
+        return;
+      }
 
-    if (registerData.password !== registerData.confirmPassword) {
-      toast.error('Las contraseñas no coinciden');
-      return;
-    }
-
-    if (registerData.password.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
-      return;
+      if (registerData.password.length < 6) {
+        toast.error('La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -616,7 +614,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                     ))}
                   </div>
 
-                  <form onSubmit={handleRegister}>
+                  <form onSubmit={(e) => e.preventDefault()}>
                     {/* Step 1: Personal Information */}
                     {activeStep === 1 && (
                       <div className="space-y-6 animate-fadeIn">
@@ -830,7 +828,10 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                       {activeStep < 3 ? (
                         <Button
                           type="button"
-                          onClick={nextStep}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            nextStep();
+                          }}
                           className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-12 shadow-lg shadow-indigo-200"
                         >
                           Continuar
@@ -838,7 +839,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                         </Button>
                       ) : (
                         <Button
-                          type="submit"
+                          type="button"
+                          onClick={handleRegister}
                           disabled={isLoading}
                           className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-12 shadow-lg shadow-indigo-200"
                         >
