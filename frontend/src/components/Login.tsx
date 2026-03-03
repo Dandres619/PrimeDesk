@@ -143,14 +143,18 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Si no estamos en el último paso, el Enter o el click debe pasar al siguiente paso
     if (activeStep < 3) {
-      nextStep();
+      return nextStep();
+    }
+
+    if (!registerData.email) {
+      toast.error('Falta el correo electrónico de los pasos anteriores');
+      setActiveStep(2);
       return;
     }
 
-    if (!registerData.email || !registerData.password || !registerData.confirmPassword) {
-      toast.error('Por favor complete todos los campos de acceso');
+    if (!registerData.password || !registerData.confirmPassword) {
+      toast.error('Por favor complete los campos de contraseña');
       return;
     }
 
@@ -278,13 +282,13 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
   const nextStep = () => {
     if (activeStep === 1) {
       if (!registerData.firstName || !registerData.lastName || !registerData.documentNumber) {
-        toast.error('Complete los campos obligatorios');
+        toast.error('Por favor complete los campos obligatorios (nombre, apellido y documento)');
         return;
       }
       setActiveStep(2);
     } else if (activeStep === 2) {
       if (!registerData.email) {
-        toast.error('Ingrese su correo electrónico');
+        toast.error('Por favor ingrese su correo electrónico para continuar');
         return;
       }
       setActiveStep(3);
