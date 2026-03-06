@@ -5,12 +5,14 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { User, Lock, Mail, Phone, MapPin, Briefcase } from 'lucide-react';
+import { User, Lock, Mail, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function MiPerfil() {
     const [profileData, setProfileData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [isProcessingPassword, setIsProcessingPassword] = useState(false);
 
     // States for Profile Update
     const [formData, setFormData] = useState({
@@ -67,6 +69,7 @@ export function MiPerfil() {
 
     const handleProfileSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsProcessing(true);
         try {
             const response = await fetch(`${API_URL}/auth/profile`, {
                 method: 'PUT',
@@ -86,6 +89,8 @@ export function MiPerfil() {
             fetchProfile();
         } catch (error: any) {
             toast.error(error.message);
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -97,6 +102,13 @@ export function MiPerfil() {
             return;
         }
 
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+        if (!passwordRegex.test(passwordData.nueva_contrasena)) {
+            toast.error('La nueva contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial');
+            return;
+        }
+
+        setIsProcessingPassword(true);
         try {
             const response = await fetch(`${API_URL}/auth/change-password`, {
                 method: 'POST',
@@ -119,6 +131,8 @@ export function MiPerfil() {
             setPasswordData({ contrasena_actual: '', nueva_contrasena: '', confirmar_contrasena: '' });
         } catch (error: any) {
             toast.error(error.message);
+        } finally {
+            setIsProcessingPassword(false);
         }
     };
 
@@ -145,8 +159,14 @@ export function MiPerfil() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="md:col-span-1 h-fit">
                     <CardHeader className="text-center pb-2">
-                        <div className="mx-auto w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center mb-4 text-white text-3xl font-bold">
-                            {formData.nombre?.charAt(0) || profileData?.Correo?.charAt(0).toUpperCase()}
+                        <div className="mx-auto w-24 h-24 mb-4 relative">
+                            {profileData?.FotoEmpleado || profileData?.FotoCliente ? (
+                                <img src={profileData?.FotoEmpleado || profileData?.FotoCliente} alt="Foto de perfil" className="w-full h-full rounded-full object-cover border-4 border-blue-600/20" />
+                            ) : (
+                                <div className="w-full h-full bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                                    {formData.nombre?.charAt(0) || profileData?.Correo?.charAt(0).toUpperCase()}
+                                </div>
+                            )}
                         </div>
                         <CardTitle>{formData.nombre} {formData.apellido}</CardTitle>
                         <CardDescription className="flex items-center justify-center gap-2 mt-2">
@@ -223,7 +243,14 @@ export function MiPerfil() {
                                     <Input id="direccion" value={formData.direccion} onChange={e => setFormData({ ...formData, direccion: e.target.value })} />
                                 </div>
 
-                                <Button type="submit" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">Guardar Cambios</Button>
+                                <Button type="submit" disabled={isProcessing} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">
+                                    {isProcessing ? (
+                                        <>
+                                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                            Guardando...
+                                        </>
+                                    ) : 'Guardar Cambios'}
+                                </Button>
                             </form>
                         </CardContent>
                     </Card>
@@ -237,20 +264,27 @@ export function MiPerfil() {
                             <CardDescription>Modifica la contraseña de acceso a tu cuenta.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md">
+                            <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md" noValidate>
                                 <div className="space-y-2">
                                     <Label htmlFor="current-pass">Contraseña Actual *</Label>
-                                    <Input id="current-pass" type="password" value={passwordData.contrasena_actual} onChange={e => setPasswordData({ ...passwordData, contrasena_actual: e.target.value })} required />
+                                    <Input id="current-pass" type="password" value={passwordData.contrasena_actual} onChange={e => setPasswordData({ ...passwordData, contrasena_actual: e.target.value })} required placeholder="********" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="new-pass">Nueva Contraseña *</Label>
-                                    <Input id="new-pass" type="password" value={passwordData.nueva_contrasena} onChange={e => setPasswordData({ ...passwordData, nueva_contrasena: e.target.value })} required minLength={6} placeholder="Mínimo 6 caracteres" />
+                                    <Input id="new-pass" type="password" value={passwordData.nueva_contrasena} onChange={e => setPasswordData({ ...passwordData, nueva_contrasena: e.target.value })} required placeholder="********" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="confirm-pass">Confirmar Nueva Contraseña *</Label>
-                                    <Input id="confirm-pass" type="password" value={passwordData.confirmar_contrasena} onChange={e => setPasswordData({ ...passwordData, confirmar_contrasena: e.target.value })} required minLength={6} />
+                                    <Input id="confirm-pass" type="password" value={passwordData.confirmar_contrasena} onChange={e => setPasswordData({ ...passwordData, confirmar_contrasena: e.target.value })} required placeholder="********" />
                                 </div>
-                                <Button type="submit" variant="secondary" className="w-full sm:w-auto mt-2">Actualizar Contraseña</Button>
+                                <Button type="submit" variant="secondary" disabled={isProcessingPassword} className="w-full sm:w-auto mt-2">
+                                    {isProcessingPassword ? (
+                                        <>
+                                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                            Actualizando...
+                                        </>
+                                    ) : 'Actualizar Contraseña'}
+                                </Button>
                             </form>
                         </CardContent>
                     </Card>

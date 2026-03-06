@@ -50,17 +50,17 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
   // Register form state
   const [registerData, setRegisterData] = useState({
-    firstName: '',
-    lastName: '',
-    documentType: 'CC',
-    documentNumber: '',
-    neighborhood: '',
-    address: '',
-    birthDate: '',
+    nombre: '',
+    apellido: '',
+    tipo_documento: 'CC',
+    documento: '',
+    barrio: '',
+    direccion: '',
+    fecha_nacimiento: '',
     email: '',
-    password: '',
-    confirmPassword: '',
-    phone: ''
+    contrasena: '',
+    confirmarContrasena: '',
+    telefono: ''
   });
 
   // Forgot password state
@@ -141,78 +141,98 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
   };
 
   const handleRegister = async () => {
-    if (activeStep !== 3) return;
-
-    if (activeStep === 3) {
-      if (!registerData.email) {
-        toast.error('Falta el correo electrónico del paso anterior');
-        setActiveStep(2);
-        return;
-      }
-
-      if (!registerData.password || !registerData.confirmPassword) {
-        toast.error('Por favor complete todos los campos de contraseña en este último paso');
-        return;
-      }
-
-      if (registerData.password !== registerData.confirmPassword) {
-        toast.error('Las contraseñas no coinciden');
-        return;
-      }
-
-      if (registerData.password.length < 6) {
-        toast.error('La contraseña debe tener al menos 6 caracteres');
-        return;
-      }
-    }
-
     setIsLoading(true);
-
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           correo: registerData.email,
-          contrasena: registerData.password,
-          id_rol: 3,
-          nombre: registerData.firstName,
-          apellido: registerData.lastName,
-          tipo_documento: registerData.documentType,
-          documento: registerData.documentNumber,
-          telefono: registerData.phone || '',
-          barrio: registerData.neighborhood,
-          direccion: registerData.address,
-          fecha_nacimiento: registerData.birthDate
-        })
+          contrasena: registerData.contrasena,
+          id_rol: 3, // Default: Cliente
+          nombre: registerData.nombre,
+          apellido: registerData.apellido,
+          tipo_documento: registerData.tipo_documento,
+          documento: registerData.documento,
+          telefono: registerData.telefono || '',
+          barrio: registerData.barrio,
+          direccion: registerData.direccion,
+          fecha_nacimiento: registerData.fecha_nacimiento
+        }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Error en el registro');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error en el registro');
       }
 
-      toast.success('Registro exitoso. Se ha enviado un enlace de verificación a tu correo. Por favor verifica tu cuenta antes de iniciar sesión.');
+      toast.success('Cuenta creada exitosamente. Por favor verifica tu correo.');
       setIsLogin(true);
       setRegisterData({
-        firstName: '',
-        lastName: '',
-        documentType: 'CC',
-        documentNumber: '',
-        neighborhood: '',
-        address: '',
-        birthDate: '',
+        nombre: '',
+        apellido: '',
+        tipo_documento: 'CC',
+        documento: '',
+        barrio: '',
+        direccion: '',
+        fecha_nacimiento: '',
         email: '',
-        password: '',
-        confirmPassword: '',
-        phone: ''
+        contrasena: '',
+        confirmarContrasena: '',
+        telefono: ''
       });
       setActiveStep(1);
     } catch (error: any) {
       toast.error(error.message || 'Error de conexión');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const nextStep = () => {
+    setActiveStep(prev => prev + 1);
+  };
+
+  const prevStep = () => {
+    setActiveStep(prev => prev - 1);
+  };
+
+  const handleNextStep = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e && e.type === 'keydown' && (e as React.KeyboardEvent).key !== 'Enter') return;
+    if (e && e.type === 'click') e.preventDefault();
+
+    if (activeStep === 1) {
+      if (!registerData.nombre || !registerData.apellido || !registerData.documento) {
+        toast.error('Por favor complete los campos obligatorios (nombre, apellido y documento)');
+        return;
+      }
+      nextStep();
+    } else if (activeStep === 2) {
+      if (!registerData.email) {
+        toast.error('Por favor ingrese su correo electrónico para continuar');
+        return;
+      }
+      nextStep();
+    } else if (activeStep === 3) {
+      if (!registerData.email) {
+        toast.error('Falta el correo electrónico de los pasos anteriores');
+        setActiveStep(2);
+        return;
+      }
+      if (!registerData.contrasena || !registerData.confirmarContrasena) {
+        toast.error('Por favor complete los campos de contraseña');
+        return;
+      }
+      if (registerData.contrasena !== registerData.confirmarContrasena) {
+        toast.error('Las contraseñas no coinciden');
+        return;
+      }
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+      if (!passwordRegex.test(registerData.contrasena)) {
+        toast.error('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial');
+        return;
+      }
+      handleRegister();
     }
   };
 
@@ -264,8 +284,9 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       return;
     }
 
-    if (resetPasswordData.newPassword.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(resetPasswordData.newPassword)) {
+      toast.error('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial');
       return;
     }
 
@@ -275,26 +296,6 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       newPassword: '',
       confirmPassword: ''
     });
-  };
-
-  const nextStep = () => {
-    if (activeStep === 1) {
-      if (!registerData.firstName || !registerData.lastName || !registerData.documentNumber) {
-        toast.error('Por favor complete los campos obligatorios (nombre, apellido y documento)');
-        return;
-      }
-      setActiveStep(2);
-    } else if (activeStep === 2) {
-      if (!registerData.email) {
-        toast.error('Por favor ingrese su correo electrónico para continuar');
-        return;
-      }
-      setActiveStep(3);
-    }
-  };
-
-  const prevStep = () => {
-    setActiveStep(activeStep - 1);
   };
 
   if (showResetPassword) {
@@ -614,28 +615,28 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                     ))}
                   </div>
 
-                  <form onSubmit={(e) => e.preventDefault()}>
+                  <form className="space-y-4 pt-4" onKeyDown={(e) => e.key === 'Enter' && handleNextStep()}>
                     {/* Step 1: Personal Information */}
                     {activeStep === 1 && (
                       <div className="space-y-6 animate-fadeIn">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="firstName" className="text-gray-700">Nombre *</Label>
+                            <Label htmlFor="reg-nombre" className="text-gray-700">Nombre *</Label>
                             <Input
-                              id="firstName"
+                              id="reg-nombre"
                               placeholder="Juan"
-                              value={registerData.firstName}
-                              onChange={(e) => setRegisterData(prev => ({ ...prev, firstName: e.target.value }))}
+                              value={registerData.nombre}
+                              onChange={(e) => setRegisterData(prev => ({ ...prev, nombre: e.target.value }))}
                               className="border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="lastName" className="text-gray-700">Apellido *</Label>
+                            <Label htmlFor="reg-apellido" className="text-gray-700">Apellido *</Label>
                             <Input
-                              id="lastName"
+                              id="reg-apellido"
                               placeholder="Pérez"
-                              value={registerData.lastName}
-                              onChange={(e) => setRegisterData(prev => ({ ...prev, lastName: e.target.value }))}
+                              value={registerData.apellido}
+                              onChange={(e) => setRegisterData(prev => ({ ...prev, apellido: e.target.value }))}
                               className="border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
                             />
                           </div>
@@ -643,12 +644,12 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="documentType" className="text-gray-700">Tipo Documento</Label>
+                            <Label htmlFor="reg-doc-type" className="text-gray-700">Tipo Documento</Label>
                             <select
-                              id="documentType"
-                              value={registerData.documentType}
-                              onChange={(e) => setRegisterData(prev => ({ ...prev, documentType: e.target.value }))}
-                              className="w-full px-3 py-2 border border-gray-200 text-gray-700 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                              id="reg-doc-type"
+                              value={registerData.tipo_documento}
+                              onChange={(e) => setRegisterData(prev => ({ ...prev, tipo_documento: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-200 text-gray-700 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all bg-white"
                             >
                               <option value="CC">Cédula de Ciudadanía</option>
                               <option value="CE">Cédula de Extranjería</option>
@@ -657,14 +658,14 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                             </select>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="documentNumber" className="text-gray-700">Número de documento *</Label>
+                            <Label htmlFor="reg-doc" className="text-gray-700">Número de documento *</Label>
                             <div className="relative">
                               <CreditCard className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                               <Input
-                                id="documentNumber"
+                                id="reg-doc"
                                 placeholder="123456789"
-                                value={registerData.documentNumber}
-                                onChange={(e) => setRegisterData(prev => ({ ...prev, documentNumber: e.target.value }))}
+                                value={registerData.documento}
+                                onChange={(e) => setRegisterData(prev => ({ ...prev, documento: e.target.value }))}
                                 className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
                               />
                             </div>
@@ -672,15 +673,15 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="phone" className="text-gray-700">Teléfono</Label>
+                          <Label htmlFor="reg-tel" className="text-gray-700">Teléfono</Label>
                           <div className="relative">
                             <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
-                              id="phone"
+                              id="reg-tel"
                               type="tel"
                               placeholder="+57 300 123 4567"
-                              value={registerData.phone}
-                              onChange={(e) => setRegisterData(prev => ({ ...prev, phone: e.target.value }))}
+                              value={registerData.telefono}
+                              onChange={(e) => setRegisterData(prev => ({ ...prev, telefono: e.target.value }))}
                               className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
                             />
                           </div>
@@ -691,49 +692,6 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                     {/* Step 2: Contact & Location */}
                     {activeStep === 2 && (
                       <div className="space-y-6 animate-fadeIn">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="neighborhood" className="text-gray-700">Barrio</Label>
-                            <div className="relative">
-                              <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                              <Input
-                                id="neighborhood"
-                                placeholder="El Poblado"
-                                value={registerData.neighborhood}
-                                onChange={(e) => setRegisterData(prev => ({ ...prev, neighborhood: e.target.value }))}
-                                className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="birthDate" className="text-gray-700">Fecha de Nacimiento</Label>
-                            <div className="relative">
-                              <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                              <Input
-                                id="birthDate"
-                                type="date"
-                                value={registerData.birthDate}
-                                onChange={(e) => setRegisterData(prev => ({ ...prev, birthDate: e.target.value }))}
-                                className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 text-gray-500"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="address" className="text-gray-700">Dirección</Label>
-                          <div className="relative">
-                            <Home className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                            <Input
-                              id="address"
-                              placeholder="Calle 10 # 43-20"
-                              value={registerData.address}
-                              onChange={(e) => setRegisterData(prev => ({ ...prev, address: e.target.value }))}
-                              className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
-                            />
-                          </div>
-                        </div>
-
                         <div className="space-y-2">
                           <Label htmlFor="reg-email" className="text-gray-700">Correo electrónico *</Label>
                           <div className="relative">
@@ -744,6 +702,49 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="nombre@ejemplo.com"
                               value={registerData.email}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
+                              className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="reg-barrio" className="text-gray-700">Barrio</Label>
+                            <div className="relative">
+                              <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                              <Input
+                                id="reg-barrio"
+                                placeholder="El Poblado"
+                                value={registerData.barrio}
+                                onChange={(e) => setRegisterData(prev => ({ ...prev, barrio: e.target.value }))}
+                                className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="reg-nac" className="text-gray-700">Fecha de Nacimiento</Label>
+                            <div className="relative">
+                              <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                              <Input
+                                id="reg-nac"
+                                type="date"
+                                value={registerData.fecha_nacimiento}
+                                onChange={(e) => setRegisterData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))}
+                                className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 text-gray-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="reg-dir" className="text-gray-700">Dirección</Label>
+                          <div className="relative">
+                            <Home className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <Input
+                              id="reg-dir"
+                              placeholder="Calle 10 # 43-20"
+                              value={registerData.direccion}
+                              onChange={(e) => setRegisterData(prev => ({ ...prev, direccion: e.target.value }))}
                               className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
                             />
                           </div>
@@ -761,10 +762,11 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                             <Input
                               id="reg-password"
                               type={showRegisterPassword ? "text" : "password"}
-                              placeholder="Mínimo 6 caracteres"
-                              value={registerData.password}
-                              onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
+                              placeholder="********"
+                              value={registerData.contrasena}
+                              onChange={(e) => setRegisterData(prev => ({ ...prev, contrasena: e.target.value }))}
                               className="pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                              minLength={8}
                             />
                             <button
                               type="button"
@@ -784,9 +786,10 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               id="reg-confirm-password"
                               type={showRegisterConfirmPassword ? "text" : "password"}
                               placeholder="Repite tu contraseña"
-                              value={registerData.confirmPassword}
-                              onChange={(e) => setRegisterData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                              value={registerData.confirmarContrasena}
+                              onChange={(e) => setRegisterData(prev => ({ ...prev, confirmarContrasena: e.target.value }))}
                               className="pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                              minLength={8}
                             />
                             <button
                               type="button"
@@ -828,10 +831,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                       {activeStep < 3 ? (
                         <Button
                           type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            nextStep();
-                          }}
+                          onClick={(e) => handleNextStep(e)}
                           className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-12 shadow-lg shadow-indigo-200"
                         >
                           Continuar
@@ -840,7 +840,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                       ) : (
                         <Button
                           type="button"
-                          onClick={handleRegister}
+                          onClick={(e) => handleNextStep(e)}
                           disabled={isLoading}
                           className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-12 shadow-lg shadow-indigo-200"
                         >

@@ -26,7 +26,10 @@ export default function ResetPassword() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!token) return toast.error('Token faltante en la URL');
-        if (password.length < 6) return toast.error('La contraseña debe tener al menos 6 caracteres');
+        const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+        if (!passwordRegex.test(password)) {
+            return toast.error('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial');
+        }
         if (password !== confirm) return toast.error('Las contraseñas no coinciden');
 
         try {
@@ -109,14 +112,14 @@ export default function ResetPassword() {
                                 </Button>
                             </div>
                         ) : (
-                            <form onSubmit={handleSubmit} className="space-y-5">
+                            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                                 <div className="space-y-2">
                                     <Label className="text-gray-700 font-semibold text-sm">Nueva Contraseña</Label>
                                     <div className="relative group">
                                         <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
                                         <Input
                                             type={showPassword ? "text" : "password"}
-                                            placeholder="Mínimo 6 caracteres"
+                                            placeholder="********"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             className="pl-10 pr-10 h-12 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"

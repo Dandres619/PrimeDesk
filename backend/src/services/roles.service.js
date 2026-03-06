@@ -24,6 +24,15 @@ const create = async ({ nombre, descripcion }) => {
 
 const update = async (id, { nombre, descripcion, estado }) => {
     const sql = await getPool();
+
+    // Si se intenta desactivar el rol (estado = false)
+    if (estado === false) {
+        const usersCount = await sql`SELECT COUNT(*) FROM usuarios WHERE id_rol = ${id} AND estado = TRUE`;
+        if (parseInt(usersCount[0].count) > 0) {
+            throw { status: 400, message: 'No se puede desactivar el rol dado que hay uno o más usuarios que tienen este rol activo.' };
+        }
+    }
+
     const [row] = await sql`
         UPDATE roles SET nombre = ${nombre}, descripcion = ${descripcion || null}, estado = ${estado}
         WHERE id_rol = ${id}
@@ -35,13 +44,27 @@ const update = async (id, { nombre, descripcion, estado }) => {
 
 const remove = async (id) => {
     const sql = await getPool();
-    const [row] = await sql`
-        DELETE FROM roles 
-        WHERE id_rol = ${id}
-        RETURNING id_rol
-    `;
-    if (!row) throw { status: 404, message: 'Rol no encontrado.' };
-    return { message: 'Rol eliminado.' };
+
+    // 1. Verificar si hay usuarios con este rol
+    const usersCount = await sql`SELECT COUNT(*) FROM usuarios WHERE id_rol = ${id} AND estado = TRUE`;
+    if (parseInt(usersCount[0].count) > 0) {
+        throw { status: 400, message: 'No se puede eliminar el rol dado que hay uno o más usuarios que tienen este rol activo.' };
+    }
+
+    return await sql.begin(async (tx) => {
+        // 2. Eliminar primero los permisos asociados para evitar violación de llave foránea
+        await tx`DELETE FROM roles_permisos WHERE id_rol = ${id}`;
+
+        // 3. Eliminar el rol
+        const [row] = await tx`
+            DELETE FROM roles 
+            WHERE id_rol = ${id}
+            RETURNING id_rol
+        `;
+
+        if (!row) throw { status: 404, message: 'Rol no encontrado.' };
+        return { message: 'Rol eliminado correctamente.' };
+    });
 };
 
 // Gestión de permisos de un rol

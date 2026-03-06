@@ -3,14 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { ConfirmDialog } from './ConfirmDialog';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
-import { User, Plus, Search, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { User, Plus, Search, Edit, Eye, EyeOff, Mail, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const tipoBadges: Record<string, any> = {
@@ -22,7 +20,6 @@ const tipoBadges: Record<string, any> = {
 
 export function Usuarios() {
   const [usuarios, setUsuarios] = useState<any[]>([]);
-  const [roles, setRoles] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any | null>(null);
@@ -30,7 +27,7 @@ export function Usuarios() {
   const [showPassword, setShowPassword] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'destructive' as any, onConfirm: () => { } });
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ email: '', id_rol: '', password: '', confirmPassword: '', estado: true });
 
   // @ts-ignore
@@ -50,27 +47,14 @@ export function Usuarios() {
     }
   }, [API_URL, token]);
 
-  const fetchRoles = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_URL}/roles`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Error al obtener los roles');
-      const data = await response.json();
-      setRoles(data);
-    } catch (error: any) {
-      toast.error(error.message);
-    }
-  }, [API_URL, token]);
-
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
-      await Promise.all([fetchUsuarios(), fetchRoles()]);
+      await fetchUsuarios();
       setIsLoading(false);
     };
     init();
-  }, [fetchUsuarios, fetchRoles]);
+  }, [fetchUsuarios]);
 
   const resetForm = () => {
     setFormData({ email: '', id_rol: '', password: '', confirmPassword: '', estado: true });
@@ -90,11 +74,18 @@ export function Usuarios() {
       return;
     }
 
-    if (!editingUser && formData.password !== formData.confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       toast.error('Las contraseñas no coinciden');
       return;
     }
 
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (formData.password && !passwordRegex.test(formData.password)) {
+      toast.error('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial');
+      return;
+    }
+
+    setIsSaving(true);
     try {
       let response;
       if (editingUser) {
@@ -106,8 +97,7 @@ export function Usuarios() {
           },
           body: JSON.stringify({
             correo: formData.email,
-            id_rol: parseInt(formData.id_rol),
-            estado: formData.estado ? 1 : 0
+            contrasena: formData.password || undefined
           })
         });
       } else {
@@ -136,20 +126,34 @@ export function Usuarios() {
       fetchUsuarios();
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleToggleEstado = async (id: number) => {
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (currentUser.id_usuario === id) {
+      toast.error('No puedes inactivar tu propia cuenta.');
+      return;
+    }
+
+    setIsSaving(true);
     try {
       const response = await fetch(`${API_URL}/usuarios/${id}/estado`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!response.ok) throw new Error('Error al cambiar el estado');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Error al cambiar el estado');
+      }
       toast.success('Estado actualizado');
       fetchUsuarios();
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -167,6 +171,8 @@ export function Usuarios() {
 
   const filteredUsers = usuarios.filter(u =>
     u.Correo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (u.Nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (u.Apellido || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.NombreRol.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -194,17 +200,22 @@ export function Usuarios() {
             <p className="text-muted-foreground">Gestión de acceso al sistema</p>
           </div>
         </div>
-        <Button onClick={() => setShowModal(true)} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Usuario
-        </Button>
+        <div className="flex-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-4 rounded-xl flex items-center gap-4">
+          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center text-blue-600 shrink-0">
+            <Plus className="w-6 h-6" />
+          </div>
+          <div className="text-sm">
+            <p className="font-semibold text-blue-900 dark:text-blue-300">¿Deseas registrar un nuevo usuario?</p>
+            <p className="text-blue-700 dark:text-blue-400">Dirígete al módulo de <strong>Empleados</strong> o <strong>Clientes</strong> para registrar una nueva cuenta vinculada a una persona.</p>
+          </div>
+        </div>
       </div>
 
       <Card>
         <CardContent className="p-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por email o rol..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+            <Input placeholder="Buscar por nombre, email o rol..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
           </div>
         </CardContent>
       </Card>
@@ -219,6 +230,8 @@ export function Usuarios() {
               <TableRow>
                 <TableHead>ID</TableHead>
                 <TableHead>Correo Electrónico</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Apellido</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
@@ -233,6 +246,12 @@ export function Usuarios() {
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">{u.Correo}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">{u.Nombre || '-'}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">{u.Apellido || '-'}</div>
                     </TableCell>
                     <TableCell>
                       <Badge className={tipoBadges[u.NombreRol]?.class || 'bg-gray-100'}>
@@ -299,58 +318,34 @@ export function Usuarios() {
           <DialogHeader>
             <DialogTitle>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="space-y-2">
               <Label htmlFor="email">Correo electrónico *</Label>
               <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} placeholder="correo@ejemplo.com" required />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="id_rol">Rol / Tipo de usuario *</Label>
-              <Select value={formData.id_rol} onValueChange={(value) => setFormData(prev => ({ ...prev, id_rol: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione un rol" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map(r => (
-                    <SelectItem key={r.ID_Rol} value={r.ID_Rol.toString()}>{r.Nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {!editingUser && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Contraseña *</Label>
-                  <div className="relative">
-                    <Input id="password" type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))} placeholder="Mínimo 6 caracteres" required />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground">
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label htmlFor="password">{editingUser ? 'Nueva contraseña (opcional)' : 'Contraseña *'}</Label>
+                <div className="relative">
+                  <Input id="password" type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))} placeholder={editingUser ? "Dejar en blanco para no cambiar" : "8+ chars, Mayús, Núm, Espec."} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirmar contraseña *</Label>
-                  <Input id="confirmPassword" type="password" value={formData.confirmPassword} onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))} placeholder="Repita la contraseña" required />
-                </div>
-              </>
-            )}
-
-            {editingUser && (
-              <div className="flex items-center space-x-2 pt-2">
-                <Switch
-                  id="user-status"
-                  checked={formData.estado}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, estado: checked }))}
-                />
-                <Label htmlFor="user-status">Usuario Activo</Label>
               </div>
-            )}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Verificar contraseña *</Label>
+                <Input id="confirmPassword" type="password" value={formData.confirmPassword} onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))} placeholder="Repita la contraseña" />
+              </div>
+            </div>
 
             <div className="flex gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => { setShowModal(false); resetForm(); }} className="flex-1">Cancelar</Button>
-              <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">{editingUser ? 'Actualizar' : 'Crear'}</Button>
+              <Button type="submit" disabled={isSaving} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {editingUser ? 'Actualizar' : 'Crear'}
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -362,29 +357,42 @@ export function Usuarios() {
             <DialogTitle>Detalles de la Cuenta</DialogTitle>
           </DialogHeader>
           {viewingUser && (
-            <div className="space-y-4 pt-2">
-              <div className="flex flex-col items-center gap-2 p-4 bg-muted/50 rounded-lg">
-                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-                  <User className="w-8 h-8 text-white" />
-                </div>
+            <div className="space-y-6 pt-2">
+              <div className="flex flex-col items-center gap-3 p-6 bg-muted/40 rounded-xl border border-dashed border-muted-foreground/20">
+                {viewingUser.Foto ? (
+                  <img src={viewingUser.Foto} alt="Perfil" className="w-20 h-20 rounded-full object-cover border-2 border-blue-600 p-0.5" />
+                ) : (
+                  <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                    <User className="w-10 h-10 text-white" />
+                  </div>
+                )}
                 <div className="text-center">
-                  <p className="font-bold text-lg">{viewingUser.Correo}</p>
-                  <Badge className={tipoBadges[viewingUser.NombreRol]?.class}>{viewingUser.NombreRol}</Badge>
+                  <p className="font-bold text-xl">{viewingUser.Nombre} {viewingUser.Apellido}</p>
+                  <p className="text-muted-foreground text-sm flex items-center justify-center gap-1">
+                    <Mail className="w-3 h-3" />
+                    {viewingUser.Correo}
+                  </p>
+                  <Badge className={tipoBadges[viewingUser.NombreRol]?.class + " mt-2"}>{viewingUser.NombreRol}</Badge>
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground text-xs uppercase">ID Usuario</Label>
-                  <p className="font-medium">#{viewingUser.ID_Usuario}</p>
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">ID Usuario</Label>
+                  <p className="font-mono font-medium">#{viewingUser.ID_Usuario}</p>
                 </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs uppercase">Estado</Label>
-                  <p className="font-medium">{(viewingUser.Estado === true || viewingUser.Estado === 1) ? 'Activo' : 'Inactivo'}</p>
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Estado</Label>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className={`w-2 h-2 rounded-full ${(viewingUser.Estado === true || viewingUser.Estado === 1) ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <p className="font-medium text-sm">{(viewingUser.Estado === true || viewingUser.Estado === 1) ? 'Activo' : 'Inactivo'}</p>
+                  </div>
                 </div>
               </div>
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded border border-blue-100 dark:border-blue-900">
-                <p className="text-xs text-blue-700 dark:text-blue-300">
-                  Este es un perfil de acceso al sistema. Los datos personales (nombre, teléfono, etc.) se gestionan en los módulos respectivos de Empleados o Clientes.
+
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                <p className="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed text-center">
+                  Este es un perfil de acceso al sistema. Los datos adicionales se gestionan en los módulos de personal.
                 </p>
               </div>
             </div>

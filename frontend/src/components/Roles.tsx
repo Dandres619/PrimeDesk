@@ -197,7 +197,7 @@ export function Roles() {
           estado: newStatus
         })
       });
-      if (!response.ok) throw new Error('Error al cambiar el estado del rol');
+      if (!response.ok) throw new Error('No se puede inactivar este rol dado que hay uno o más usuarios que tienen este rol activo.');
       toast.success('Estado actualizado');
       fetchRoles();
     } catch (error: any) {

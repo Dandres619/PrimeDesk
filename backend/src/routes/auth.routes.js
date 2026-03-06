@@ -23,8 +23,8 @@ router.post(
     [
         body('correo').isEmail().withMessage('Correo inválido.'),
         body('contrasena')
-            .isLength({ min: 6 })
-            .withMessage('La contraseña debe tener al menos 6 caracteres.'),
+            .matches(/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/)
+            .withMessage('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.'),
         body('id_rol').isInt({ min: 1 }).withMessage('ID de rol inválido.'),
         // Validaciones condicionales o generales para clientes
         body('nombre').optional().notEmpty().withMessage('Nombre requerido.'),
@@ -53,7 +53,9 @@ router.post(
     '/reset-password',
     [
         body('token').notEmpty().withMessage('Token requerido.'),
-        body('nueva_contrasena').isLength({ min: 6 }).withMessage('La nueva contraseña debe tener al menos 6 caracteres.'),
+        body('nueva_contrasena')
+            .matches(/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/)
+            .withMessage('La nueva contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.'),
         handleValidation,
     ],
     authController.resetPassword
@@ -91,8 +93,8 @@ router.post(
     [
         body('contrasena_actual').notEmpty().withMessage('Contraseña actual requerida.'),
         body('nueva_contrasena')
-            .isLength({ min: 6 })
-            .withMessage('La nueva contraseña debe tener al menos 6 caracteres.'),
+            .matches(/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/)
+            .withMessage('La nueva contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.'),
         handleValidation,
     ],
     authController.changePassword

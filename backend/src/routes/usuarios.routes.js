@@ -12,7 +12,9 @@ router.get('/:id', verifyToken, requirePermiso('gestionar_usuarios'), usuariosCo
 router.post('/', verifyToken, requirePermiso('gestionar_usuarios'),
     [
         body('correo').isEmail().withMessage('Correo inválido.'),
-        body('contrasena').isLength({ min: 6 }).withMessage('Contraseña mínima 6 caracteres.'),
+        body('contrasena')
+            .matches(/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/)
+            .withMessage('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.'),
         body('id_rol').isInt({ min: 1 }).withMessage('ID rol inválido.'),
         handleValidation,
     ],
@@ -21,7 +23,10 @@ router.post('/', verifyToken, requirePermiso('gestionar_usuarios'),
 router.put('/:id', verifyToken, requirePermiso('gestionar_usuarios'),
     [
         body('correo').isEmail().withMessage('Correo inválido.'),
-        body('id_rol').isInt({ min: 1 }).withMessage('ID rol inválido.'),
+        body('contrasena')
+            .optional({ checkFalsy: true })
+            .matches(/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/)
+            .withMessage('La nueva contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.'),
         handleValidation,
     ],
     usuariosController.update

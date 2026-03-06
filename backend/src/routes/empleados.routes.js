@@ -10,12 +10,12 @@ const ctrl = makeCrudController(empleadosService);
 const router = Router();
 
 const validations = [
-    body('id_usuario').isInt({ min: 1 }).withMessage('ID usuario inválido.'),
+    body('id_usuario').optional().isInt({ min: 1 }).withMessage('ID usuario inválido.'),
     body('nombre').notEmpty().withMessage('Nombre requerido.'),
     body('apellido').notEmpty().withMessage('Apellido requerido.'),
     body('tipo_documento').notEmpty().withMessage('Tipo de documento requerido.'),
     body('documento').notEmpty().withMessage('Documento requerido.'),
-    body('telefono').isLength({ min: 7, max: 10 }).withMessage('Teléfono inválido.'),
+    body('telefono').isLength({ min: 7 }).withMessage('Teléfono demasiado corto.'),
     body('fecha_nacimiento').isDate().withMessage('Fecha de nacimiento inválida.'),
     handleValidation,
 ];

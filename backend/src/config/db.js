@@ -11,7 +11,8 @@ const sql = postgres(connectionString, {
     ssl: 'require', // Supabase requiere SSL
     max: 10,
     idle_timeout: 30,
-    connect_timeout: 30
+    connect_timeout: 30,
+    prepare: false // Deshabilitar prepared statements para evitar errores con PGBouncer (Transaction Mode)
 });
 
 /**

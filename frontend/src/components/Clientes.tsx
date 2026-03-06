@@ -9,14 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { Switch } from './ui/switch';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, Users, Phone, Mail, MapPin } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Users, Phone, Mail, Loader2, Lock as LockIcon, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
-const initialClients = [
-  { id: 1, nombre: 'Juan Carlos', apellido: 'Pérez', email: 'juan.perez@email.com', phone: '+57 300 123 4567', direccion: 'Calle 123 #45-67', barrio: 'Chapinero', fechaNacimiento: '1985-05-15', imagen: '', document: '12345678', documentType: 'CC', status: 'Activo', motorcycles: 2, registeredAt: '2024-01-15' },
-  { id: 2, nombre: 'María', apellido: 'García López', email: 'maria.garcia@email.com', phone: '+57 301 234 5678', direccion: 'Carrera 67 #89-12', barrio: 'El Poblado', fechaNacimiento: '1990-08-22', imagen: '', document: '87654321', documentType: 'CC', status: 'Activo', motorcycles: 1, registeredAt: '2024-02-20' },
-  { id: 3, nombre: 'Carlos Eduardo', apellido: 'López', email: 'carlos.lopez@email.com', phone: '+57 302 345 6789', direccion: 'Avenida 45 #12-34', barrio: 'Granada', fechaNacimiento: '1988-12-10', imagen: '', document: '11223344', documentType: 'CC', status: 'Inactivo', motorcycles: 0, registeredAt: '2024-03-10' }
-];
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
 const docTypes: any = { CC: 'Cédula de Ciudadanía', CE: 'Cédula de Extranjería', PP: 'Pasaporte' };
 
@@ -27,30 +23,128 @@ export function Clientes() {
   const [viewingClient, setViewingClient] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
-  const [clients, setClients] = useState(initialClients);
+  const [clients, setClients] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const filteredClients = clients.filter(c => c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || c.apellido.toLowerCase().includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone.includes(searchTerm) || c.document.includes(searchTerm));
-  const totalPages = Math.ceil(filteredClients.length / 2);
-  const paginatedClients = filteredClients.slice((currentPage - 1) * 2, currentPage * 2);
+  React.useEffect(() => {
+    fetchClients();
+  }, []);
 
-  const handleSave = (data: any) => {
-    editingClient ? setClients(clients.map(c => c.id === editingClient.id ? { ...c, ...data } : c)) : setClients([...clients, { id: Date.now(), ...data, status: 'Activo', motorcycles: 0, registeredAt: new Date().toISOString().split('T')[0] }]);
-    toast.success(`Cliente ${editingClient ? 'actualizado' : 'registrado'} exitosamente`);
-    setIsDialogOpen(false);
-    setEditingClient(null);
+  const fetchClients = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/clientes`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Error al cargar clientes');
+      const data = await response.json();
+      setClients(data);
+    } catch (error) {
+      toast.error('No se pudieron cargar los clientes');
+    } finally {
+      setTimeout(() => setIsLoading(false), 500);
+    }
+  };
+
+  const handleSave = async (data: any) => {
+    setIsSaving(true);
+    try {
+      const url = editingClient
+        ? `${API_URL}/clientes/${editingClient.ID_Cliente}`
+        : `${API_URL}/clientes`;
+
+      const method = editingClient ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al guardar');
+      }
+
+      toast.success(`Cliente ${editingClient ? 'actualizado' : 'registrado'} exitosamente`);
+      setIsDialogOpen(false);
+      setEditingClient(null);
+      fetchClients();
+    } catch (error: any) {
+      toast.error(error.message || 'Error de conexión');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteClient = async (id: number) => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`${API_URL}/clientes/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Error al eliminar');
+      toast.success('Cliente eliminado exitosamente');
+      fetchClients();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const filteredClients = clients.filter(c =>
+    (c.Nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.Apellido || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.Correo || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.Telefono || '').includes(searchTerm) ||
+    (c.Documento || '').includes(searchTerm)
+  );
+
+  const totalPages = Math.ceil(filteredClients.length / 5);
+  const paginatedClients = filteredClients.slice((currentPage - 1) * 5, currentPage * 5);
+
+  const handleToggleEstado = async (userId: number) => {
+    try {
+      if (!userId) {
+        toast.error('Este cliente no tiene un usuario vinculado');
+        return;
+      }
+      const response = await fetch(`${API_URL}/usuarios/${userId}/estado`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Error al cambiar el estado');
+      toast.success('Estado actualizado correctamente');
+      fetchClients();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
   };
 
   const stats = [
     { icon: Users, color: 'text-blue-600', value: clients.length, label: 'Total Clientes' },
-    { icon: Users, color: 'text-green-600', value: clients.filter(c => c.status === 'Activo').length, label: 'Activos' },
-    { icon: Users, color: 'text-orange-600', value: clients.filter(c => c.motorcycles > 0).length, label: 'Con Motos' },
-    { icon: Users, color: 'text-purple-600', value: clients.reduce((sum, c) => sum + c.motorcycles, 0), label: 'Total Motos' }
+    { icon: Users, color: 'text-green-600', value: clients.filter(c => c.ID_Usuario === null || c.EstadoUsuario === true || c.EstadoUsuario === 1).length, label: 'Activos' },
+    { icon: Users, color: 'text-orange-600', value: clients.filter(c => (c.motos_count || 0) > 0).length, label: 'Con Motos' },
+    { icon: Users, color: 'text-purple-600', value: clients.reduce((sum, c) => sum + (c.motos_count || 0), 0), label: 'Total Motos' }
   ];
 
   const actions = [
     { icon: Eye, onClick: (c: any) => setViewingClient(c), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
     { icon: Edit, onClick: (c: any) => { setEditingClient(c); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
-    { icon: Trash2, onClick: (c: any) => setConfirmDialog({ open: true, title: 'Eliminar Cliente', description: '¿Está seguro de que desea eliminar este cliente? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setClients(clients.filter(cl => cl.id !== c.id)); toast.success('Cliente eliminado exitosamente'); } }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
+    { icon: Trash2, onClick: (c: any) => setConfirmDialog({ open: true, title: 'Eliminar Cliente', description: '¿Está seguro de que desea eliminar este cliente? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => deleteClient(c.ID_Cliente) }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
   ];
 
   return (
@@ -67,109 +161,121 @@ export function Clientes() {
               Nuevo Cliente
             </Button>
           </DialogTrigger>
-          <ClientDialog client={editingClient} onSave={handleSave} />
+          <ClientDialog client={editingClient} onSave={handleSave} isSaving={isSaving} />
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {stats.map((s, i) => (
-          <Card key={i}>
-            <CardContent className="flex items-center p-6">
-              <s.icon className={`w-8 h-8 ${s.color} mr-4`} />
-              <div>
-                <p className="text-2xl font-bold">{s.value}</p>
-                <p className="text-muted-foreground">{s.label}</p>
+      {isLoading ? (
+        <div className="flex items-center justify-center p-24">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {stats.map((s, i) => (
+              <Card key={i}>
+                <CardContent className="flex items-center p-6">
+                  <s.icon className={`w-8 h-8 ${s.color} mr-4`} />
+                  <div>
+                    <p className="text-2xl font-bold">{s.value}</p>
+                    <p className="text-muted-foreground">{s.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-600" />
+                Listado de Clientes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Contacto</TableHead>
+                    <TableHead>Documento</TableHead>
+                    <TableHead>Motos</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedClients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                        No se encontraron clientes.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedClients.map(c => (
+                      <TableRow key={c.ID_Cliente}>
+                        <TableCell>
+                          <p className="font-medium">{c.Nombre} {c.Apellido}</p>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p className="text-sm flex items-center gap-1">
+                              <Mail className="w-3 h-3 text-muted-foreground" />
+                              {c.Correo || 'Sin correo (Solo Datos)'}
+                            </p>
+                            <p className="text-sm flex items-center gap-1 font-medium">
+                              <Phone className="w-3 h-3 text-muted-foreground" />
+                              {c.Telefono || 'Sin teléfono'}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{c.Documento}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{(c.motos_count || 0)} motos</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={c.ID_Usuario === null || c.EstadoUsuario === true || c.EstadoUsuario === 1}
+                              onCheckedChange={() => handleToggleEstado(c.ID_Usuario)}
+                            />
+                            <span className="text-sm">{(c.ID_Usuario === null || c.EstadoUsuario === true || c.EstadoUsuario === 1) ? 'Activo' : 'Inactivo'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            {actions.map((a, i) => (
+                              <Button key={i} size="sm" variant="ghost" onClick={() => a.onClick(c)} className={a.color}>
+                                <a.icon className="w-4 h-4" />
+                              </Button>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+
+              <div className="mt-6 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    {totalPages > 1 && <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>}
+                    {Array.from({ length: Math.max(1, totalPages) }, (_, i) => i + 1).map(p => (
+                      <PaginationItem key={p}><PaginationLink onClick={() => totalPages > 1 ? setCurrentPage(p) : undefined} isActive={currentPage === p} className={totalPages > 1 ? "cursor-pointer" : "cursor-default"}>{p}</PaginationLink></PaginationItem>
+                    ))}
+                    {totalPages > 1 && <PaginationItem><PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>}
+                  </PaginationContent>
+                </Pagination>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-600" />
-            Listado de Clientes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Contacto</TableHead>
-                <TableHead>Documento</TableHead>
-                <TableHead>Motos</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedClients.map(c => (
-                <TableRow key={c.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{c.nombre} {c.apellido}</p>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {c.direccion}, {c.barrio}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <p className="text-sm flex items-center gap-1">
-                        <Mail className="w-3 h-3 text-muted-foreground" />
-                        {c.email}
-                      </p>
-                      <p className="text-sm flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-muted-foreground" />
-                        {c.phone}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{c.documentType}: {c.document}</p>
-                      <p className="text-sm text-muted-foreground">Reg: {c.registeredAt}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{c.motorcycles} motos</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch checked={c.status === 'Activo'} onCheckedChange={() => { setClients(clients.map(cl => cl.id === c.id ? { ...cl, status: cl.status === 'Activo' ? 'Inactivo' : 'Activo' } : cl)); toast.success('Estado actualizado exitosamente'); }} />
-                      <span className="text-sm">{c.status}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {actions.map((a, i) => (
-                        <Button key={i} size="sm" variant="ghost" onClick={() => a.onClick(c)} className={a.color}>
-                          <a.icon className="w-4 h-4" />
-                        </Button>
-                      ))}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          <div className="mt-6 flex justify-center">
-            <Pagination>
-              <PaginationContent>
-                {totalPages > 1 && <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>}
-                {Array.from({ length: Math.max(1, totalPages) }, (_, i) => i + 1).map(p => (
-                  <PaginationItem key={p}><PaginationLink onClick={() => totalPages > 1 ? setCurrentPage(p) : undefined} isActive={currentPage === p} className={totalPages > 1 ? "cursor-pointer" : "cursor-default"}>{p}</PaginationLink></PaginationItem>
-                ))}
-                {totalPages > 1 && <PaginationItem><PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>}
-              </PaginationContent>
-            </Pagination>
-          </div>
-        </CardContent>
-      </Card>
+        </>
+      )}
 
       <Dialog open={!!viewingClient} onOpenChange={() => setViewingClient(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -178,31 +284,65 @@ export function Clientes() {
           </DialogHeader>
           {viewingClient && (
             <div className="space-y-6">
-              <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg">
-                <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200">
-                  <img src={viewingClient.imagen || "https://images.unsplash.com/photo-1701463387028-3947648f1337?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBwZXJzb24lMjBhdmF0YXJ8ZW58MXx8fHwxNzU4Mzk2MDE2fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"} alt={`${viewingClient.nombre} ${viewingClient.apellido}`} className="w-full h-full object-cover" />
+              <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg border">
+                <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 border-2 border-blue-100 flex items-center justify-center text-blue-600 font-bold text-2xl">
+                  {viewingClient.Foto ? (
+                    <img src={viewingClient.Foto} alt={`${viewingClient.Nombre} ${viewingClient.Apellido}`} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{viewingClient.Nombre?.[0]}{viewingClient.Apellido?.[0]}</span>
+                  )}
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold">{viewingClient.nombre} {viewingClient.apellido}</h3>
-                  <p className="text-muted-foreground">{viewingClient.email}</p>
+                  <h3 className="text-xl font-semibold">{viewingClient.Nombre} {viewingClient.Apellido}</h3>
+                  <p className="text-muted-foreground">{viewingClient.Correo || 'Sin cuenta de acceso'}</p>
                   <div className="flex gap-2 mt-2">
-                    <Badge className={viewingClient.status === 'Activo' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}>{viewingClient.status}</Badge>
-                    <Badge variant="outline">{viewingClient.motorcycles} motos</Badge>
+                    <Badge className={viewingClient.ID_Usuario === null || viewingClient.EstadoUsuario ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                      {viewingClient.ID_Usuario === null || viewingClient.EstadoUsuario ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                    <Badge variant="outline">{(viewingClient.motos_count || 0)} motos</Badge>
                   </div>
                 </div>
               </div>
               {[
-                { title: 'Información Personal', fields: [['Nombre', viewingClient.nombre], ['Apellido', viewingClient.apellido], ['Fecha de nacimiento', new Date(viewingClient.fechaNacimiento).toLocaleDateString('es-ES')], ['Edad', `${new Date().getFullYear() - new Date(viewingClient.fechaNacimiento).getFullYear()} años`]] },
-                { title: 'Información de Contacto', fields: [['Correo electrónico', viewingClient.email], ['Teléfono', viewingClient.phone], ['Dirección', viewingClient.direccion], ['Barrio', viewingClient.barrio]] },
-                { title: 'Información de Identificación', fields: [['Tipo de documento', docTypes[viewingClient.documentType] || viewingClient.documentType], ['Número de documento', viewingClient.document]] },
-                { title: 'Información del Sistema', fields: [['Estado de la cuenta', <Badge key="status" className={viewingClient.status === 'Activo' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}>{viewingClient.status}</Badge>], ['Motocicletas registradas', `${viewingClient.motorcycles} motocicletas`], ['Fecha de registro', new Date(viewingClient.registeredAt).toLocaleDateString('es-ES')], ['ID del cliente', `#${viewingClient.id}`]] }
+                {
+                  title: 'Información Personal',
+                  fields: [
+                    ['Nombre', viewingClient.Nombre],
+                    ['Apellido', viewingClient.Apellido],
+                    ['Fecha de nacimiento', viewingClient.FechaNacimiento ? new Date(viewingClient.FechaNacimiento).toLocaleDateString('es-ES') : 'No especificada'],
+                    ['Edad', viewingClient.FechaNacimiento ? `${new Date().getFullYear() - new Date(viewingClient.FechaNacimiento).getFullYear()} años` : '---']
+                  ]
+                },
+                {
+                  title: 'Información de Contacto',
+                  fields: [
+                    ['Correo electrónico', viewingClient.Correo || 'No tiene cuenta'],
+                    ['Teléfono', viewingClient.Telefono],
+                    ['Dirección', viewingClient.Direccion || 'Sin dirección'],
+                    ['Barrio', viewingClient.Barrio || 'Sin barrio']
+                  ]
+                },
+                {
+                  title: 'Información de Identificación',
+                  fields: [
+                    ['Tipo de documento', docTypes[viewingClient.TipoDocumento] || viewingClient.TipoDocumento],
+                    ['Número de documento', viewingClient.Documento]
+                  ]
+                },
+                {
+                  title: 'Información del Sistema',
+                  fields: [
+                    ['ID del cliente', `#${viewingClient.ID_Cliente}`],
+                    ['Motocicletas registradas', `${viewingClient.motos_count || 0} motocicletas`]
+                  ]
+                }
               ].map((section, i) => (
                 <div key={i}>
-                  <h4 className="font-semibold mb-3">{section.title}</h4>
+                  <h4 className="font-semibold mb-3 pb-1 border-b text-blue-700">{section.title}</h4>
                   <div className="grid grid-cols-2 gap-4">
                     {section.fields.map(([label, value], j) => (
                       <div key={j}>
-                        <Label className="text-muted-foreground">{label}</Label>
+                        <Label className="text-xs text-muted-foreground uppercase">{label}</Label>
                         {typeof value === 'string' ? <p className="font-medium">{value}</p> : <div className="mt-1">{value}</div>}
                       </div>
                     ))}
@@ -214,65 +354,215 @@ export function Clientes() {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))} title={confirmDialog.title} description={confirmDialog.description} confirmText={confirmDialog.confirmText} variant={confirmDialog.variant} onConfirm={confirmDialog.onConfirm} />
+      <ConfirmDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))} title={confirmDialog.title} description={confirmDialog.description} confirmText={confirmDialog.confirmText} variant={confirmDialog.variant} onConfirm={confirmDialog.onConfirm} loading={isDeleting} />
     </div>
   );
 }
 
-function ClientDialog({ client, onSave }: any) {
-  const [formData, setFormData] = useState({ nombre: client?.nombre || '', apellido: client?.apellido || '', email: client?.email || '', phone: client?.phone || '', direccion: client?.direccion || '', barrio: client?.barrio || '', fechaNacimiento: client?.fechaNacimiento || '', imagen: client?.imagen || '', document: client?.document || '', documentType: client?.documentType || 'CC' });
+function ClientDialog({ client, onSave, isSaving }: any) {
+  const [activeStep, setActiveStep] = useState(1);
+  const [formData, setFormData] = useState({
+    crear_usuario: true,
+    correo: '',
+    contrasena: '',
+    confirmarContrasena: '',
+    nombre: '',
+    apellido: '',
+    telefono: '',
+    direccion: '',
+    barrio: '',
+    fecha_nacimiento: '',
+    foto: '',
+    documento: '',
+    tipo_documento: 'CC'
+  });
 
-  const fields = [
-    { id: 'nombre', label: 'Nombre', placeholder: 'Nombre del cliente', required: true },
-    { id: 'apellido', label: 'Apellido', placeholder: 'Apellido del cliente', required: true },
-    { id: 'email', label: 'Correo Electrónico', placeholder: 'cliente@email.com', type: 'email', required: true, full: true },
-    { id: 'phone', label: 'Teléfono', placeholder: '+57 300 123 4567', required: true, full: true },
-    { id: 'direccion', label: 'Dirección', placeholder: 'Calle 123 #45-67', required: true },
-    { id: 'barrio', label: 'Barrio', placeholder: 'Centro', required: true },
-    { id: 'fechaNacimiento', label: 'Fecha de Nacimiento', type: 'date', required: true },
-    { id: 'imagen', label: 'Imagen (URL)', placeholder: 'https://ejemplo.com/imagen.jpg' }
-  ];
+  React.useEffect(() => {
+    if (client) {
+      setFormData({
+        crear_usuario: false,
+        correo: client.Correo || '',
+        contrasena: '',
+        confirmarContrasena: '',
+        nombre: client.Nombre || '',
+        apellido: client.Apellido || '',
+        telefono: client.Telefono || '',
+        direccion: client.Direccion || '',
+        barrio: client.Barrio || '',
+        fecha_nacimiento: client.FechaNacimiento ? client.FechaNacimiento.split('T')[0] : '',
+        foto: client.Foto || '',
+        documento: client.Documento || '',
+        tipo_documento: client.TipoDocumento || 'CC'
+      });
+    } else {
+      setFormData({
+        crear_usuario: true,
+        correo: '',
+        contrasena: '',
+        confirmarContrasena: '',
+        nombre: '',
+        apellido: '',
+        telefono: '',
+        direccion: '',
+        barrio: '',
+        fecha_nacimiento: '',
+        foto: '',
+        documento: '',
+        tipo_documento: 'CC'
+      });
+    }
+  }, [client]);
+
+  const nextStep = () => {
+    if (activeStep === 1) {
+      if (!formData.correo || (!client && !formData.contrasena)) {
+        toast.error('Complete los datos de acceso');
+        return;
+      }
+      if (!client && formData.contrasena !== formData.confirmarContrasena) {
+        toast.error('Las contraseñas no coinciden');
+        return;
+      }
+
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+      if (!client && !passwordRegex.test(formData.contrasena)) {
+        toast.error('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial');
+        return;
+      }
+      setActiveStep(2);
+    }
+  };
 
   return (
     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{client ? 'Editar Cliente' : 'Nuevo Cliente'}</DialogTitle>
       </DialogHeader>
-      <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="space-y-4">
-        {fields.filter(f => f.full).map(f => (
-          <div key={f.id}>
-            <Label htmlFor={f.id}>{f.label}</Label>
-            <Input id={f.id} type={f.type || 'text'} value={formData[f.id as keyof typeof formData]} onChange={(e) => setFormData(prev => ({ ...prev, [f.id]: e.target.value }))} placeholder={f.placeholder} required={f.required} />
-          </div>
-        ))}
 
-        <div className="grid grid-cols-2 gap-4">
-          {fields.filter(f => !f.full).map(f => (
-            <div key={f.id}>
-              <Label htmlFor={f.id}>{f.label}</Label>
-              <Input id={f.id} type={f.type || 'text'} value={formData[f.id as keyof typeof formData]} onChange={(e) => setFormData(prev => ({ ...prev, [f.id]: e.target.value }))} placeholder={f.placeholder} required={f.required} />
+      {/* Steps Indicator */}
+      {!client && (
+        <div className="flex items-center justify-center gap-4 mb-8">
+          {[1, 2].map((step) => (
+            <div key={step} className="flex items-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border-2 transition-all ${activeStep >= step ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-200 text-gray-400'}`}>
+                {step}
+              </div>
+              {step === 1 && <div className={`w-12 h-0.5 mx-1 ${activeStep > 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />}
             </div>
           ))}
-          <div>
-            <Label htmlFor="documentType">Tipo de Documento</Label>
-            {client ? (
-              <Input value={formData.documentType} disabled className="bg-muted/50" />
-            ) : (
-              <select id="documentType" value={formData.documentType} onChange={(e) => setFormData(prev => ({ ...prev, documentType: e.target.value }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-                {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k} className="bg-background text-foreground text-sm">{v}</option>)}
-              </select>
-            )}
-          </div>
-          <div>
-            <Label htmlFor="document">Número de Documento</Label>
-            <Input id="document" value={formData.document} onChange={client ? undefined : (e) => setFormData(prev => ({ ...prev, document: e.target.value }))} placeholder="12345678" disabled={!!client} className={client ? "bg-muted/50" : ""} required />
-          </div>
         </div>
-        <div className="flex justify-end gap-2">
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-            {client ? 'Actualizar' : 'Registrar'} Cliente
-          </Button>
-        </div>
+      )}
+
+      <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="space-y-6" noValidate>
+        {activeStep === 1 && !client ? (
+          <div className="space-y-4 animate-fadeIn">
+            <h4 className="font-semibold text-lg flex items-center gap-2">
+              <LockIcon className="w-5 h-5 text-blue-600" />
+              Datos de Acceso
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="reg-correo">Correo electrónico acceso *</Label>
+                <Input
+                  id="reg-correo"
+                  type="email"
+                  placeholder="ejemplo@correo.com"
+                  value={formData.correo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, correo: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-pass">Contraseña provisional *</Label>
+                <Input
+                  id="reg-pass"
+                  type="password"
+                  placeholder="8+ chars, Mayús, Núm, Espec."
+                  value={formData.contrasena}
+                  onChange={(e) => setFormData(prev => ({ ...prev, contrasena: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-confirm-pass">Confirmar contraseña *</Label>
+                <Input
+                  id="reg-confirm-pass"
+                  type="password"
+                  placeholder="Repita la contraseña"
+                  value={formData.confirmarContrasena}
+                  onChange={(e) => setFormData(prev => ({ ...prev, confirmarContrasena: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex justify-end pt-4">
+              <Button type="button" onClick={nextStep} className="bg-blue-600 hover:bg-blue-700">
+                Siguiente: Datos Personales
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6 animate-fadeIn">
+            <h4 className="font-semibold text-lg">Datos Personales</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="nombre">Nombre *</Label>
+                <Input id="nombre" value={formData.nombre} onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apellido">Apellido *</Label>
+                <Input id="apellido" value={formData.apellido} onChange={(e) => setFormData(prev => ({ ...prev, apellido: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tipo_documento">Tipo de Documento</Label>
+                <select
+                  id="tipo_documento"
+                  value={formData.tipo_documento}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tipo_documento: e.target.value }))}
+                  disabled={!!client}
+                  className={`w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${client ? "bg-muted opacity-80" : ""}`}
+                >
+                  {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k}>{v as string}</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="documento">Número de Documento *</Label>
+                <Input id="documento" value={formData.documento} onChange={(e) => setFormData(prev => ({ ...prev, documento: e.target.value }))} required disabled={!!client} className={client ? "bg-muted" : ""} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Teléfono *</Label>
+                <Input id="phone" value={formData.telefono} onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fecha_nacimiento">Fecha de Nacimiento *</Label>
+                <Input id="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={(e) => setFormData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="barrio">Barrio</Label>
+                <Input id="barrio" value={formData.barrio} onChange={(e) => setFormData(prev => ({ ...prev, barrio: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="direccion">Dirección</Label>
+                <Input id="direccion" value={formData.direccion} onChange={(e) => setFormData(prev => ({ ...prev, direccion: e.target.value }))} />
+              </div>
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="foto">Imagen (URL)</Label>
+                <Input id="foto" value={formData.foto} onChange={(e) => setFormData(prev => ({ ...prev, foto: e.target.value }))} placeholder="https://ejemplo.com/imagen.jpg" />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" type="button" onClick={() => (document.querySelector('[data-state="open"]')?.parentElement as any)?.click()}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {client ? 'Actualizar Cliente' : 'Finalizar Registro'}
+              </Button>
+            </div>
+          </div>
+        )}
       </form>
     </DialogContent>
   );

@@ -30,7 +30,7 @@ const login = async (correo, contrasena) => {
     const user = users[0];
 
     if (!user.estado) {
-        throw { status: 403, message: 'Usuario inactivo. Contacte al administrador.' };
+        throw { status: 403, message: 'Su cuenta está inactiva. Por favor, contacte con la administración del taller para más información.' };
     }
 
     if (!user.correo_verificado) {
@@ -144,10 +144,10 @@ const getMe = async (id_usuario) => {
              r.nombre AS "NombreRol", r.descripcion AS "DescripcionRol",
              e.id_empleado AS "ID_Empleado", e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado",
              e.tipodocumento AS "TipoDocEmpleado", e.documento AS "DocEmpleado", e.telefono AS "TelEmpleado",
-             e.barrio AS "BarrioEmpleado", e.direccion AS "DirEmpleado", e.fechanacimiento AS "NacEmpleado",
+             e.barrio AS "BarrioEmpleado", e.direccion AS "DirEmpleado", e.fechanacimiento AS "NacEmpleado", e.foto AS "FotoEmpleado",
              c.id_cliente AS "ID_Cliente", c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente",
              c.tipodocumento AS "TipoDocumento", c.documento AS "Documento", c.telefono AS "Telefono", 
-             c.barrio AS "Barrio", c.direccion AS "Direccion", c.fechanacimiento AS "FechaNacimiento"
+             c.barrio AS "Barrio", c.direccion AS "Direccion", c.fechanacimiento AS "FechaNacimiento", c.foto AS "FotoCliente"
       FROM usuarios u
       INNER JOIN roles r ON u.id_rol = r.id_rol
       LEFT JOIN empleados e ON e.id_usuario = u.id_usuario
@@ -179,7 +179,7 @@ const getMe = async (id_usuario) => {
  */
 const updateProfile = async (id_usuario, data) => {
     const sql = await getPool();
-    const { nombre, apellido, tipo_documento, documento, telefono, barrio, direccion } = data;
+    const { nombre, apellido, tipo_documento, documento, telefono, barrio, direccion, foto } = data;
 
     const user = await getMe(id_usuario);
 
@@ -187,22 +187,24 @@ const updateProfile = async (id_usuario, data) => {
         await sql`
             UPDATE clientes 
             SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
-                documento = ${documento}, telefono = ${telefono}, barrio = ${barrio}, direccion = ${direccion}
+                documento = ${documento}, telefono = ${telefono}, barrio = ${barrio}, direccion = ${direccion},
+                foto = ${foto || null}
             WHERE id_usuario = ${id_usuario}
         `;
     } else { // Admin / Empleado
         // Check if admin has employee record
-        const emp = await sql`SELECT id_empleado FROM empleados WHERE id_usuario = ${id_usuario}`;
+        const emp = await sql`SELECT id_empleado FROM empleados WHERE id_usuario = ${id_usuario} `;
         if (emp.length === 0) {
             await sql`
-                INSERT INTO empleados (id_usuario, nombre, apellido, tipodocumento, documento, telefono, barrio, direccion, fechaingreso)
-                VALUES (${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento}, ${telefono}, ${barrio}, ${direccion}, NOW())
+                INSERT INTO empleados(id_usuario, nombre, apellido, tipodocumento, documento, telefono, barrio, direccion, fechaingreso)
+        VALUES(${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento}, ${telefono}, ${barrio}, ${direccion}, NOW())
             `;
         } else {
             await sql`
                 UPDATE empleados 
                 SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
-                    documento = ${documento}, telefono = ${telefono}, barrio = ${barrio}, direccion = ${direccion}
+                    documento = ${documento}, telefono = ${telefono}, barrio = ${barrio}, direccion = ${direccion},
+                    foto = ${foto || null}
                 WHERE id_usuario = ${id_usuario}
             `;
         }
@@ -217,7 +219,7 @@ const updateProfile = async (id_usuario, data) => {
 const changePassword = async (id_usuario, contrasenaActual, nuevaContrasena) => {
     const sql = await getPool();
 
-    const users = await sql`SELECT contrasena FROM usuarios WHERE id_usuario = ${id_usuario}`;
+    const users = await sql`SELECT contrasena FROM usuarios WHERE id_usuario = ${id_usuario} `;
 
     if (users.length === 0) {
         throw { status: 404, message: 'Usuario no encontrado.' };
@@ -229,7 +231,7 @@ const changePassword = async (id_usuario, contrasenaActual, nuevaContrasena) => 
     }
 
     const hashed = await bcrypt.hash(nuevaContrasena, 10);
-    await sql`UPDATE usuarios SET contrasena = ${hashed} WHERE id_usuario = ${id_usuario}`;
+    await sql`UPDATE usuarios SET contrasena = ${hashed} WHERE id_usuario = ${id_usuario} `;
 
     return { message: 'Contraseña actualizada correctamente.' };
 };
@@ -240,7 +242,7 @@ const changePassword = async (id_usuario, contrasenaActual, nuevaContrasena) => 
 const requestPasswordReset = async (correo) => {
     const sql = await getPool();
 
-    const users = await sql`SELECT id_usuario, correo FROM usuarios WHERE correo = ${correo}`;
+    const users = await sql`SELECT id_usuario, correo FROM usuarios WHERE correo = ${correo} `;
     if (users.length === 0) {
         // No revelar información: devolver sin error
         return;
@@ -253,8 +255,8 @@ const requestPasswordReset = async (correo) => {
 
     await sql.begin(async (tx) => {
         // Insertar registro de token
-        await tx`INSERT INTO password_resets (id_usuario, token_hash, expires_at, used)
-                 VALUES (${user.id_usuario}, ${tokenHash}, ${expiresAt}, FALSE)`;
+        await tx`INSERT INTO password_resets(id_usuario, token_hash, expires_at, used)
+        VALUES(${user.id_usuario}, ${tokenHash}, ${expiresAt}, FALSE)`;
     });
 
     const resetLink = `${FRONTEND_URL}/reset-password?token=${token}`;
