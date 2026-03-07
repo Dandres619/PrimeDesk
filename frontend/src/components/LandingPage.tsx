@@ -200,7 +200,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLoginClick, onRegisterClick
                 Agendar Servicio
               </button>
               <button
-                onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' })}
                 className="px-8 py-4 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-lg font-semibold text-lg transition-all border-2 border-white/30 flex items-center gap-2 justify-center"
               >
                 <Wrench className="w-5 h-5" />
