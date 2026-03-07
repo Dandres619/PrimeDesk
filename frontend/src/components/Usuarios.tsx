@@ -14,7 +14,6 @@ import { toast } from 'sonner';
 const tipoBadges: Record<string, any> = {
   'Administrador': { class: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800', label: 'Administrador' },
   'Empleado': { class: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800', label: 'Empleado' },
-  'Técnico': { class: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800', label: 'Empleado' },
   'Cliente': { class: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800', label: 'Cliente' }
 };
 
@@ -180,14 +179,6 @@ export function Usuarios() {
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -220,98 +211,104 @@ export function Usuarios() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Usuarios ({filteredUsers.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Correo Electrónico</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Apellido</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedUsers.length > 0 ? (
-                paginatedUsers.map(u => (
-                  <TableRow key={u.ID_Usuario}>
-                    <TableCell>
-                      <div className="font-medium">{u.ID_Usuario}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{u.Correo}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{u.Nombre || '-'}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">{u.Apellido || '-'}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={tipoBadges[u.NombreRol]?.class || 'bg-gray-100'}>
-                        {u.NombreRol}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={u.Estado === true || u.Estado === 1}
-                          onCheckedChange={() => handleToggleEstado(u.ID_Usuario)}
-                        />
-                        <span className="text-sm">{(u.Estado === true || u.Estado === 1) ? 'Activo' : 'Inactivo'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => setViewingUser(u)} className="text-blue-600">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(u)} className="text-blue-600">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center p-24">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+        </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Lista de Usuarios ({filteredUsers.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Correo Electrónico</TableHead>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Apellido</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedUsers.length > 0 ? (
+                  paginatedUsers.map(u => (
+                    <TableRow key={u.ID_Usuario}>
+                      <TableCell>
+                        <p>{u.ID_Usuario}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p>{u.Correo}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p>{u.Nombre || '-'}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p>{u.Apellido || '-'}</p>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={tipoBadges[u.NombreRol]?.class || 'bg-gray-100'}>
+                          {u.NombreRol}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={u.Estado === true || u.Estado === 1}
+                            onCheckedChange={() => handleToggleEstado(u.ID_Usuario)}
+                          />
+                          <span className="text-sm">{(u.Estado === true || u.Estado === 1) ? 'Activo' : 'Inactivo'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => setViewingUser(u)} className="text-blue-600">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(u)} className="text-blue-600">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      No se encontraron usuarios.
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    No se encontraron usuarios.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
 
-          {totalPages > 1 && (
-            <div className="mt-6 flex justify-center">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-                  </PaginationItem>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                    <PaginationItem key={p}>
-                      <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">
-                        {p}
-                      </PaginationLink>
+            {totalPages > 1 && (
+              <div className="mt-6 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
                     </PaginationItem>
-                  ))}
-                  <PaginationItem>
-                    <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                      <PaginationItem key={p}>
+                        <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">
+                          {p}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={showModal} onOpenChange={(open) => { if (!open) resetForm(); setShowModal(open); }}>
         <DialogContent className="max-w-md">

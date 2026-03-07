@@ -137,8 +137,7 @@ export function Clientes() {
   const stats = [
     { icon: Users, color: 'text-blue-600', value: clients.length, label: 'Total Clientes' },
     { icon: Users, color: 'text-green-600', value: clients.filter(c => c.ID_Usuario === null || c.EstadoUsuario === true || c.EstadoUsuario === 1).length, label: 'Activos' },
-    { icon: Users, color: 'text-orange-600', value: clients.filter(c => (c.motos_count || 0) > 0).length, label: 'Con Motos' },
-    { icon: Users, color: 'text-purple-600', value: clients.reduce((sum, c) => sum + (c.motos_count || 0), 0), label: 'Total Motos' }
+    { icon: Users, color: 'text-orange-600', value: clients.filter(c => (c.MotosCount || 0) > 0).length, label: 'Con Motos' },
   ];
 
   const actions = [
@@ -150,9 +149,14 @@ export function Clientes() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar clientes..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold">Clientes</h1>
+            <p className="text-muted-foreground">Gestión de la base de datos de clientes</p>
+          </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -165,13 +169,22 @@ export function Clientes() {
         </Dialog>
       </div>
 
+      <Card>
+        <CardContent className="p-6">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Buscar clientes..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+          </div>
+        </CardContent>
+      </Card>
+
       {isLoading ? (
         <div className="flex items-center justify-center p-24">
           <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {stats.map((s, i) => (
               <Card key={i}>
                 <CardContent className="flex items-center p-6">
@@ -198,7 +211,8 @@ export function Clientes() {
                   <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Apellido</TableHead>
-                    <TableHead>Contacto</TableHead>
+                    <TableHead>Correo</TableHead>
+                    <TableHead>Telefono</TableHead>
                     <TableHead>Documento</TableHead>
                     <TableHead>Motos</TableHead>
                     <TableHead>Estado</TableHead>
@@ -208,7 +222,7 @@ export function Clientes() {
                 <TableBody>
                   {paginatedClients.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                         No se encontraron clientes.
                       </TableCell>
                     </TableRow>
@@ -216,30 +230,28 @@ export function Clientes() {
                     paginatedClients.map(c => (
                       <TableRow key={c.ID_Cliente}>
                         <TableCell>
-                          <p className="font-medium">{c.Nombre}</p>
+                          <p>{c.Nombre}</p>
                         </TableCell>
                         <TableCell>
-                          <p className="font-medium">{c.Apellido}</p>
+                          <p>{c.Apellido}</p>
                         </TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            <p className="text-sm flex items-center gap-1">
-                              <Mail className="w-3 h-3 text-muted-foreground" />
-                              {c.Correo || 'Sin correo (Solo Datos)'}
-                            </p>
-                            <p className="text-sm flex items-center gap-1 font-medium">
-                              <Phone className="w-3 h-3 text-muted-foreground" />
-                              {c.Telefono || 'Sin teléfono'}
-                            </p>
+                          <div>
+                            <p>{c.Correo}</p>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{c.Documento}</p>
+                            <p>{c.Telefono}</p>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{(c.motos_count || 0)} motos</Badge>
+                          <div>
+                            <p>{c.Documento}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{(c.MotosCount || 0)} moto(s)</Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -303,7 +315,7 @@ export function Clientes() {
                     <Badge className={viewingClient.ID_Usuario === null || viewingClient.EstadoUsuario ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                       {viewingClient.ID_Usuario === null || viewingClient.EstadoUsuario ? 'Activo' : 'Inactivo'}
                     </Badge>
-                    <Badge variant="outline">{(viewingClient.motos_count || 0)} motos</Badge>
+                    <Badge variant="outline">{(viewingClient.MotosCount || 0)} motos</Badge>
                   </div>
                 </div>
               </div>
@@ -337,7 +349,7 @@ export function Clientes() {
                   title: 'Información del Sistema',
                   fields: [
                     ['ID del cliente', `#${viewingClient.ID_Cliente}`],
-                    ['Motocicletas registradas', `${viewingClient.motos_count || 0} motocicletas`]
+                    ['Motocicletas registradas', `${viewingClient.MotosCount || 0} motocicletas`]
                   ]
                 }
               ].map((section, i) => (
@@ -466,7 +478,7 @@ function ClientDialog({ client, onSave, isSaving }: any) {
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="reg-correo">Correo electrónico acceso *</Label>
+                <Label htmlFor="reg-correo">Correo electrónico *</Label>
                 <Input
                   id="reg-correo"
                   type="email"

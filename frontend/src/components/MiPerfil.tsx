@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { User, Lock, Mail, Briefcase } from 'lucide-react';
+import { User, Lock, Mail, Briefcase, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function MiPerfil() {
@@ -136,14 +136,6 @@ export function MiPerfil() {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center p-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
             <div className="flex items-center gap-3">
@@ -156,140 +148,146 @@ export function MiPerfil() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="md:col-span-1 h-fit">
-                    <CardHeader className="text-center pb-2">
-                        <div className="mx-auto w-24 h-24 mb-4 relative">
-                            {profileData?.FotoEmpleado || profileData?.FotoCliente ? (
-                                <img src={profileData?.FotoEmpleado || profileData?.FotoCliente} alt="Foto de perfil" className="w-full h-full rounded-full object-cover border-4 border-blue-600/20" />
-                            ) : (
-                                <div className="w-full h-full bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-                                    {formData.nombre?.charAt(0) || profileData?.Correo?.charAt(0).toUpperCase()}
-                                </div>
-                            )}
-                        </div>
-                        <CardTitle>{formData.nombre} {formData.apellido}</CardTitle>
-                        <CardDescription className="flex items-center justify-center gap-2 mt-2">
-                            <Badge variant="secondary" className="capitalize">{profileData?.NombreRol}</Badge>
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
-                        <div className="flex items-center gap-3 text-sm">
-                            <Mail className="w-4 h-4 text-muted-foreground" />
-                            <span className="truncate">{profileData?.Correo}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-sm">
-                            <Briefcase className="w-4 h-4 text-muted-foreground" />
-                            <span>Rol: {profileData?.NombreRol}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-sm">
-                            <div className={`w-2 h-2 rounded-full ${profileData?.estado ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                            <span>Estado: {profileData?.estado ? 'Activo' : 'Inactivo'}</span>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <div className="md:col-span-2 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Datos Personales</CardTitle>
-                            <CardDescription>Actualiza tu información básica de contacto.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handleProfileSubmit} className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="nombre">Nombres</Label>
-                                        <Input id="nombre" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} required />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="apellido">Apellidos</Label>
-                                        <Input id="apellido" value={formData.apellido} onChange={e => setFormData({ ...formData, apellido: e.target.value })} required />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="tipo_doc">Tipo Documento</Label>
-                                        <Select disabled value={formData.tipo_documento} onValueChange={v => setFormData({ ...formData, tipo_documento: v })}>
-                                            <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="CC">Cédula de Ciudadanía</SelectItem>
-                                                <SelectItem value="CE">Cédula de Extranjería</SelectItem>
-                                                <SelectItem value="NIT">NIT</SelectItem>
-                                                <SelectItem value="PAS">Pasaporte</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="documento">Número Documento</Label>
-                                        <Input id="documento" disabled value={formData.documento} onChange={e => setFormData({ ...formData, documento: e.target.value })} required />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="telefono">Teléfono</Label>
-                                        <Input id="telefono" value={formData.telefono} onChange={e => setFormData({ ...formData, telefono: e.target.value })} required />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="barrio">Barrio</Label>
-                                        <Input id="barrio" value={formData.barrio} onChange={e => setFormData({ ...formData, barrio: e.target.value })} />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="direccion">Dirección</Label>
-                                    <Input id="direccion" value={formData.direccion} onChange={e => setFormData({ ...formData, direccion: e.target.value })} />
-                                </div>
-
-                                <Button type="submit" disabled={isProcessing} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">
-                                    {isProcessing ? (
-                                        <>
-                                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                            Guardando...
-                                        </>
-                                    ) : 'Guardar Cambios'}
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Lock className="w-5 h-5" />
-                                Seguridad
-                            </CardTitle>
-                            <CardDescription>Modifica la contraseña de acceso a tu cuenta.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md" noValidate>
-                                <div className="space-y-2">
-                                    <Label htmlFor="current-pass">Contraseña Actual *</Label>
-                                    <Input id="current-pass" type="password" value={passwordData.contrasena_actual} onChange={e => setPasswordData({ ...passwordData, contrasena_actual: e.target.value })} required placeholder="********" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="new-pass">Nueva Contraseña *</Label>
-                                    <Input id="new-pass" type="password" value={passwordData.nueva_contrasena} onChange={e => setPasswordData({ ...passwordData, nueva_contrasena: e.target.value })} required placeholder="********" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="confirm-pass">Confirmar Nueva Contraseña *</Label>
-                                    <Input id="confirm-pass" type="password" value={passwordData.confirmar_contrasena} onChange={e => setPasswordData({ ...passwordData, confirmar_contrasena: e.target.value })} required placeholder="********" />
-                                </div>
-                                <Button type="submit" variant="secondary" disabled={isProcessingPassword} className="w-full sm:w-auto mt-2">
-                                    {isProcessingPassword ? (
-                                        <>
-                                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                                            Actualizando...
-                                        </>
-                                    ) : 'Actualizar Contraseña'}
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
+            {isLoading ? (
+                <div className="flex items-center justify-center p-24">
+                    <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
                 </div>
-            </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card className="md:col-span-1 h-fit">
+                        <CardHeader className="text-center pb-2">
+                            <div className="mx-auto w-24 h-24 mb-4 relative">
+                                {profileData?.FotoEmpleado || profileData?.FotoCliente ? (
+                                    <img src={profileData?.FotoEmpleado || profileData?.FotoCliente} alt="Foto de perfil" className="w-full h-full rounded-full object-cover border-4 border-blue-600/20" />
+                                ) : (
+                                    <div className="w-full h-full bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                                        {formData.nombre?.charAt(0) || profileData?.Correo?.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                            <CardTitle>{formData.nombre} {formData.apellido}</CardTitle>
+                            <CardDescription className="flex items-center justify-center gap-2 mt-2">
+                                <Badge variant="secondary" className="capitalize">{profileData?.NombreRol}</Badge>
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-4">
+                            <div className="flex items-center gap-3 text-sm">
+                                <Mail className="w-4 h-4 text-muted-foreground" />
+                                <span className="truncate">{profileData?.Correo}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                                <Briefcase className="w-4 h-4 text-muted-foreground" />
+                                <span>Rol: {profileData?.NombreRol}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                                <div className={`w-2 h-2 rounded-full ${profileData?.estado ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                <span>Estado: {profileData?.estado ? 'Activo' : 'Inactivo'}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <div className="md:col-span-2 space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Datos Personales</CardTitle>
+                                <CardDescription>Actualiza tu información básica de contacto.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handleProfileSubmit} className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="nombre">Nombres</Label>
+                                            <Input id="nombre" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} required />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="apellido">Apellidos</Label>
+                                            <Input id="apellido" value={formData.apellido} onChange={e => setFormData({ ...formData, apellido: e.target.value })} required />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="tipo_doc">Tipo Documento</Label>
+                                            <Select disabled value={formData.tipo_documento} onValueChange={v => setFormData({ ...formData, tipo_documento: v })}>
+                                                <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="CC">Cédula de Ciudadanía</SelectItem>
+                                                    <SelectItem value="CE">Cédula de Extranjería</SelectItem>
+                                                    <SelectItem value="NIT">NIT</SelectItem>
+                                                    <SelectItem value="PAS">Pasaporte</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="documento">Número Documento</Label>
+                                            <Input id="documento" disabled value={formData.documento} onChange={e => setFormData({ ...formData, documento: e.target.value })} required />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="telefono">Teléfono</Label>
+                                            <Input id="telefono" value={formData.telefono} onChange={e => setFormData({ ...formData, telefono: e.target.value })} required />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="barrio">Barrio</Label>
+                                            <Input id="barrio" value={formData.barrio} onChange={e => setFormData({ ...formData, barrio: e.target.value })} />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="direccion">Dirección</Label>
+                                        <Input id="direccion" value={formData.direccion} onChange={e => setFormData({ ...formData, direccion: e.target.value })} />
+                                    </div>
+
+                                    <Button type="submit" disabled={isProcessing} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">
+                                        {isProcessing ? (
+                                            <>
+                                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                                Guardando...
+                                            </>
+                                        ) : 'Guardar Cambios'}
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Lock className="w-5 h-5" />
+                                    Seguridad
+                                </CardTitle>
+                                <CardDescription>Modifica la contraseña de acceso a tu cuenta.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md" noValidate>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="current-pass">Contraseña Actual *</Label>
+                                        <Input id="current-pass" type="password" value={passwordData.contrasena_actual} onChange={e => setPasswordData({ ...passwordData, contrasena_actual: e.target.value })} required placeholder="********" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="new-pass">Nueva Contraseña *</Label>
+                                        <Input id="new-pass" type="password" value={passwordData.nueva_contrasena} onChange={e => setPasswordData({ ...passwordData, nueva_contrasena: e.target.value })} required placeholder="********" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="confirm-pass">Confirmar Nueva Contraseña *</Label>
+                                        <Input id="confirm-pass" type="password" value={passwordData.confirmar_contrasena} onChange={e => setPasswordData({ ...passwordData, confirmar_contrasena: e.target.value })} required placeholder="********" />
+                                    </div>
+                                    <Button type="submit" variant="secondary" disabled={isProcessingPassword} className="w-full sm:w-auto mt-2">
+                                        {isProcessingPassword ? (
+                                            <>
+                                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                                                Actualizando...
+                                            </>
+                                        ) : 'Actualizar Contraseña'}
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

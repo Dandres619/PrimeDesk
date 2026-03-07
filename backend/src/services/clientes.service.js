@@ -10,7 +10,8 @@ const getAll = async () => {
                c.apellido AS "Apellido", c.tipodocumento AS "TipoDocumento", c.documento AS "Documento",
                c.telefono AS "Telefono", c.barrio AS "Barrio", c.direccion AS "Direccion", 
                c.fechanacimiento AS "FechaNacimiento", c.foto AS "Foto", u.correo AS "Correo",
-               u.correo_verificado AS "CorreoVerificado", u.estado AS "EstadoUsuario"
+               u.correo_verificado AS "CorreoVerificado", u.estado AS "EstadoUsuario",
+               (SELECT COUNT(*) FROM motocicletas WHERE id_cliente = c.id_cliente)::int AS "MotosCount"
         FROM clientes c
         LEFT JOIN usuarios u ON c.id_usuario = u.id_usuario
         ORDER BY c.id_cliente DESC
@@ -24,7 +25,8 @@ const getById = async (id) => {
                c.apellido AS "Apellido", c.tipodocumento AS "TipoDocumento", c.documento AS "Documento",
                c.telefono AS "Telefono", c.barrio AS "Barrio", c.direccion AS "Direccion", 
                c.fechanacimiento AS "FechaNacimiento", c.foto AS "Foto", u.correo AS "Correo",
-               u.correo_verificado AS "CorreoVerificado", u.estado AS "EstadoUsuario"
+               u.correo_verificado AS "CorreoVerificado", u.estado AS "EstadoUsuario",
+               (SELECT COUNT(*) FROM motocicletas WHERE id_cliente = c.id_cliente)::int AS "MotosCount"
         FROM clientes c
         LEFT JOIN usuarios u ON c.id_usuario = u.id_usuario
         WHERE c.id_cliente = ${id}

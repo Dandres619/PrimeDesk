@@ -16,7 +16,7 @@ const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000
 
 const roleBadges = {
   'Administrador': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  'Mecánico': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+  'Empleado': 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
 };
 
 const docTypes: any = { CC: 'Cédula de Ciudadanía', CE: 'Cédula de Extranjería', PP: 'Pasaporte' };
@@ -187,9 +187,14 @@ export function Empleados() {
         loading={isDeleting}
       />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por nombre, email o rol..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <UserCog className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold">Empleados</h1>
+            <p className="text-muted-foreground">Gestión del personal del taller</p>
+          </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -201,6 +206,15 @@ export function Empleados() {
           <EmployeeDialog employee={editingEmployee} onSave={handleSave} isSaving={isSaving} />
         </Dialog>
       </div>
+
+      <Card>
+        <CardContent className="p-6">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Buscar por nombre, email o rol..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+          </div>
+        </CardContent>
+      </Card>
 
       {isLoading ? (
         <div className="flex items-center justify-center p-24">
@@ -235,7 +249,8 @@ export function Empleados() {
                   <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Apellido</TableHead>
-                    <TableHead>Contacto</TableHead>
+                    <TableHead>Correo</TableHead>
+                    <TableHead>Telefono</TableHead>
                     <TableHead>Documento</TableHead>
                     <TableHead>Rol</TableHead>
                     <TableHead>Estado</TableHead>
@@ -253,27 +268,19 @@ export function Empleados() {
                     paginatedEmployees.map(e => (
                       <TableRow key={e.ID_Empleado}>
                         <TableCell>
-                          <p className="font-medium">{e.Nombre}</p>
+                          <p>{e.Nombre}</p>
                         </TableCell>
                         <TableCell>
-                          <p className="font-medium">{e.Apellido}</p>
+                          <p>{e.Apellido}</p>
                         </TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            <p className="text-sm flex items-center gap-1">
-                              <Mail className="w-3 h-3 text-muted-foreground" />
-                              {e.Correo || 'Sin correo'}
-                            </p>
-                            <p className="text-sm flex items-center gap-1 font-medium">
-                              <Phone className="w-3 h-3 text-muted-foreground" />
-                              {e.Telefono}
-                            </p>
-                          </div>
+                          <p>{e.Correo}</p>
                         </TableCell>
                         <TableCell>
-                          <div>
-                            <p className="font-medium">{e.Documento}</p>
-                          </div>
+                          <p>{e.Telefono}</p>
+                        </TableCell>
+                        <TableCell>
+                          <p>{e.Documento}</p>
                         </TableCell>
                         <TableCell>
                           <Badge className={roleBadges[e.NombreRol as keyof typeof roleBadges]}>{e.NombreRol}</Badge>
@@ -525,7 +532,7 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
                 <Input id="emp-confirm-pass" type="password" value={formData.confirmarContrasena} onChange={(e) => setFormData(prev => ({ ...prev, confirmarContrasena: e.target.value }))} required placeholder="********" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emp-rol">Rol en el sistema</Label>
+                <Label htmlFor="emp-rol">Rol</Label>
                 <select
                   id="emp-rol"
                   value={formData.id_rol}
