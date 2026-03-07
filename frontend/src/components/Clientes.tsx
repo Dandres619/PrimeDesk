@@ -197,6 +197,7 @@ export function Clientes() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
+                    <TableHead>Apellido</TableHead>
                     <TableHead>Contacto</TableHead>
                     <TableHead>Documento</TableHead>
                     <TableHead>Motos</TableHead>
@@ -215,7 +216,10 @@ export function Clientes() {
                     paginatedClients.map(c => (
                       <TableRow key={c.ID_Cliente}>
                         <TableCell>
-                          <p className="font-medium">{c.Nombre} {c.Apellido}</p>
+                          <p className="font-medium">{c.Nombre}</p>
+                        </TableCell>
+                        <TableCell>
+                          <p className="font-medium">{c.Apellido}</p>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -477,7 +481,7 @@ function ClientDialog({ client, onSave, isSaving }: any) {
                 <Input
                   id="reg-pass"
                   type="password"
-                  placeholder="8+ chars, Mayús, Núm, Espec."
+                  placeholder="********"
                   value={formData.contrasena}
                   onChange={(e) => setFormData(prev => ({ ...prev, contrasena: e.target.value }))}
                   required
@@ -547,7 +551,7 @@ function ClientDialog({ client, onSave, isSaving }: any) {
                 <Input id="direccion" value={formData.direccion} onChange={(e) => setFormData(prev => ({ ...prev, direccion: e.target.value }))} />
               </div>
               <div className="col-span-2 space-y-2">
-                <Label htmlFor="foto">Imagen (URL)</Label>
+                <Label htmlFor="foto">Foto (URL)</Label>
                 <Input id="foto" value={formData.foto} onChange={(e) => setFormData(prev => ({ ...prev, foto: e.target.value }))} placeholder="https://ejemplo.com/imagen.jpg" />
               </div>
             </div>

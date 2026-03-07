@@ -159,12 +159,6 @@ export function Dashboard() {
             Resumen operativo y financiero · <span className="text-primary/80 italic font-semibold">Rafa Motos</span>
           </p>
         </div>
-
-        <div className="flex items-center gap-2 bg-background/50 backdrop-blur-sm p-1.5 rounded-2xl border border-border shadow-sm">
-          <Button className="rounded-xl shadow-md bg-primary hover:bg-primary/90 font-bold px-5 transition-all active:scale-95">
-            <Download className="w-4 h-4 mr-2" /> Exportar
-          </Button>
-        </div>
       </div>
 
       {/* KPI Cards Grid */}

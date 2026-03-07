@@ -234,6 +234,7 @@ export function Empleados() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
+                    <TableHead>Apellido</TableHead>
                     <TableHead>Contacto</TableHead>
                     <TableHead>Documento</TableHead>
                     <TableHead>Rol</TableHead>
@@ -252,7 +253,10 @@ export function Empleados() {
                     paginatedEmployees.map(e => (
                       <TableRow key={e.ID_Empleado}>
                         <TableCell>
-                          <p className="font-medium">{e.Nombre} {e.Apellido}</p>
+                          <p className="font-medium">{e.Nombre}</p>
+                        </TableCell>
+                        <TableCell>
+                          <p className="font-medium">{e.Apellido}</p>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -514,11 +518,11 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emp-pass">Contraseña provisional *</Label>
-                <Input id="emp-pass" type="password" value={formData.contrasena} onChange={(e) => setFormData(prev => ({ ...prev, contrasena: e.target.value }))} required placeholder="8+ chars, Mayús, Núm, Espec." />
+                <Input id="emp-pass" type="password" value={formData.contrasena} onChange={(e) => setFormData(prev => ({ ...prev, contrasena: e.target.value }))} required placeholder="********" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emp-confirm-pass">Confirmar contraseña *</Label>
-                <Input id="emp-confirm-pass" type="password" value={formData.confirmarContrasena} onChange={(e) => setFormData(prev => ({ ...prev, confirmarContrasena: e.target.value }))} required />
+                <Input id="emp-confirm-pass" type="password" value={formData.confirmarContrasena} onChange={(e) => setFormData(prev => ({ ...prev, confirmarContrasena: e.target.value }))} required placeholder="********" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emp-rol">Rol en el sistema</Label>
@@ -592,7 +596,7 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
                 <Input id="direccion" value={formData.direccion} onChange={(e) => setFormData(prev => ({ ...prev, direccion: e.target.value }))} required />
               </div>
               <div className="col-span-2 space-y-2">
-                <Label htmlFor="foto">Imagen (URL)</Label>
+                <Label htmlFor="foto">Foto (URL)</Label>
                 <Input id="foto" value={formData.foto} onChange={(e) => setFormData(prev => ({ ...prev, foto: e.target.value }))} placeholder="https://ejemplo.com/imagen.jpg" />
               </div>
             </div>
