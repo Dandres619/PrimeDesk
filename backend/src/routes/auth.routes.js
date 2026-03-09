@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const authController = require('../controllers/auth.controller');
 const { verifyToken } = require('../middlewares/auth.middleware');
 const { handleValidation } = require('../middlewares/validate.middleware');
+const upload = require('../middlewares/upload.middleware');
 
 const router = Router();
 

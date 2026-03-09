@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -41,6 +41,7 @@ export function MiPerfil() {
 
     const [fotoFile, setFotoFile] = useState<File | null>(null);
     const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const getPhotoUrl = (photo: string | null) => {
         if (!photo) return null;
@@ -107,14 +108,20 @@ export function MiPerfil() {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Error al actualizar perfil');
+                const err = new Error(errorData.message || 'Error al actualizar perfil') as any;
+                err.errors = errorData.errors;
+                throw err;
             }
 
             toast.success('Perfil actualizado exitosamente');
             setFotoFile(null);
             fetchProfile();
         } catch (error: any) {
-            toast.error(error.message);
+            let errorMsg = error.message;
+            if (errorMsg === 'Error de validación.' && error.errors) {
+                errorMsg = `Error de validación: ${error.errors.map((e: any) => `${e.campo}: ${e.mensaje}`).join(', ')}`;
+            }
+            toast.error(errorMsg);
         } finally {
             setIsProcessing(false);
         }
@@ -124,6 +131,9 @@ export function MiPerfil() {
         const file = e.target.files?.[0];
         if (file) {
             setFotoFile(file);
+            // Limpiar URL si se selecciona archivo
+            setFormData(prev => ({ ...prev, foto: '' }));
+
             const reader = new FileReader();
             reader.onloadend = () => {
                 setFotoPreview(reader.result as string);
@@ -290,7 +300,13 @@ export function MiPerfil() {
                                                     <ImageIcon className="w-3 h-3" />
                                                     Desde archivo local
                                                 </Label>
-                                                <Input type="file" accept="image/*" onChange={handleFileChange} className="cursor-pointer" />
+                                                <Input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleFileChange}
+                                                    className="cursor-pointer"
+                                                />
                                             </div>
 
                                             <div className="space-y-2">
@@ -302,8 +318,14 @@ export function MiPerfil() {
                                                     placeholder="https://..."
                                                     value={formData.foto}
                                                     onChange={e => {
-                                                        setFormData({ ...formData, foto: e.target.value });
-                                                        if (!fotoFile) setFotoPreview(e.target.value);
+                                                        const url = e.target.value;
+                                                        setFormData({ ...formData, foto: url });
+                                                        // Limpiar archivo si se pone URL
+                                                        if (url) {
+                                                            setFotoFile(null);
+                                                            if (fileInputRef.current) fileInputRef.current.value = '';
+                                                            setFotoPreview(url);
+                                                        }
                                                     }}
                                                 />
                                             </div>
