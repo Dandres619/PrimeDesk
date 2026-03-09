@@ -204,10 +204,11 @@ const updateProfile = async (id_usuario, data, file) => {
                 });
 
             if (error) {
-                console.error('Error al subir a Supabase Storage:', error);
-                // Fallback a local si falla el storage pero solo en desarrollo
+                console.error('❌ Error al subir a Supabase Storage:', error.message || error);
+                // Fallback a local si falla el storage
                 finalFoto = `/uploads/profiles/${file.filename}`;
             } else {
+                console.log('✅ Foto subida exitosamente a Supabase Storage:', file.filename);
                 const { data: publicUrl } = supabase.storage
                     .from('profiles')
                     .getPublicUrl(file.filename);
@@ -217,7 +218,7 @@ const updateProfile = async (id_usuario, data, file) => {
                 fs.unlinkSync(file.path);
             }
         } catch (uploadErr) {
-            console.error('Error en el proceso de subida:', uploadErr);
+            console.error('❌ Error crítico en el proceso de subida:', uploadErr);
             finalFoto = `/uploads/profiles/${file.filename}`;
         }
     } else if (foto && foto.trim() !== '') {
