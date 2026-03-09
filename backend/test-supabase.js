@@ -2,12 +2,10 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 console.log('URL:', supabaseUrl);
-console.log('Key length:', supabaseKey ? supabaseKey.length : 0);
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.service_role);
 
 async function test() {
     console.log('Probando conexión y buckets...');
