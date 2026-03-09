@@ -64,6 +64,9 @@ export function MiPerfil() {
             setProfileData(data);
 
             const isClient = data.id_rol === 3;
+            const photoPath = (isClient ? data.FotoCliente : data.FotoEmpleado) || '';
+            const isExternal = photoPath.startsWith('http');
+
             setFormData({
                 nombre: (isClient ? data.NombreCliente : data.NombreEmpleado) || '',
                 apellido: (isClient ? data.ApellidoCliente : data.ApellidoEmpleado) || '',
@@ -72,10 +75,10 @@ export function MiPerfil() {
                 telefono: (isClient ? data.Telefono : data.TelEmpleado) || '',
                 direccion: (isClient ? data.Direccion : data.DirEmpleado) || '',
                 barrio: (isClient ? data.Barrio : data.BarrioEmpleado) || '',
-                foto: (isClient ? data.FotoCliente : data.FotoEmpleado) || '',
+                foto: isExternal ? photoPath : '', // Solo poner en el input si es URL real
                 fecha_nacimiento: (isClient ? data.FechaNacimiento : data.NacEmpleado) ? (isClient ? data.FechaNacimiento : data.NacEmpleado).split('T')[0] : ''
             });
-            setFotoPreview(getPhotoUrl(isClient ? data.FotoCliente : data.FotoEmpleado));
+            setFotoPreview(getPhotoUrl(photoPath));
         } catch (error: any) {
             toast.error(error.message);
         } finally {

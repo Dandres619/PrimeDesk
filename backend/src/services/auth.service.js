@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const { getPool } = require('../config/db');
 const jwtConfig = require('../config/jwt');
 const emailService = require('./email.service');
+const supabase = require('../config/supabase');
+const fs = require('fs');
 
 require('dotenv').config();
 
@@ -192,7 +194,32 @@ const updateProfile = async (id_usuario, data, file) => {
     // Determinar qué foto usar
     let finalFoto = currentFoto;
     if (file) {
-        finalFoto = `/uploads/profiles/${file.filename}`;
+        try {
+            const fileBuffer = fs.readFileSync(file.path);
+            const { data: uploadData, error } = await supabase.storage
+                .from('profiles')
+                .upload(file.filename, fileBuffer, {
+                    contentType: file.mimetype,
+                    upsert: true
+                });
+
+            if (error) {
+                console.error('Error al subir a Supabase Storage:', error);
+                // Fallback a local si falla el storage pero solo en desarrollo
+                finalFoto = `/uploads/profiles/${file.filename}`;
+            } else {
+                const { data: publicUrl } = supabase.storage
+                    .from('profiles')
+                    .getPublicUrl(file.filename);
+                finalFoto = publicUrl.publicUrl;
+
+                // Borrar archivo local tras subir a la nube
+                fs.unlinkSync(file.path);
+            }
+        } catch (uploadErr) {
+            console.error('Error en el proceso de subida:', uploadErr);
+            finalFoto = `/uploads/profiles/${file.filename}`;
+        }
     } else if (foto && foto.trim() !== '') {
         finalFoto = foto;
     }
