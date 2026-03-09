@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from './/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from './ui/sidebar';
+import { MiPerfil } from './MiPerfil';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -23,7 +24,6 @@ import {
   Trash2,
   History,
   Settings,
-  Save,
   Moon,
   Sun,
   ChevronLeft,
@@ -35,17 +35,6 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, en
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
-interface ClientData {
-  nombre: string;
-  apellido: string;
-  email: string;
-  telefono: string;
-  documentType: string;
-  document: string;
-  direccion: string;
-  barrio: string;
-  fechaNacimiento: string;
-}
 
 interface Moto {
   id: number;
@@ -110,20 +99,6 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   const [activeSection, setActiveSection] = useState('perfil');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  // Estado del perfil
-  const [clientData, setClientData] = useState<ClientData>({
-    nombre: '',
-    apellido: '',
-    email: '',
-    telefono: '',
-    documentType: '',
-    document: '',
-    direccion: '',
-    barrio: '',
-    fechaNacimiento: ''
-  });
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-
   const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
   React.useEffect(() => {
@@ -135,18 +110,6 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       })
         .then(res => res.json())
         .then(data => {
-          setClientData({
-            nombre: data.NombreCliente || '',
-            apellido: data.ApellidoCliente || '',
-            email: data.Correo || '',
-            telefono: data.Telefono || '',
-            documentType: data.TipoDocumento || '',
-            document: data.Documento || '',
-            direccion: data.Direccion || '',
-            barrio: data.Barrio || '',
-            fechaNacimiento: data.FechaNacimiento ? data.FechaNacimiento.split('T')[0] : ''
-          });
-
           // Cargar Motos si tenemos el ID del cliente
           if (data.ID_Cliente) {
             // Cargar Motos
@@ -266,44 +229,6 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   const [mechanics, setMechanics] = useState<Employee[]>([]);
   const [availableServices, setAvailableServices] = useState<Service[]>([]);
 
-  const handleUpdateProfile = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token || !currentUser?.id_cliente) {
-        toast.error('No se pudo identificar la sesión');
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/clientes/${currentUser.id_cliente}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          id_usuario: currentUser.id,
-          nombre: clientData.nombre,
-          apellido: clientData.apellido,
-          tipo_documento: clientData.documentType,
-          documento: clientData.document,
-          telefono: clientData.telefono,
-          barrio: clientData.barrio,
-          direccion: clientData.direccion,
-          fecha_nacimiento: clientData.fechaNacimiento
-        })
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Error al actualizar perfil');
-      }
-
-      toast.success('Perfil actualizado exitosamente');
-      setIsEditingProfile(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Error de conexión');
-    }
-  };
 
   const resetMotoForm = () => {
     setMotoFormData({
@@ -525,155 +450,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   const renderContent = () => {
     switch (activeSection) {
       case 'perfil':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                  <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-semibold">Mi Perfil</h1>
-                  <p className="text-muted-foreground">Gestiona tu información personal</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setIsEditingProfile(!isEditingProfile)}
-                variant={isEditingProfile ? "outline" : "default"}
-                className={!isEditingProfile ? "bg-blue-600 hover:bg-blue-700" : ""}
-              >
-                {isEditingProfile ? (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Guardar
-                  </>
-                ) : (
-                  <>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Editar
-                  </>
-                )}
-              </Button>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Información Personal</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nombre">Nombre *</Label>
-                    <Input
-                      id="nombre"
-                      value={clientData.nombre}
-                      onChange={(e) => setClientData(prev => ({ ...prev, nombre: e.target.value }))}
-                      disabled={!isEditingProfile}
-                      placeholder="Ej: Juan Carlos"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="apellido">Apellido *</Label>
-                    <Input
-                      id="apellido"
-                      value={clientData.apellido}
-                      onChange={(e) => setClientData(prev => ({ ...prev, apellido: e.target.value }))}
-                      disabled={!isEditingProfile}
-                      placeholder="Ej: Pérez García"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="documentType">Tipo de Documento</Label>
-                    <Input
-                      id="documentType"
-                      value={clientData.documentType}
-                      disabled={true}
-                      className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="document">Número de Documento</Label>
-                    <Input
-                      id="document"
-                      value={clientData.document}
-                      disabled={true}
-                      className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Correo Electrónico *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={clientData.email}
-                      onChange={(e) => setClientData(prev => ({ ...prev, email: e.target.value }))}
-                      disabled={!isEditingProfile}
-                      placeholder="ejemplo@email.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="telefono">Teléfono *</Label>
-                    <Input
-                      id="telefono"
-                      value={clientData.telefono}
-                      onChange={(e) => setClientData(prev => ({ ...prev, telefono: e.target.value }))}
-                      disabled={!isEditingProfile}
-                      placeholder="+57 300 123 4567"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="direccion">Dirección *</Label>
-                    <Input
-                      id="direccion"
-                      value={clientData.direccion}
-                      onChange={(e) => setClientData(prev => ({ ...prev, direccion: e.target.value }))}
-                      disabled={!isEditingProfile}
-                      placeholder="Calle 123 #45-67"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="barrio">Barrio *</Label>
-                    <Input
-                      id="barrio"
-                      value={clientData.barrio}
-                      onChange={(e) => setClientData(prev => ({ ...prev, barrio: e.target.value }))}
-                      disabled={!isEditingProfile}
-                      placeholder="Ej: Chapinero"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="fechaNacimiento">Fecha de Nacimiento *</Label>
-                    <Input
-                      id="fechaNacimiento"
-                      type="date"
-                      value={clientData.fechaNacimiento}
-                      onChange={(e) => setClientData(prev => ({ ...prev, fechaNacimiento: e.target.value }))}
-                      disabled={!isEditingProfile}
-                      className="[&::-webkit-calendar-picker-indicator]:dark:invert"
-                    />
-                  </div>
-                </div>
-                {isEditingProfile && (
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditingProfile(false)}
-                      className="flex-1"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={handleUpdateProfile}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
-                    >
-                      Guardar Cambios
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        );
+        return <MiPerfil />;
 
       // Nuevo case 'motos' completo en vista tabla
       case 'motos':
@@ -1012,7 +789,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="p-4">
+          <SidebarContent className="p-4 overflow-y-auto sidebar-scroll">
             <SidebarMenu>
               {clientMenuItems.map((item) => (
                 <SidebarMenuItem key={item.id}>

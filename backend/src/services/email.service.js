@@ -22,11 +22,13 @@ const sendMail = async ({ to, subject, text, html, templateId, dynamic_template_
     const msg = {
         to,
         from: SENDER_EMAIL,
+        replyTo: "primedesksena@gmail.com",
         subject,
         text,
         html,
-        mail_settings: {
-            sandbox_mode: { enable: sandbox }
+        tracking_settings: {
+            click_tracking: { enable: false },
+            open_tracking: { enable: false }
         }
     };
 

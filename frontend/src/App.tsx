@@ -277,7 +277,7 @@ function AppContent() {
                         )}
                     </SidebarHeader>
 
-                    <SidebarContent className="p-4">
+                    <SidebarContent className="p-4 overflow-y-auto sidebar-scroll">
                         <SidebarMenu>
                             {menuItems
                                 .filter(item => currentUser?.permisos?.includes(item.permission))

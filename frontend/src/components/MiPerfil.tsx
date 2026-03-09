@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { User, Lock, Mail, Briefcase, Loader2 } from 'lucide-react';
+import { User, Lock, Mail, Briefcase, Loader2, Camera, Globe, Image as ImageIcon, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function MiPerfil() {
@@ -22,7 +22,9 @@ export function MiPerfil() {
         documento: '',
         telefono: '',
         direccion: '',
-        barrio: ''
+        barrio: '',
+        foto: '',
+        fecha_nacimiento: ''
     });
 
     // States for Password Update
@@ -34,7 +36,17 @@ export function MiPerfil() {
 
     // @ts-ignore
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+    const BASE_URL = API_URL.replace('/api', '');
     const token = localStorage.getItem('token');
+
+    const [fotoFile, setFotoFile] = useState<File | null>(null);
+    const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+
+    const getPhotoUrl = (photo: string | null) => {
+        if (!photo) return null;
+        if (photo.startsWith('http')) return photo;
+        return `${BASE_URL}${photo}`;
+    };
 
     useEffect(() => {
         fetchProfile();
@@ -58,8 +70,11 @@ export function MiPerfil() {
                 documento: (isClient ? data.Documento : data.DocEmpleado) || '',
                 telefono: (isClient ? data.Telefono : data.TelEmpleado) || '',
                 direccion: (isClient ? data.Direccion : data.DirEmpleado) || '',
-                barrio: (isClient ? data.Barrio : data.BarrioEmpleado) || ''
+                barrio: (isClient ? data.Barrio : data.BarrioEmpleado) || '',
+                foto: (isClient ? data.FotoCliente : data.FotoEmpleado) || '',
+                fecha_nacimiento: (isClient ? data.FechaNacimiento : data.NacEmpleado) ? (isClient ? data.FechaNacimiento : data.NacEmpleado).split('T')[0] : ''
             });
+            setFotoPreview(getPhotoUrl(isClient ? data.FotoCliente : data.FotoEmpleado));
         } catch (error: any) {
             toast.error(error.message);
         } finally {
@@ -71,13 +86,23 @@ export function MiPerfil() {
         e.preventDefault();
         setIsProcessing(true);
         try {
+            const formDataToSend = new FormData();
+            Object.entries(formData).forEach(([key, value]) => {
+                if (value !== null && value !== undefined) {
+                    formDataToSend.append(key, value as string);
+                }
+            });
+
+            if (fotoFile) {
+                formDataToSend.append('fotoFile', fotoFile);
+            }
+
             const response = await fetch(`${API_URL}/auth/profile`, {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(formData)
+                body: formDataToSend
             });
 
             if (!response.ok) {
@@ -86,11 +111,24 @@ export function MiPerfil() {
             }
 
             toast.success('Perfil actualizado exitosamente');
+            setFotoFile(null);
             fetchProfile();
         } catch (error: any) {
             toast.error(error.message);
         } finally {
             setIsProcessing(false);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setFotoFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFotoPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -157,8 +195,8 @@ export function MiPerfil() {
                     <Card className="md:col-span-1 h-fit">
                         <CardHeader className="text-center pb-2">
                             <div className="mx-auto w-24 h-24 mb-4 relative">
-                                {profileData?.FotoEmpleado || profileData?.FotoCliente ? (
-                                    <img src={profileData?.FotoEmpleado || profileData?.FotoCliente} alt="Foto de perfil" className="w-full h-full rounded-full object-cover border-4 border-blue-600/20" />
+                                {fotoPreview ? (
+                                    <img src={fotoPreview} alt="Foto de perfil" className="w-full h-full rounded-full object-cover border-4 border-blue-600/20" />
                                 ) : (
                                     <div className="w-full h-full bg-blue-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
                                         {formData.nombre?.charAt(0) || profileData?.Correo?.charAt(0).toUpperCase()}
@@ -208,7 +246,7 @@ export function MiPerfil() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="tipo_doc">Tipo Documento</Label>
-                                            <Select disabled value={formData.tipo_documento} onValueChange={v => setFormData({ ...formData, tipo_documento: v })}>
+                                            <Select value={formData.tipo_documento} onValueChange={v => setFormData({ ...formData, tipo_documento: v })}>
                                                 <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="CC">Cédula de Ciudadanía</SelectItem>
@@ -220,7 +258,7 @@ export function MiPerfil() {
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="documento">Número Documento</Label>
-                                            <Input id="documento" disabled value={formData.documento} onChange={e => setFormData({ ...formData, documento: e.target.value })} required />
+                                            <Input id="documento" value={formData.documento} onChange={e => setFormData({ ...formData, documento: e.target.value })} required />
                                         </div>
                                     </div>
 
@@ -238,6 +276,51 @@ export function MiPerfil() {
                                     <div className="space-y-2">
                                         <Label htmlFor="direccion">Dirección</Label>
                                         <Input id="direccion" value={formData.direccion} onChange={e => setFormData({ ...formData, direccion: e.target.value })} />
+                                    </div>
+
+                                    <div className="space-y-4 border-t pt-4 mt-6">
+                                        <h3 className="text-sm font-medium flex items-center gap-2">
+                                            <Camera className="w-4 h-4 text-blue-600" />
+                                            Foto de Perfil
+                                        </h3>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <ImageIcon className="w-3 h-3" />
+                                                    Desde archivo local
+                                                </Label>
+                                                <Input type="file" accept="image/*" onChange={handleFileChange} className="cursor-pointer" />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <Globe className="w-3 h-3" />
+                                                    Desde URL externa
+                                                </Label>
+                                                <Input
+                                                    placeholder="https://..."
+                                                    value={formData.foto}
+                                                    onChange={e => {
+                                                        setFormData({ ...formData, foto: e.target.value });
+                                                        if (!fotoFile) setFotoPreview(e.target.value);
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 pt-2">
+                                        <Label htmlFor="nacimiento" className="flex items-center gap-2 text-sm">
+                                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                                            Fecha de Nacimiento
+                                        </Label>
+                                        <Input
+                                            id="nacimiento"
+                                            type="date"
+                                            value={formData.fecha_nacimiento}
+                                            onChange={e => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
+                                        />
                                     </div>
 
                                     <Button type="submit" disabled={isProcessing} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">

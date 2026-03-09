@@ -177,37 +177,56 @@ const getMe = async (id_usuario) => {
 /**
  * Actualizar Perfil.
  */
-const updateProfile = async (id_usuario, data) => {
+const updateProfile = async (id_usuario, data, file) => {
     const sql = await getPool();
-    const { nombre, apellido, tipo_documento, documento, telefono, barrio, direccion, foto } = data;
+    const {
+        nombre, apellido, tipo_documento, documento, telefono,
+        barrio, direccion, foto, fecha_nacimiento
+    } = data;
 
     const user = await getMe(id_usuario);
+    const isClient = Number(user.id_rol) === 3;
+    const currentFoto = isClient ? user.FotoCliente : user.FotoEmpleado;
+    const currentNacimiento = isClient ? user.FechaNacimiento : user.NacEmpleado;
 
-    if (user.id_rol === 3) { // Cliente
+    // Determinar qué foto usar
+    let finalFoto = currentFoto;
+    if (file) {
+        finalFoto = `/uploads/profiles/${file.filename}`;
+    } else if (foto && foto.trim() !== '') {
+        finalFoto = foto;
+    }
+
+    const finalNacimiento = fecha_nacimiento || currentNacimiento;
+
+    if (isClient) {
         await sql`
             UPDATE clientes 
             SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
-                documento = ${documento}, telefono = ${telefono}, barrio = ${barrio}, direccion = ${direccion},
-                foto = ${foto || null}
+                documento = ${documento}, telefono = ${telefono}, barrio = ${barrio || null}, 
+                direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento || null},
+                foto = ${finalFoto || null}
             WHERE id_usuario = ${id_usuario}
         `;
-    } else { // Admin / Empleado
-        // Check if admin has employee record
-        const emp = await sql`SELECT id_empleado FROM empleados WHERE id_usuario = ${id_usuario} `;
-        if (emp.length === 0) {
-            await sql`
-                INSERT INTO empleados(id_usuario, nombre, apellido, tipodocumento, documento, telefono, barrio, direccion, fechaingreso)
-        VALUES(${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento}, ${telefono}, ${barrio}, ${direccion}, NOW())
-            `;
-        } else {
-            await sql`
-                UPDATE empleados 
-                SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
-                    documento = ${documento}, telefono = ${telefono}, barrio = ${barrio}, direccion = ${direccion},
-                    foto = ${foto || null}
-                WHERE id_usuario = ${id_usuario}
-            `;
-        }
+    } else {
+        await sql.begin(async (tx) => {
+            const emp = await tx`SELECT id_empleado FROM empleados WHERE id_usuario = ${id_usuario}`;
+            if (emp.length === 0) {
+                await tx`
+                    INSERT INTO empleados (id_usuario, nombre, apellido, tipodocumento, documento, telefono, barrio, direccion, fechanacimiento, foto, fechaingreso)
+                    VALUES (${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento}, ${telefono}, ${barrio || null}, ${direccion || null}, ${finalNacimiento || null}, ${finalFoto || null}, NOW())
+                `;
+            } else {
+                await tx`
+                    UPDATE empleados 
+                    SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
+                        documento = ${documento}, telefono = ${telefono}, barrio = ${barrio || null}, 
+                        direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento || null},
+                        foto = ${finalFoto || null}
+                    WHERE id_usuario = ${id_usuario}
+                `;
+            }
+        });
     }
 
     return { message: 'Perfil actualizado correctamente.' };

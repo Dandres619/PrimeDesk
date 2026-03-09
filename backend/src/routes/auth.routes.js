@@ -75,6 +75,7 @@ router.post(
 router.put(
     '/profile',
     verifyToken,
+    upload.single('fotoFile'),
     [
         body('nombre').notEmpty().withMessage('Nombre requerido.'),
         body('apellido').notEmpty().withMessage('Apellido requerido.'),
