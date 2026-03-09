@@ -205,21 +205,23 @@ const updateProfile = async (id_usuario, data, file) => {
 
             if (error) {
                 console.error('❌ Error al subir a Supabase Storage:', error.message || error);
-                // Fallback a local si falla el storage
-                finalFoto = `/uploads/profiles/${file.filename}`;
+                throw new Error(`Error en Supabase Storage: ${error.message || 'Bucket "profiles" no encontrado o sin permisos'}`);
             } else {
                 console.log('✅ Foto subida exitosamente a Supabase Storage:', file.filename);
                 const { data: publicUrl } = supabase.storage
                     .from('profiles')
                     .getPublicUrl(file.filename);
+
                 finalFoto = publicUrl.publicUrl;
 
                 // Borrar archivo local tras subir a la nube
-                fs.unlinkSync(file.path);
+                if (fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path);
+                }
             }
         } catch (uploadErr) {
-            console.error('❌ Error crítico en el proceso de subida:', uploadErr);
-            finalFoto = `/uploads/profiles/${file.filename}`;
+            console.error('❌ Error crítico en el proceso de subida:', uploadErr.message);
+            throw uploadErr; // Lanzar el error para que el frontend lo vea
         }
     } else if (foto && foto.trim() !== '') {
         finalFoto = foto;
