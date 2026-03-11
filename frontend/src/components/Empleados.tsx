@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { Switch } from './ui/switch';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, UserCog, Phone, Mail, Lock as LockIcon, ArrowRight, User, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, UserCog, Lock as LockIcon, ArrowRight, User, Loader2, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -64,18 +64,28 @@ export function Empleados() {
 
       const method = editingEmployee ? 'PUT' : 'POST';
 
+      const formDataToSend = new FormData();
+      Object.keys(data).forEach(key => {
+        if (key === 'fotoFile') {
+          if (data[key]) formDataToSend.append('fotoFile', data[key]);
+        } else if (data[key] !== null && data[key] !== undefined && data[key] !== '') {
+          formDataToSend.append(key, String(data[key]));
+        }
+      });
+
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(data)
+        body: formDataToSend
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al guardar');
+        const err = new Error(errorData.message || 'Error al guardar') as any;
+        err.errors = errorData.errors;
+        throw err;
       }
 
       toast.success(`Empleado ${editingEmployee ? 'actualizado' : 'registrado'} exitosamente`);
@@ -83,7 +93,11 @@ export function Empleados() {
       setEditingEmployee(null);
       fetchEmployees();
     } catch (error: any) {
-      toast.error(error.message || 'Error de conexión');
+      let errorMsg = error.message || 'Error de conexión';
+      if (errorMsg === 'Error de validación.' && error.errors) {
+         errorMsg = `Error de validación: ${error.errors.map((e: any) => `${e.campo}: ${e.mensaje}`).join(', ')}`;
+      }
+      toast.error(errorMsg);
     } finally {
       setIsSaving(false);
     }
@@ -416,6 +430,7 @@ export function Empleados() {
 
 function EmployeeDialog({ employee, onSave, isSaving }: any) {
   const [activeStep, setActiveStep] = useState(1);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     correo: '',
     contrasena: '',
@@ -430,8 +445,20 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
     barrio: '',
     fecha_nacimiento: '',
     fecha_ingreso: new Date().toISOString().split('T')[0],
-    foto: ''
+    foto: '',
+    fotoFile: null as File | null
   });
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const BASE_URL = API_URL.replace('/api', '');
+
+  const getPhotoUrl = (photo: string | null) => {
+      if (!photo) return null;
+      if (photo.startsWith('http')) return photo;
+      return `${BASE_URL}${photo}`;
+  };
+
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (employee) {
@@ -449,8 +476,11 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
         fecha_nacimiento: employee.FechaNacimiento ? employee.FechaNacimiento.split('T')[0] : '',
         fecha_ingreso: employee.FechaIngreso ? employee.FechaIngreso.split('T')[0] : new Date().toISOString().split('T')[0],
         foto: employee.Foto || '',
-        confirmarContrasena: ''
+        confirmarContrasena: '',
+        fotoFile: null
       });
+      setFotoPreview(getPhotoUrl(employee.Foto));
+      setFormErrors({});
     } else {
       setFormData({
         correo: '',
@@ -466,30 +496,81 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
         barrio: '',
         fecha_nacimiento: '',
         fecha_ingreso: new Date().toISOString().split('T')[0],
-        foto: ''
+        foto: '',
+        fotoFile: null
       });
+      setFotoPreview(null);
+      setFormErrors({});
     }
   }, [employee]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      onFileChange(e.target.files);
+  };
+
+  const onFileChange = (files: FileList | null) => {
+      if (files && files.length > 0) {
+          const file = files[0];
+          setFormData(prev => ({ ...prev, fotoFile: file, foto: '' }));
+
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              setFotoPreview(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+      }
+  };
+
   const nextStep = () => {
     if (activeStep === 1) {
-      if (!formData.correo || (!employee && !formData.contrasena)) {
-        toast.error('Complete los datos de acceso');
-        return;
-      }
+      let errors: Record<string, string> = {};
+      
+      if (!formData.correo) errors.correo = 'Requerido';
+      if (!employee && !formData.contrasena) errors.contrasena = 'Requerido';
       if (!employee && formData.contrasena !== formData.confirmarContrasena) {
-        toast.error('Las contraseñas no coinciden');
-        return;
+        errors.confirmarContrasena = 'Las contraseñas no coinciden';
+      }
+      
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+      if (!employee && formData.contrasena && !passwordRegex.test(formData.contrasena)) {
+        errors.contrasena = 'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial';
       }
 
-      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
-      if (!employee && !passwordRegex.test(formData.contrasena)) {
-        toast.error('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial');
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors);
         return;
       }
+      setFormErrors({});
       setActiveStep(2);
     }
   };
+
+  const handleFinalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    let errors: Record<string, string> = {};
+
+    if (!formData.nombre) errors.nombre = 'Requerido';
+    if (!formData.apellido) errors.apellido = 'Requerido';
+    
+    if (!formData.documento) errors.documento = 'Requerido';
+    else if (!/^\d{7,10}$/.test(formData.documento) && !employee) errors.documento = 'Entre 7 y 10 números';
+    
+    if (!formData.telefono) errors.telefono = 'Requerido';
+    else if (!/^\d{10}$/.test(formData.telefono)) errors.telefono = 'Exactamente 10 números';
+
+    if (!formData.fecha_nacimiento) errors.fecha_nacimiento = 'Requerido';
+    if (!formData.barrio) errors.barrio = 'Requerido';
+    if (!formData.direccion) errors.direccion = 'Requerido';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    
+    setFormErrors({});
+    onSave(formData);
+  };
+
 
   return (
     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -511,7 +592,7 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
         </div>
       )}
 
-      <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="space-y-6" noValidate>
+      <form onSubmit={handleFinalSubmit} className="space-y-6" noValidate>
         {activeStep === 1 && !employee ? (
           <div className="space-y-4 animate-fadeIn">
             <h4 className="font-semibold text-lg flex items-center gap-2">
@@ -520,16 +601,25 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="emp-correo">Correo electrónico *</Label>
-                <Input id="emp-correo" type="email" value={formData.correo} onChange={(e) => setFormData(prev => ({ ...prev, correo: e.target.value }))} required />
+                <div className="flex justify-between items-center">
+                   <Label htmlFor="emp-correo">Correo electrónico *</Label>
+                   {formErrors.correo && <span className="text-red-500 text-xs">{formErrors.correo}</span>}
+                </div>
+                <Input id="emp-correo" type="email" value={formData.correo} onChange={(e) => setFormData(prev => ({ ...prev, correo: e.target.value }))} className={formErrors.correo ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emp-pass">Contraseña provisional *</Label>
-                <Input id="emp-pass" type="password" value={formData.contrasena} onChange={(e) => setFormData(prev => ({ ...prev, contrasena: e.target.value }))} required placeholder="********" />
+                <div className="flex justify-between items-center">
+                   <Label htmlFor="emp-pass">Contraseña *</Label>
+                   {formErrors.contrasena && <span className="text-red-500 text-xs max-w-[60%] text-right leading-tight">{formErrors.contrasena}</span>}
+                </div>
+                <Input id="emp-pass" type="password" value={formData.contrasena} onChange={(e) => setFormData(prev => ({ ...prev, contrasena: e.target.value }))} className={formErrors.contrasena ? 'border-red-500' : ''} required placeholder="********" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emp-confirm-pass">Confirmar contraseña *</Label>
-                <Input id="emp-confirm-pass" type="password" value={formData.confirmarContrasena} onChange={(e) => setFormData(prev => ({ ...prev, confirmarContrasena: e.target.value }))} required placeholder="********" />
+                <div className="flex justify-between items-center">
+                   <Label htmlFor="emp-confirm-pass">Confirmar *</Label>
+                   {formErrors.confirmarContrasena && <span className="text-red-500 text-xs">{formErrors.confirmarContrasena}</span>}
+                </div>
+                <Input id="emp-confirm-pass" type="password" value={formData.confirmarContrasena} onChange={(e) => setFormData(prev => ({ ...prev, confirmarContrasena: e.target.value }))} className={formErrors.confirmarContrasena ? 'border-red-500' : ''} required placeholder="********" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emp-rol">Rol</Label>
@@ -559,12 +649,18 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nombre">Nombre *</Label>
-                <Input id="nombre" value={formData.nombre} onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))} required />
+                <div className="flex justify-between items-center">
+                   <Label htmlFor="nombre">Nombre *</Label>
+                   {formErrors.nombre && <span className="text-red-500 text-xs">{formErrors.nombre}</span>}
+                </div>
+                <Input id="nombre" value={formData.nombre} onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))} className={formErrors.nombre ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="apellido">Apellido *</Label>
-                <Input id="apellido" value={formData.apellido} onChange={(e) => setFormData(prev => ({ ...prev, apellido: e.target.value }))} required />
+                <div className="flex justify-between items-center">
+                   <Label htmlFor="apellido">Apellido *</Label>
+                   {formErrors.apellido && <span className="text-red-500 text-xs">{formErrors.apellido}</span>}
+                </div>
+                <Input id="apellido" value={formData.apellido} onChange={(e) => setFormData(prev => ({ ...prev, apellido: e.target.value }))} className={formErrors.apellido ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tipo_documento">Tipo de Documento</Label>
@@ -579,32 +675,74 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="documento">Número de Documento *</Label>
-                <Input id="documento" value={formData.documento} onChange={(e) => setFormData(prev => ({ ...prev, documento: e.target.value }))} required disabled={!!employee} className={employee ? "bg-muted" : ""} />
+                <div className="flex justify-between items-center">
+                   <Label htmlFor="documento">Núm. Documento *</Label>
+                   {formErrors.documento && <span className="text-red-500 text-xs">{formErrors.documento}</span>}
+                </div>
+                <Input id="documento" value={formData.documento} onChange={(e) => setFormData(prev => ({ ...prev, documento: e.target.value }))} required disabled={!!employee} className={`${employee ? 'bg-muted ' : ''}${formErrors.documento ? 'border-red-500' : ''}`} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="telefono">Teléfono *</Label>
-                <Input id="telefono" value={formData.telefono} onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))} required />
+                <div className="flex justify-between items-center">
+                   <Label htmlFor="telefono">Teléfono *</Label>
+                   {formErrors.telefono && <span className="text-red-500 text-xs">{formErrors.telefono}</span>}
+                </div>
+                <Input id="telefono" value={formData.telefono} onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))} className={formErrors.telefono ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fecha_nacimiento">Fecha de Nacimiento *</Label>
-                <Input id="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={(e) => setFormData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))} required />
+                <div className="flex justify-between items-center">
+                   <Label htmlFor="fecha_nacimiento">Fec. Nacimiento *</Label>
+                   {formErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{formErrors.fecha_nacimiento}</span>}
+                </div>
+                <Input id="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={(e) => setFormData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))} className={formErrors.fecha_nacimiento ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
                 <Input id="fecha_ingreso" type="date" value={formData.fecha_ingreso} onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="barrio">Barrio *</Label>
-                <Input id="barrio" value={formData.barrio} onChange={(e) => setFormData(prev => ({ ...prev, barrio: e.target.value }))} required />
+                <div className="flex justify-between items-center">
+                   <Label htmlFor="barrio">Barrio *</Label>
+                   {formErrors.barrio && <span className="text-red-500 text-xs">{formErrors.barrio}</span>}
+                </div>
+                <Input id="barrio" value={formData.barrio} onChange={(e) => setFormData(prev => ({ ...prev, barrio: e.target.value }))} className={formErrors.barrio ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="direccion">Dirección *</Label>
-                <Input id="direccion" value={formData.direccion} onChange={(e) => setFormData(prev => ({ ...prev, direccion: e.target.value }))} required />
+                <div className="flex justify-between items-center">
+                   <Label htmlFor="direccion">Dirección *</Label>
+                   {formErrors.direccion && <span className="text-red-500 text-xs">{formErrors.direccion}</span>}
+                </div>
+                <Input id="direccion" value={formData.direccion} onChange={(e) => setFormData(prev => ({ ...prev, direccion: e.target.value }))} className={formErrors.direccion ? 'border-red-500' : ''} required />
               </div>
               <div className="col-span-2 space-y-2">
-                <Label htmlFor="foto">Foto (URL)</Label>
-                <Input id="foto" value={formData.foto} onChange={(e) => setFormData(prev => ({ ...prev, foto: e.target.value }))} placeholder="https://ejemplo.com/imagen.jpg" />
+                <Label>Foto de Perfil</Label>
+                <div className="flex items-center gap-6 mt-4">
+                  <div className="relative group overflow-hidden w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 shadow-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                    {fotoPreview ? (
+                      <img src={fotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-12 h-12 text-gray-400" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="foto" className="flex items-center gap-2 cursor-pointer">
+                        <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                          <Camera className="w-4 h-4 mr-2" />
+                          Subir desde PC
+                        </Button>
+                      </Label>
+                      <Input
+                        id="foto"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex justify-between pt-4">

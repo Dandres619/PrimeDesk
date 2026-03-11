@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { User, Lock, Mail, Briefcase, Loader2, Camera, Globe, Image as ImageIcon, Calendar } from 'lucide-react';
+import { User, Lock, Mail, Briefcase, Loader2, Camera, Image as ImageIcon, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function MiPerfil() {
@@ -13,6 +13,7 @@ export function MiPerfil() {
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isProcessingPassword, setIsProcessingPassword] = useState(false);
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
     // States for Profile Update
     const [formData, setFormData] = useState({
@@ -88,6 +89,24 @@ export function MiPerfil() {
 
     const handleProfileSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        let errors: Record<string, string> = {};
+        if (!formData.nombre) errors.nombre = 'Requerido';
+        if (!formData.apellido) errors.apellido = 'Requerido';
+        
+        if (!formData.telefono) errors.telefono = 'Requerido';
+        else if (!/^\d{10}$/.test(formData.telefono)) errors.telefono = 'Exactamente 10 números';
+
+        if (!formData.barrio) errors.barrio = 'Requerido';
+        if (!formData.direccion) errors.direccion = 'Requerido';
+        if (!formData.fecha_nacimiento) errors.fecha_nacimiento = 'Requerido';
+
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            return;
+        }
+        setFormErrors({});
+
         setIsProcessing(true);
         try {
             const formDataToSend = new FormData();
@@ -247,20 +266,32 @@ export function MiPerfil() {
                                 <form onSubmit={handleProfileSubmit} className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="nombre">Nombres</Label>
-                                            <Input id="nombre" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} required />
+                                            <div className="flex justify-between items-center">
+                                                <Label htmlFor="nombre">Nombres *</Label>
+                                                {formErrors.nombre && <span className="text-red-500 text-xs">{formErrors.nombre}</span>}
+                                            </div>
+                                            <Input id="nombre" value={formData.nombre} onChange={e => setFormData({ ...formData, nombre: e.target.value })} className={formErrors.nombre ? 'border-red-500' : ''} required />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="apellido">Apellidos</Label>
-                                            <Input id="apellido" value={formData.apellido} onChange={e => setFormData({ ...formData, apellido: e.target.value })} required />
+                                            <div className="flex justify-between items-center">
+                                                <Label htmlFor="apellido">Apellidos *</Label>
+                                                {formErrors.apellido && <span className="text-red-500 text-xs">{formErrors.apellido}</span>}
+                                            </div>
+                                            <Input id="apellido" value={formData.apellido} onChange={e => setFormData({ ...formData, apellido: e.target.value })} className={formErrors.apellido ? 'border-red-500' : ''} required />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="tipo_doc">Tipo Documento</Label>
-                                            <Select value={formData.tipo_documento} onValueChange={v => setFormData({ ...formData, tipo_documento: v })}>
-                                                <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+                                            <Select
+                                                value={formData.tipo_documento}
+                                                onValueChange={v => setFormData({ ...formData, tipo_documento: v })}
+                                                disabled
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Tipo" />
+                                                </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="CC">Cédula de Ciudadanía</SelectItem>
                                                     <SelectItem value="CE">Cédula de Extranjería</SelectItem>
@@ -269,26 +300,60 @@ export function MiPerfil() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
+
                                         <div className="space-y-2">
                                             <Label htmlFor="documento">Número Documento</Label>
-                                            <Input id="documento" value={formData.documento} onChange={e => setFormData({ ...formData, documento: e.target.value })} required />
+                                            <Input
+                                                id="documento"
+                                                value={formData.documento}
+                                                onChange={e => setFormData({ ...formData, documento: e.target.value })}
+                                                required
+                                                disabled
+                                            />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="telefono">Teléfono</Label>
-                                            <Input id="telefono" value={formData.telefono} onChange={e => setFormData({ ...formData, telefono: e.target.value })} required />
+                                            <div className="flex justify-between items-center">
+                                                <Label htmlFor="telefono">Teléfono *</Label>
+                                                {formErrors.telefono && <span className="text-red-500 text-xs">{formErrors.telefono}</span>}
+                                            </div>
+                                            <Input id="telefono" value={formData.telefono} onChange={e => setFormData({ ...formData, telefono: e.target.value })} className={formErrors.telefono ? 'border-red-500' : ''} required />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="barrio">Barrio</Label>
-                                            <Input id="barrio" value={formData.barrio} onChange={e => setFormData({ ...formData, barrio: e.target.value })} />
+                                            <div className="flex justify-between items-center">
+                                                <Label htmlFor="barrio">Barrio *</Label>
+                                                {formErrors.barrio && <span className="text-red-500 text-xs">{formErrors.barrio}</span>}
+                                            </div>
+                                            <Input id="barrio" value={formData.barrio} onChange={e => setFormData({ ...formData, barrio: e.target.value })} className={formErrors.barrio ? 'border-red-500' : ''} required />
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="direccion">Dirección</Label>
-                                        <Input id="direccion" value={formData.direccion} onChange={e => setFormData({ ...formData, direccion: e.target.value })} />
+                                        <div className="flex justify-between items-center">
+                                            <Label htmlFor="direccion">Dirección *</Label>
+                                            {formErrors.direccion && <span className="text-red-500 text-xs">{formErrors.direccion}</span>}
+                                        </div>
+                                        <Input id="direccion" value={formData.direccion} onChange={e => setFormData({ ...formData, direccion: e.target.value })} className={formErrors.direccion ? 'border-red-500' : ''} required />
+                                    </div>
+
+                                    <div className="space-y-2 pt-2">
+                                        <div className="flex justify-between items-center">
+                                            <Label htmlFor="nacimiento" className="flex items-center gap-2 text-sm">
+                                                <Calendar className="w-4 h-4 text-muted-foreground" />
+                                                Fecha de Nacimiento *
+                                            </Label>
+                                            {formErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{formErrors.fecha_nacimiento}</span>}
+                                        </div>
+                                        <Input
+                                            id="nacimiento"
+                                            type="date"
+                                            value={formData.fecha_nacimiento}
+                                            onChange={e => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
+                                            className={formErrors.fecha_nacimiento ? 'border-red-500 text-gray-500' : 'text-gray-500'}
+                                            required
+                                        />
                                     </div>
 
                                     <div className="space-y-4 border-t pt-4 mt-6">
@@ -311,41 +376,7 @@ export function MiPerfil() {
                                                     className="cursor-pointer"
                                                 />
                                             </div>
-
-                                            <div className="space-y-2">
-                                                <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                                                    <Globe className="w-3 h-3" />
-                                                    Desde URL externa
-                                                </Label>
-                                                <Input
-                                                    placeholder="https://..."
-                                                    value={formData.foto}
-                                                    onChange={e => {
-                                                        const url = e.target.value;
-                                                        setFormData({ ...formData, foto: url });
-                                                        // Limpiar archivo si se pone URL
-                                                        if (url) {
-                                                            setFotoFile(null);
-                                                            if (fileInputRef.current) fileInputRef.current.value = '';
-                                                            setFotoPreview(url);
-                                                        }
-                                                    }}
-                                                />
-                                            </div>
                                         </div>
-                                    </div>
-
-                                    <div className="space-y-2 pt-2">
-                                        <Label htmlFor="nacimiento" className="flex items-center gap-2 text-sm">
-                                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                                            Fecha de Nacimiento
-                                        </Label>
-                                        <Input
-                                            id="nacimiento"
-                                            type="date"
-                                            value={formData.fecha_nacimiento}
-                                            onChange={e => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
-                                        />
                                     </div>
 
                                     <Button type="submit" disabled={isProcessing} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700">

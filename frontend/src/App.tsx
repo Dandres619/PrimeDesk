@@ -78,7 +78,7 @@ function AppContent() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [showLanding, setShowLanding] = useState(true);
     const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-    const [currentUser, setCurrentUser] = useState<{ id?: number; id_cliente?: number; username: string; name: string; type: string; permisos: string[] } | null>(null);
+    const [currentUser, setCurrentUser] = useState<{ id?: number; id_cliente?: number; username: string; name: string; last_name: string; type: string; permisos: string[] } | null>(null);
 
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -103,6 +103,7 @@ function AppContent() {
                         id_cliente: profileData.ID_Cliente,
                         username: profileData.correo,
                         name: profileData.NombreCliente || profileData.NombreEmpleado || profileData.correo,
+                        last_name: profileData.ApellidoCliente || profileData.ApellidoEmpleado || '',
                         type,
                         permisos
                     });
@@ -271,7 +272,7 @@ function AppContent() {
                         {currentUser && (
                             <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
                                 <p className="text-base font-bold text-blue-900 dark:text-blue-200">Bienvenido</p>
-                                <p className="text-sm font-medium text-blue-700 dark:text-blue-400">{currentUser.name}</p>
+                                <p className="text-sm font-medium text-blue-700 dark:text-blue-400">{currentUser.name} {currentUser.last_name}</p>
                                 <p className="text-sm text-blue-600 dark:text-blue-500 capitalize">{currentUser.type}</p>
                             </div>
                         )}

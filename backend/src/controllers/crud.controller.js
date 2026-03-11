@@ -23,7 +23,7 @@ const makeCrudController = (service) => ({
 
     create: async (req, res) => {
         try {
-            const data = await service.create(req.body);
+            const data = await service.create(req.body, req.file);
             res.status(201).json(data);
         } catch (err) {
             res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
@@ -32,7 +32,7 @@ const makeCrudController = (service) => ({
 
     update: async (req, res) => {
         try {
-            const data = await service.update(parseInt(req.params.id), req.body);
+            const data = await service.update(parseInt(req.params.id), req.body, req.file);
             res.json(data);
         } catch (err) {
             res.status(err.status || 500).json({ message: err.message || 'Error interno.' });

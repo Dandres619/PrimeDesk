@@ -2,6 +2,9 @@ const { getPool } = require('../config/db');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const emailService = require('./email.service');
+const supabase = require('../config/supabase');
+const fs = require('fs');
+
 
 const getAll = async () => {
   const sql = await getPool();
@@ -35,13 +38,33 @@ const getById = async (id) => {
   return rows[0];
 };
 
-const create = async (data) => {
+const create = async (data, file) => {
   const sql = await getPool();
-  const {
+  let {
     crear_usuario, correo, contrasena,
     nombre, apellido, tipo_documento, documento, telefono,
     barrio, direccion, fecha_nacimiento, foto
   } = data;
+
+  if (file) {
+    try {
+        const fileBuffer = fs.readFileSync(file.path);
+        const { data: uploadData, error } = await supabase.storage
+            .from('profiles')
+            .upload(file.filename, fileBuffer, { contentType: file.mimetype, upsert: true });
+
+        if (error) {
+            console.error('❌ Error al subir:', error.message);
+        } else {
+            const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(file.filename);
+            foto = publicUrl.publicUrl;
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        }
+    } catch (err) {
+        console.error('Error subiendo foto:', err);
+    }
+  }
+
 
   try {
     return await sql.begin(async (tx) => {
@@ -98,10 +121,36 @@ const create = async (data) => {
   }
 };
 
-const update = async (id, data) => {
+const update = async (id, data, file) => {
   const sql = await getPool();
-  const { nombre, apellido, tipo_documento, documento, telefono,
+  let { nombre, apellido, tipo_documento, documento, telefono,
     barrio, direccion, fecha_nacimiento, foto } = data;
+
+  if (file) {
+    try {
+        const fileBuffer = fs.readFileSync(file.path);
+        const { data: uploadData, error } = await supabase.storage
+            .from('profiles')
+            .upload(file.filename, fileBuffer, { contentType: file.mimetype, upsert: true });
+
+        if (error) {
+            console.error('❌ Error al subir:', error.message);
+        } else {
+            const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(file.filename);
+            foto = publicUrl.publicUrl;
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        }
+    } catch (err) {
+        console.error('Error subiendo foto:', err);
+    }
+  } else if (!foto || foto === 'null') {
+      const [current] = await sql`SELECT foto FROM clientes WHERE id_cliente = ${id}`;
+      // Si el frontend envia foto vacia/null y no envia file
+      if (current && (!foto || foto.trim() === '')) {
+          foto = current.foto;
+      }
+  }
+
 
   const [row] = await sql`
         UPDATE clientes 

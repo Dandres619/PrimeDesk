@@ -62,6 +62,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     confirmarContrasena: '',
     telefono: ''
   });
+  const [registerErrors, setRegisterErrors] = useState<Record<string, string>>({});
 
   // Forgot password state
   const [forgotEmail, setForgotEmail] = useState('');
@@ -202,36 +203,50 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     if (e && e.type === 'click') e.preventDefault();
 
     if (activeStep === 1) {
-      if (!registerData.nombre || !registerData.apellido || !registerData.documento) {
-        toast.error('Por favor complete los campos obligatorios (nombre, apellido y documento)');
+      const errs: Record<string, string> = {};
+      if (!registerData.nombre) errs.nombre = 'Requerido';
+      if (!registerData.apellido) errs.apellido = 'Requerido';
+      if (!registerData.documento) errs.documento = 'Requerido';
+      else if (!/^\d{7,10}$/.test(registerData.documento)) errs.documento = 'Entre 7 y 10 números';
+      if (!registerData.telefono) errs.telefono = 'Requerido';
+      else if (!/^\d{10}$/.test(registerData.telefono)) errs.telefono = 'Exactamente 10 números';
+
+      if (Object.keys(errs).length > 0) {
+        setRegisterErrors(errs);
         return;
       }
+      setRegisterErrors({});
       nextStep();
     } else if (activeStep === 2) {
-      if (!registerData.email) {
-        toast.error('Por favor ingrese su correo electrónico para continuar');
+      const errs: Record<string, string> = {};
+      if (!registerData.email) errs.email = 'Requerido';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerData.email)) errs.email = 'Correo inválido';
+      if (!registerData.barrio) errs.barrio = 'Requerido';
+      if (!registerData.direccion) errs.direccion = 'Requerido';
+      if (!registerData.fecha_nacimiento) errs.fecha_nacimiento = 'Requerido';
+
+      if (Object.keys(errs).length > 0) {
+        setRegisterErrors(errs);
         return;
       }
+      setRegisterErrors({});
       nextStep();
     } else if (activeStep === 3) {
-      if (!registerData.email) {
-        toast.error('Falta el correo electrónico de los pasos anteriores');
-        setActiveStep(2);
-        return;
-      }
-      if (!registerData.contrasena || !registerData.confirmarContrasena) {
-        toast.error('Por favor complete los campos de contraseña');
-        return;
-      }
-      if (registerData.contrasena !== registerData.confirmarContrasena) {
-        toast.error('Las contraseñas no coinciden');
-        return;
-      }
+      const errs: Record<string, string> = {};
+      if (!registerData.contrasena) errs.contrasena = 'Requerido';
       const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
-      if (!passwordRegex.test(registerData.contrasena)) {
+      if (registerData.contrasena && !passwordRegex.test(registerData.contrasena)) {
+        errs.contrasena = 'Formato inseguro';
         toast.error('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial');
+      }
+      if (!registerData.confirmarContrasena) errs.confirmarContrasena = 'Requerido';
+      if (registerData.contrasena !== registerData.confirmarContrasena) errs.confirmarContrasena = 'No coinciden';
+
+      if (Object.keys(errs).length > 0) {
+        setRegisterErrors(errs);
         return;
       }
+      setRegisterErrors({});
       handleRegister();
     }
   };
@@ -621,23 +636,29 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                       <div className="space-y-6 animate-fadeIn">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="reg-nombre" className="text-gray-700">Nombre *</Label>
+                            <div className="flex justify-between items-center">
+                               <Label htmlFor="reg-nombre" className="text-gray-700">Nombre *</Label>
+                               {registerErrors.nombre && <span className="text-red-500 text-xs">{registerErrors.nombre}</span>}
+                            </div>
                             <Input
                               id="reg-nombre"
                               placeholder="Juan"
                               value={registerData.nombre}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, nombre: e.target.value }))}
-                              className="border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                              className={`border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.nombre ? 'border-red-500' : ''}`}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="reg-apellido" className="text-gray-700">Apellido *</Label>
+                            <div className="flex justify-between items-center">
+                               <Label htmlFor="reg-apellido" className="text-gray-700">Apellido *</Label>
+                               {registerErrors.apellido && <span className="text-red-500 text-xs">{registerErrors.apellido}</span>}
+                            </div>
                             <Input
                               id="reg-apellido"
                               placeholder="Pérez"
                               value={registerData.apellido}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, apellido: e.target.value }))}
-                              className="border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                              className={`border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.apellido ? 'border-red-500' : ''}`}
                             />
                           </div>
                         </div>
@@ -658,7 +679,10 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                             </select>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="reg-doc" className="text-gray-700">Número de documento *</Label>
+                            <div className="flex justify-between items-center">
+                               <Label htmlFor="reg-doc" className="text-gray-700">Número de documento *</Label>
+                               {registerErrors.documento && <span className="text-red-500 text-xs">{registerErrors.documento}</span>}
+                            </div>
                             <div className="relative">
                               <CreditCard className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                               <Input
@@ -666,14 +690,17 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                                 placeholder="123456789"
                                 value={registerData.documento}
                                 onChange={(e) => setRegisterData(prev => ({ ...prev, documento: e.target.value }))}
-                                className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                                className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.documento ? 'border-red-500' : ''}`}
                               />
                             </div>
                           </div>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="reg-tel" className="text-gray-700">Teléfono</Label>
+                          <div className="flex justify-between items-center">
+                             <Label htmlFor="reg-tel" className="text-gray-700">Teléfono *</Label>
+                             {registerErrors.telefono && <span className="text-red-500 text-xs">{registerErrors.telefono}</span>}
+                          </div>
                           <div className="relative">
                             <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
@@ -682,7 +709,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="+57 300 123 4567"
                               value={registerData.telefono}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, telefono: e.target.value }))}
-                              className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                              className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.telefono ? 'border-red-500' : ''}`}
                             />
                           </div>
                         </div>
@@ -693,7 +720,10 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                     {activeStep === 2 && (
                       <div className="space-y-6 animate-fadeIn">
                         <div className="space-y-2">
-                          <Label htmlFor="reg-email" className="text-gray-700">Correo electrónico *</Label>
+                          <div className="flex justify-between items-center">
+                             <Label htmlFor="reg-email" className="text-gray-700">Correo electrónico *</Label>
+                             {registerErrors.email && <span className="text-red-500 text-xs">{registerErrors.email}</span>}
+                          </div>
                           <div className="relative">
                             <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
@@ -702,14 +732,17 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="nombre@ejemplo.com"
                               value={registerData.email}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
-                              className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                              className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.email ? 'border-red-500' : ''}`}
                             />
                           </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="reg-barrio" className="text-gray-700">Barrio</Label>
+                            <div className="flex justify-between items-center">
+                               <Label htmlFor="reg-barrio" className="text-gray-700">Barrio *</Label>
+                               {registerErrors.barrio && <span className="text-red-500 text-xs">{registerErrors.barrio}</span>}
+                            </div>
                             <div className="relative">
                               <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                               <Input
@@ -717,12 +750,15 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                                 placeholder="El Poblado"
                                 value={registerData.barrio}
                                 onChange={(e) => setRegisterData(prev => ({ ...prev, barrio: e.target.value }))}
-                                className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                                className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.barrio ? 'border-red-500' : ''}`}
                               />
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="reg-nac" className="text-gray-700">Fecha de Nacimiento</Label>
+                            <div className="flex justify-between items-center">
+                               <Label htmlFor="reg-nac" className="text-gray-700">Fecha de Nacimiento *</Label>
+                               {registerErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{registerErrors.fecha_nacimiento}</span>}
+                            </div>
                             <div className="relative">
                               <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                               <Input
@@ -730,14 +766,17 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                                 type="date"
                                 value={registerData.fecha_nacimiento}
                                 onChange={(e) => setRegisterData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))}
-                                className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 text-gray-500"
+                                className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 text-gray-500 ${registerErrors.fecha_nacimiento ? 'border-red-500' : ''}`}
                               />
                             </div>
                           </div>
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="reg-dir" className="text-gray-700">Dirección</Label>
+                          <div className="flex justify-between items-center">
+                             <Label htmlFor="reg-dir" className="text-gray-700">Dirección *</Label>
+                             {registerErrors.direccion && <span className="text-red-500 text-xs">{registerErrors.direccion}</span>}
+                          </div>
                           <div className="relative">
                             <Home className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
@@ -745,7 +784,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="Calle 10 # 43-20"
                               value={registerData.direccion}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, direccion: e.target.value }))}
-                              className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                              className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.direccion ? 'border-red-500' : ''}`}
                             />
                           </div>
                         </div>
@@ -756,7 +795,10 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                     {activeStep === 3 && (
                       <div className="space-y-6 animate-fadeIn">
                         <div className="space-y-2">
-                          <Label htmlFor="reg-password" className="text-gray-700">Contraseña *</Label>
+                          <div className="flex justify-between items-center">
+                             <Label htmlFor="reg-password" className="text-gray-700">Contraseña *</Label>
+                             {registerErrors.contrasena && <span className="text-red-500 text-xs max-w-[60%] text-right leading-tight">{registerErrors.contrasena}</span>}
+                          </div>
                           <div className="relative">
                             <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
@@ -765,7 +807,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="********"
                               value={registerData.contrasena}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, contrasena: e.target.value }))}
-                              className="pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                              className={`pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.contrasena ? 'border-red-500' : ''}`}
                               minLength={8}
                             />
                             <button
@@ -779,7 +821,10 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="reg-confirm-password" className="text-gray-700">Confirmar contraseña *</Label>
+                          <div className="flex justify-between items-center">
+                             <Label htmlFor="reg-confirm-password" className="text-gray-700">Confirmar contraseña *</Label>
+                             {registerErrors.confirmarContrasena && <span className="text-red-500 text-xs">{registerErrors.confirmarContrasena}</span>}
+                          </div>
                           <div className="relative">
                             <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
@@ -788,7 +833,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="Repite tu contraseña"
                               value={registerData.confirmarContrasena}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, confirmarContrasena: e.target.value }))}
-                              className="pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200"
+                              className={`pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.confirmarContrasena ? 'border-red-500' : ''}`}
                               minLength={8}
                             />
                             <button

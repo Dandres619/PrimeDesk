@@ -5,6 +5,7 @@ const empleadosService = require('../services/empleados.service');
 const { verifyToken } = require('../middlewares/auth.middleware');
 const { requirePermiso } = require('../middlewares/role.middleware');
 const { handleValidation } = require('../middlewares/validate.middleware');
+const upload = require('../middlewares/upload.middleware');
 
 const ctrl = makeCrudController(empleadosService);
 const router = Router();
@@ -22,8 +23,8 @@ const validations = [
 
 router.get('/', verifyToken, ctrl.getAll);
 router.get('/:id', verifyToken, ctrl.getById);
-router.post('/', verifyToken, requirePermiso('gestionar_empleados'), validations, ctrl.create);
-router.put('/:id', verifyToken, requirePermiso('gestionar_empleados'), validations, ctrl.update);
+router.post('/', verifyToken, requirePermiso('gestionar_empleados'), upload.single('fotoFile'), validations, ctrl.create);
+router.put('/:id', verifyToken, requirePermiso('gestionar_empleados'), upload.single('fotoFile'), validations, ctrl.update);
 router.delete('/:id', verifyToken, requirePermiso('gestionar_empleados'), ctrl.remove);
 
 module.exports = router;
