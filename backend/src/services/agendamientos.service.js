@@ -55,6 +55,7 @@ const create = async ({ id_motocicleta, id_empleado, dia, horainicio, horafin, n
 
   try {
     const result = await sql.begin(async (tx) => {
+      // 1. Crear el agendamiento
       const [agendamiento] = await tx`
         INSERT INTO agendamientos (id_motocicleta, id_empleado, dia, horainicio, horafin, notas)
         VALUES (${id_motocicleta}, ${id_empleado}, ${dia}, ${horainicio}, ${horafin}, ${notas || null})
@@ -63,18 +64,36 @@ const create = async ({ id_motocicleta, id_empleado, dia, horainicio, horafin, n
                   horafin AS "HoraFin", notas AS "Notas"
       `;
 
+      // 2. Agregar servicios al agendamiento
       if (servicios && servicios.length > 0) {
         const serviceInserts = servicios.map(id_servicio => ({
           id_agendamiento: agendamiento.ID_Agendamiento,
           id_servicio: id_servicio
         }));
-
         await tx`
           INSERT INTO agendamientos_servicios ${sql(serviceInserts, 'id_agendamiento', 'id_servicio')}
         `;
       }
 
-      return agendamiento;
+      // 3. Crear automáticamente una reparación vinculada al agendamiento
+      const [reparacion] = await tx`
+        INSERT INTO reparaciones (id_motocicleta, id_agendamiento, fecha, observaciones, tiposervicio, estado)
+        VALUES (${id_motocicleta}, ${agendamiento.ID_Agendamiento}, NOW(), ${notas || null}, 'Agendado', 'En proceso')
+        RETURNING id_reparacion AS "ID_Reparacion"
+      `;
+
+      // 4. Vincular los mismos servicios a la reparación
+      if (servicios && servicios.length > 0) {
+        const repServiceInserts = servicios.map(id_servicio => ({
+          id_reparacion: reparacion.ID_Reparacion,
+          id_servicio: id_servicio
+        }));
+        await tx`
+          INSERT INTO reparaciones_servicios ${sql(repServiceInserts, 'id_reparacion', 'id_servicio')}
+        `;
+      }
+
+      return { ...agendamiento, ID_Reparacion: reparacion.ID_Reparacion };
     });
 
     return result;

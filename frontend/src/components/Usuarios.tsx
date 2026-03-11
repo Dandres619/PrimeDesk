@@ -196,8 +196,8 @@ export function Usuarios() {
             <Plus className="w-6 h-6" />
           </div>
           <div className="text-sm">
-            <p className="font-semibold text-blue-900 dark:text-blue-300">¿Deseas registrar un nuevo usuario?</p>
-            <p className="text-blue-700 dark:text-blue-400">Dirígete al módulo de <strong>Empleados</strong> o <strong>Clientes</strong> para registrar una nueva cuenta vinculada a una persona.</p>
+            <p className="font-semibold text-blue-900 dark:text-blue-300">¿Deseas registrar o eliminar un usuario?</p>
+            <p className="text-blue-700 dark:text-blue-400">Dirígete al módulo de <strong>Empleados</strong> o <strong>Clientes</strong> para registrar o eliminar una cuenta vinculada a una persona.</p>
           </div>
         </div>
       </div>

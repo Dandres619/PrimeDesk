@@ -15,6 +15,7 @@ router.use('/motocicletas', require('./motocicletas.routes'));
 router.use('/servicios', require('./servicios.routes'));
 router.use('/agendamientos', require('./agendamientos.routes'));
 router.use('/reparaciones', require('./reparaciones.routes'));
+router.use('/horarios', require('./horarios.routes'));
 router.use('/compras', require('./compras.routes'));
 router.use('/ventas', require('./ventas.routes'));
 router.use('/contact', require('./contact.routes'));

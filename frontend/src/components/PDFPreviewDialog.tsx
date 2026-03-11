@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { FileText, Download, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+// @ts-ignore
+import html2pdf from 'html2pdf.js';
 
 interface PDFPreviewDialogProps {
   open: boolean;
@@ -24,9 +26,25 @@ export function PDFPreviewDialog({
   onGenerate
 }: PDFPreviewDialogProps) {
 
-  const handleGenerate = () => {
-    onGenerate();
-    onOpenChange(false);
+  const handleGenerate = async () => {
+    const element = document.getElementById('pdf-content-wrapper');
+    if (!element) return;
+    
+    const opt = {
+      margin:       10,
+      filename:     `RafaMotos_${type}_${Date.now()}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    try {
+        await html2pdf().set(opt).from(element).save();
+        onGenerate();
+        onOpenChange(false);
+    } catch(err) {
+        console.error(err);
+    }
   };
 
   const renderContent = () => {
@@ -54,7 +72,7 @@ export function PDFPreviewDialog({
       <div className="text-center border-b pb-6">
         <h1 className="text-2xl font-bold text-blue-600">RAFA MOTOS</h1>
         <p className="text-sm text-muted-foreground">Taller de Motocicletas Especializado</p>
-        <p className="text-sm text-muted-foreground">Calle Principal #123-45, Bogotá, Colombia</p>
+        <p className="text-sm text-muted-foreground">Carrera 54 #96a-17, Barrio Aranjuez, Medellín, Antioquia</p>
         <p className="text-sm text-muted-foreground">Tel: +57 300 123 4567 | Email: info@rafamotos.com</p>
       </div>
 
@@ -156,7 +174,7 @@ export function PDFPreviewDialog({
       <div className="text-center border-b pb-6">
         <h1 className="text-3xl font-bold text-blue-600">RAFA MOTOS</h1>
         <p className="text-sm text-muted-foreground">Taller de Motocicletas Especializado</p>
-        <p className="text-sm text-muted-foreground">Calle Principal #123-45, Bogotá, Colombia</p>
+        <p className="text-sm text-muted-foreground">Carrera 54 #96a-17, Barrio Aranjuez, Medellín, Antioquia</p>
         <p className="text-sm text-muted-foreground">Tel: +57 300 123 4567 | Email: info@rafamotos.com</p>
         <p className="text-sm text-muted-foreground">NIT: 900.123.456-7</p>
       </div>
@@ -370,7 +388,7 @@ export function PDFPreviewDialog({
       <div className="text-center border-b pb-6">
         <h1 className="text-3xl font-bold text-blue-600">RAFA MOTOS</h1>
         <p className="text-sm text-muted-foreground">Taller de Motocicletas Especializado</p>
-        <p className="text-sm text-muted-foreground">Calle Principal #123-45, Bogotá, Colombia</p>
+        <p className="text-sm text-muted-foreground">Carrera 54 #96a-17, Barrio Aranjuez, Medellín, Antioquia</p>
         <p className="text-sm text-muted-foreground">Tel: +57 300 123 4567 | Email: info@rafamotos.com</p>
         <p className="text-sm text-muted-foreground">NIT: 900.123.456-7</p>
       </div>
@@ -509,8 +527,10 @@ export function PDFPreviewDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="border border-gray-200 rounded-lg p-8 bg-white text-slate-950 shadow-sm overflow-y-auto max-h-[calc(98vh-8rem)] light">
-          {renderContent()}
+        <div id="pdf-content-wrapper" className="border border-gray-200 rounded-lg p-8 bg-white text-slate-950 shadow-sm overflow-y-auto max-h-[calc(98vh-8rem)] light p-4 sm:p-8 shrink-0">
+          <div className="p-4" style={{ backgroundColor: 'white' }}>
+            {renderContent()}
+          </div>
         </div>
 
         <DialogFooter className="flex gap-2 sm:gap-2">

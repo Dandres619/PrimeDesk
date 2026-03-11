@@ -11,7 +11,7 @@ const getAll = async (id_cliente = null) => {
                a.dia AS "DiaAgendamiento"
         FROM reparaciones rep
         INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
-        INNER JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
+        LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
         ${id_cliente ? sql`WHERE m.id_cliente = ${id_cliente}` : sql``}
         ORDER BY rep.fecha DESC
     `;
@@ -29,7 +29,7 @@ const getById = async (id) => {
                a.dia AS "DiaAgendamiento"
         FROM reparaciones rep
         INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
-        INNER JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
+        LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
         WHERE rep.id_reparacion = ${id}
     `;
   if (appointments.length === 0) throw { status: 404, message: 'Reparación no encontrada.' };
@@ -42,7 +42,7 @@ const getById = async (id) => {
     `;
 
   const progress = await sql`
-        SELECT ra.id_reparacionavance AS "ID_ReparacionAvance", ra.id_reparacion AS "ID_Reparacion", 
+        SELECT ra.id_avance AS "ID_ReparacionAvance", ra.id_reparacion AS "ID_Reparacion", 
                ra.id_empleado AS "ID_Empleado", ra.descripcion AS "Descripcion", ra.fecha AS "Fecha",
                e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado"
         FROM reparaciones_avances ra
@@ -61,7 +61,7 @@ const create = async ({ id_motocicleta, id_agendamiento, observaciones, tipo_ser
     const result = await sql.begin(async (tx) => {
       const [reparacion] = await tx`
                 INSERT INTO reparaciones (id_motocicleta, id_agendamiento, fecha, observaciones, tiposervicio, estado)
-                VALUES (${id_motocicleta}, ${id_agendamiento}, NOW(), ${observaciones || null}, ${tipo_servicio || 'Directo'}, ${estado || 'Activo'})
+                VALUES (${id_motocicleta}, ${id_agendamiento || null}, NOW(), ${observaciones || null}, ${tipo_servicio || 'Directo'}, ${estado || 'En proceso'})
                 RETURNING id_reparacion AS "ID_Reparacion", id_motocicleta AS "ID_Motocicleta", id_agendamiento AS "ID_Agendamiento"
             `;
 
@@ -103,7 +103,7 @@ const addAvance = async (id_reparacion, id_empleado, descripcion) => {
   const [row] = await sql`
         INSERT INTO reparaciones_avances (id_reparacion, id_empleado, descripcion, fecha)
         VALUES (${id_reparacion}, ${id_empleado}, ${descripcion}, NOW())
-        RETURNING id_reparacionavance AS "ID_ReparacionAvance"
+        RETURNING id_avance AS "ID_ReparacionAvance"
     `;
   return row;
 };

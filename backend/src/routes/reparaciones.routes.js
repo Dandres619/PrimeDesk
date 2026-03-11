@@ -12,7 +12,7 @@ router.get('/:id', verifyToken, reparacionesController.getById);
 router.post('/', verifyToken, requirePermiso('gestionar_reparaciones'),
     [
         body('id_motocicleta').isInt({ min: 1 }).withMessage('ID motocicleta inválido.'),
-        body('id_agendamiento').isInt({ min: 1 }).withMessage('ID agendamiento inválido.'),
+        body('id_agendamiento').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('ID agendamiento inválido.'),
         handleValidation,
     ],
     reparacionesController.create
