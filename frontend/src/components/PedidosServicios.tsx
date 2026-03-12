@@ -164,8 +164,10 @@ export function PedidosServicios() {
             servicios: data.selectedServices
           })
         });
-        if (!res.ok) throw new Error('Error al crear reparación');
-        const newRep = await res.json();
+        
+        const resData = await res.json();
+        if (!res.ok) throw new Error(resData.message || 'Error al crear reparación');
+        const newRep = resData;
 
         // Si hay avances para agregar (suele ser despues de creado, pero si la UI permite agregarlos en creación, aquí lo simulamos)
         if (data.progress && data.progress.length > 0) {
@@ -234,7 +236,10 @@ export function PedidosServicios() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ estado: 'Anulado', tipo_servicio: 'Directo' })
       });
-      if (!res.ok) throw new Error('Error al anular reparación');
+      if (!res.ok) {
+        const resData = await res.json();
+        throw new Error(resData.message || 'Error al anular reparación');
+      }
       toast.success('Reparación anulada exitosamente');
       fetchData();
     } catch (err: any) {
@@ -266,7 +271,7 @@ export function PedidosServicios() {
   const stats = [
     { icon: Wrench, color: 'text-blue-600', value: richServiceOrders.filter(o => !o.anulado).length, label: 'Total Activos' },
     { icon: CheckCircle, color: 'text-green-600', value: richServiceOrders.filter(o => !o.anulado && o.associatedSaleId).length, label: 'Con Venta' },
-    { icon: Clock, color: 'text-orange-600', value: richServiceOrders.filter(o => !o.anulado && !o.associatedSaleId).length, label: 'Pendientes Venta' }
+    { icon: Clock, color: 'text-orange-600', value: richServiceOrders.filter(o => !o.anulado && !o.associatedSaleId).length, label: 'Pendientes de Venta' }
   ];
 
   const actions = (o: any) => [
@@ -411,7 +416,7 @@ export function PedidosServicios() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 {[
-                  { title: 'Información de la Reparación', fields: [['Número de la Reparación', viewingServiceOrder.orderNumber], ['Fecha de Recepción', format(new Date(viewingServiceOrder.date), 'PPP', { locale: es })], ['Estado', viewingServiceOrder.anulado ? <Badge key="status" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Anulado</Badge> : viewingServiceOrder.associatedSaleId ? <Badge key="status" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Facturado</Badge> : <Badge key="status" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Pendiente</Badge>]] },
+                  { title: 'Información de la Reparación', fields: [['Número de la Reparación', viewingServiceOrder.orderNumber], ['Fecha de Recepción', format(new Date(viewingServiceOrder.date), 'PPP', { locale: es })], ['Estado', viewingServiceOrder.anulado ? <Badge key="status" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Anulado</Badge> : viewingServiceOrder.associatedSaleId ? <Badge key="status" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Facturado</Badge> : <Badge key="status" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">En proceso</Badge>]] },
                   { title: 'Cliente y Motocicleta', fields: [['Cliente', <div key="client"><p className="font-medium text-foreground">{viewingServiceOrder.clientName}</p><p className="text-sm text-muted-foreground">{viewingServiceOrder.clientPhone}</p></div>], ['Motocicleta', <div key="moto"><p className="font-medium text-foreground">{viewingServiceOrder.motorcycleBrand} {viewingServiceOrder.motorcycleModel}</p><p className="text-sm text-muted-foreground">Placa: {viewingServiceOrder.motorcyclePlate}</p></div>]] }
                 ].map((section, i) => (
                   <div key={i}>
@@ -529,14 +534,14 @@ function ServiceOrderDialog({ clients, motorcycles, mechanics, editingOrder, onS
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="clientId">Cliente *</Label>
-            <select id="clientId" value={formData.clientId} onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value, motorcycleId: '' }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" required disabled={!!editingOrder}>
+            <select id="clientId" value={formData.clientId} onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value, motorcycleId: '' }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" disabled={!!editingOrder}>
               <option value="" className="bg-background text-foreground">Seleccionar cliente</option>
               {clients.map((opt: any) => <option key={opt.ID_Cliente} value={opt.ID_Cliente} className="bg-background text-foreground">{`${opt.Nombre} ${opt.Apellido || ''}`}</option>)}
             </select>
           </div>
           <div>
             <Label htmlFor="motoId">Motocicleta *</Label>
-            <select id="motoId" value={formData.motorcycleId} onChange={(e) => setFormData(prev => ({ ...prev, motorcycleId: e.target.value }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" required disabled={!!editingOrder || !formData.clientId}>
+            <select id="motoId" value={formData.motorcycleId} onChange={(e) => setFormData(prev => ({ ...prev, motorcycleId: e.target.value }))} className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" disabled={!!editingOrder || !formData.clientId}>
               <option value="" className="bg-background text-foreground">Seleccionar motocicleta</option>
               {motorcycles.filter((m: any) => m.ID_Cliente === parseInt(formData.clientId)).map((opt: any) => <option key={opt.ID_Motocicleta} value={opt.ID_Motocicleta} className="bg-background text-foreground">{`${opt.Marca} ${opt.Modelo} - ${opt.Placa}`}</option>)}
             </select>

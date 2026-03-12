@@ -29,9 +29,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Ban
+  Ban,
+  Wrench
 } from 'lucide-react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isToday, isBefore, startOfDay } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isToday, isBefore, startOfDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
@@ -61,6 +62,7 @@ interface ServicioHistorial {
 interface Agendamiento {
   id: number;
   motoId: number;
+  mechanicId: number;
   motoBrand: string;
   motoModel: string;
   motoPlate: string;
@@ -141,6 +143,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 const mappedAg = agData.map((a: any) => ({
                   id: a.ID_Agendamiento,
                   motoId: a.ID_Motocicleta,
+                  mechanicId: a.ID_Empleado,
                   motoBrand: a.MarcaMoto,
                   motoModel: a.Modelo,
                   motoPlate: a.Placa,
@@ -182,6 +185,14 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
               })));
             })
             .catch(err => console.error('Error loading services:', err));
+
+          // Cargar Horarios
+          fetch(`${API_URL}/horarios`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+            .then(res => res.json())
+            .then(hData => setHorarios(hData))
+            .catch(err => console.error('Error loading horarios:', err));
         })
         .catch(err => console.error('Error loading profile:', err));
     }
@@ -189,6 +200,9 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
   // Estado de las motos
   const [motos, setMotos] = useState<Moto[]>([]);
+  const [mechanics, setMechanics] = useState<Employee[]>([]);
+  const [horarios, setHorarios] = useState<any[]>([]);
+  const [availableServices, setAvailableServices] = useState<Service[]>([]);
 
   const [showMotoModal, setShowMotoModal] = useState(false);
   const [editingMoto, setEditingMoto] = useState<Moto | null>(null);
@@ -224,11 +238,6 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   const [selectedMotoForHistory, setSelectedMotoForHistory] = useState<number | null>(null);
   const [showDeleteMotoConfirm, setShowDeleteMotoConfirm] = useState(false);
   const [selectedMoto, setSelectedMoto] = useState<Moto | null>(null);
-
-  // Lista de mecánicos y servicios disponibles
-  const [mechanics, setMechanics] = useState<Employee[]>([]);
-  const [availableServices, setAvailableServices] = useState<Service[]>([]);
-
 
   const resetMotoForm = () => {
     setMotoFormData({
@@ -396,6 +405,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       const newAgendamiento: Agendamiento = {
         id: savedAgData.ID_Agendamiento,
         motoId: agendarFormData.motoId,
+        mechanicId: agendarFormData.mecanicoId,
         motoBrand: selectedMoto?.marca || '',
         motoModel: selectedMoto?.modelo || '',
         motoPlate: selectedMoto?.placa || '',
@@ -422,6 +432,31 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     }
   };
 
+  const handleCancelAgendamiento = async (apt: Agendamiento) => {
+    // 1 hour check
+    const aptDateTime = new Date(apt.fecha + 'T' + apt.startTime);
+    const now = new Date();
+    const diffHours = (aptDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (diffHours < 1) {
+      toast.error('Solo se puede cancelar con al menos una hora de anticipación.');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/agendamientos/${apt.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Error al cancelar');
+      setAgendamientos(prev => prev.filter(a => a.id !== apt.id));
+      setAppointmentDetailsOpen(false);
+      toast.success('Agendamiento cancelado exitosamente.');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al conectar con el servidor');
+    }
+  };
   const getMotoName = (motoId: number) => {
     const moto = motos.find(m => m.id === motoId);
     return moto ? `${moto.marca} ${moto.modelo} - ${moto.placa}` : 'Moto no encontrada';
@@ -445,6 +480,58 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
         {estado.charAt(0).toUpperCase() + estado.slice(1).replace('_', ' ')}
       </Badge>
     );
+  };
+
+  const getAvailableSlots = (mecanicoId: number, fecha: string) => {
+    if (!mecanicoId || !fecha) return [];
+
+    // Check past date
+    const selectedDateStr = fecha;
+    const selectedDate = parseISO(selectedDateStr);
+    if (isBefore(selectedDate, startOfDay(new Date()))) return [];
+
+    const daysMap: Record<number, string> = {
+      1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo'
+    };
+    const dayName = daysMap[selectedDate.getDay()];
+
+    const mechanicSched = horarios.filter((h: any) =>
+      h.ID_Empleado === mecanicoId && h.Dia === dayName && h.Estado
+    );
+
+    if (mechanicSched.length === 0) return [];
+
+    const slots: string[] = [];
+    mechanicSched.forEach((sched: any) => {
+      const startStr = sched.HoraEntrada || sched.Hora_entrada;
+      const endStr = sched.HoraSalida || sched.Hora_salida;
+
+      if (typeof startStr !== 'string' || typeof endStr !== 'string') return;
+
+      let current = parseInt(startStr.split(':')[0]);
+      const end = parseInt(endStr.split(':')[0]);
+
+      while (current < end) {
+        const slotTime = `${current.toString().padStart(2, '0')}:00`;
+        const slotEndTime = `${(current + 1).toString().padStart(2, '0')}:00`;
+
+        // Check if slot is occupied
+        const isOccupied = agendamientos.some((a: any) =>
+          a.mechanicId === mecanicoId &&
+          a.fecha === selectedDateStr &&
+          ((slotTime >= a.startTime && slotTime < a.endTime) ||
+            (slotEndTime > a.startTime && slotEndTime <= a.endTime) ||
+            (a.startTime >= slotTime && a.startTime < slotEndTime))
+        );
+
+        if (!isOccupied) {
+          slots.push(slotTime);
+        }
+        current++;
+      }
+    });
+
+    return slots;
   };
 
   const renderContent = () => {
@@ -629,14 +716,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
             return;
           }
 
-          // Validar que no haya ya un agendamiento en ese día
           const dateStr = format(date, 'yyyy-MM-dd');
-          const hasAppointment = agendamientos.some(apt => apt.fecha === dateStr);
-          if (hasAppointment) {
-            toast.error('Ya existe un agendamiento para este día. Solo se permite un agendamiento por día.');
-            return;
-          }
-
           setSelectedDate(date);
           setAgendarFormData({
             motoId: 0,
@@ -1017,30 +1097,25 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
             <div className="space-y-2">
               <Label htmlFor="startTime" className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                Hora de Inicio (Aproximada) *
+                Hora deseada (Aproximada) *
               </Label>
               <Select
                 value={agendarFormData.startTime}
                 onValueChange={(value) => setAgendarFormData(prev => ({ ...prev, startTime: value }))}
+                disabled={!agendarFormData.mecanicoId || !agendarFormData.fecha}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona la hora de inicio" />
+                  <SelectValue placeholder={!agendarFormData.mecanicoId ? "Selecciona mecánico primero" : "Selecciona la hora de inicio"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="08:00">08:00 AM</SelectItem>
-                  <SelectItem value="09:00">09:00 AM</SelectItem>
-                  <SelectItem value="10:00">10:00 AM</SelectItem>
-                  <SelectItem value="11:00">11:00 AM</SelectItem>
-                  <SelectItem value="12:00">12:00 PM</SelectItem>
-                  <SelectItem value="14:00">02:00 PM</SelectItem>
-                  <SelectItem value="15:00">03:00 PM</SelectItem>
-                  <SelectItem value="16:00">04:00 PM</SelectItem>
-                  <SelectItem value="17:00">05:00 PM</SelectItem>
+                  {getAvailableSlots(agendarFormData.mecanicoId, agendarFormData.fecha).map(slot => (
+                    <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                  ))}
+                  {agendarFormData.mecanicoId && agendarFormData.fecha && getAvailableSlots(agendarFormData.mecanicoId, agendarFormData.fecha).length === 0 && (
+                    <div className="p-2 text-xs text-red-500">No hay horarios disponibles</div>
+                  )}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground italic">
-                * La hora es un aproximado y puede ser reasignado si es necesario
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -1136,7 +1211,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground">Horario</p>
                   <p className="font-medium">{selectedAppointment.startTime}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">La hora es un aproximado y puede ser reasignado.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">La hora es un aproximado y puede ser reasignada.</p>
                 </div>
               </div>
 
@@ -1184,6 +1259,11 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 </div>
               </div>
 
+              <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
+                <Wrench className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>Al crear este agendamiento se generó automáticamente una reparación para el seguimiento técnico.</span>
+              </div>
+
               {/* Notas */}
               {selectedAppointment.notes && (
                 <div className="flex items-start gap-3">
@@ -1198,6 +1278,28 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                   </div>
                 </div>
               )}
+
+              <div className="pt-4 flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setAppointmentDetailsOpen(false)}
+                >
+                  Cerrar
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                  onClick={() => {
+                    if (selectedAppointment && confirm('¿Estás seguro de que deseas cancelar este agendamiento?')) {
+                      handleCancelAgendamiento(selectedAppointment);
+                    }
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Cancelar Cita
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

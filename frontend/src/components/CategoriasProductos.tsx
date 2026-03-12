@@ -10,17 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Switch } from './ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, Tag, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Tag, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const initialCategories = [
-  { id: 1, name: 'Repuestos de Motor', description: 'Componentes y repuestos para el sistema del motor', status: 'Activo', createdAt: '2024-01-15' },
-  { id: 2, name: 'Sistema de Frenos', description: 'Pastillas, discos, líquidos y componentes de frenos', status: 'Activo', createdAt: '2024-01-12' },
-  { id: 3, name: 'Transmisión', description: 'Cadenas, piñones, embragues y componentes de transmisión', status: 'Activo', createdAt: '2024-01-10' },
-  { id: 4, name: 'Sistema Eléctrico', description: 'Baterías, cables, luces y componentes eléctricos', status: 'Activo', createdAt: '2024-01-08' },
-  { id: 5, name: 'Carrocería', description: 'Espejos, guardabarros, tanques y partes de carrocería', status: 'Inactivo', createdAt: '2024-01-14' },
-  { id: 6, name: 'Aceites y Lubricantes', description: 'Aceites de motor, lubricantes y fluidos especializados', status: 'Activo', createdAt: '2024-01-16' }
-];
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
 export function CategoriasProductos() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,19 +21,123 @@ export function CategoriasProductos() {
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [viewingCategory, setViewingCategory] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [categories, setCategories] = useState(initialCategories);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => {} });
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
 
-  const filtered = categories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.description.toLowerCase().includes(searchTerm.toLowerCase()));
-  const totalPages = Math.ceil(filtered.length / 2);
-  const paginated = filtered.slice((currentPage - 1) * 2, currentPage * 2);
-
-  const handleSave = (data: any) => {
-    editingCategory ? setCategories(categories.map(c => c.id === editingCategory.id ? { ...c, ...data } : c)) : setCategories([...categories, { id: Date.now(), ...data, status: 'Activo', createdAt: new Date().toISOString().split('T')[0] }]);
-    toast.success(`Categoría ${editingCategory ? 'actualizada' : 'creada'} exitosamente`);
-    setIsDialogOpen(false);
-    setEditingCategory(null);
+  const headers = {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    'Content-Type': 'application/json'
   };
+
+  const fetchCategories = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/categorias`, { headers });
+      if (!res.ok) throw new Error('Error al cargar categorías');
+      const data = await res.json();
+      setCategories(data.map((c: any) => ({
+        id: c.ID_Categoria,
+        name: c.Nombre,
+        description: c.Descripcion,
+        status: c.Estado ? 'Activo' : 'Inactivo',
+        createdAt: c.createdAt // Assuming backend might have it
+      })));
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const handleSave = async (data: any) => {
+    try {
+      const method = editingCategory ? 'PUT' : 'POST';
+      const url = editingCategory ? `${API_URL}/categorias/${editingCategory.id}` : `${API_URL}/categorias`;
+
+      const payload = {
+        nombre: data.name,
+        descripcion: data.description,
+        estado: editingCategory ? (data.status === 'Activo') : true
+      };
+
+      const res = await fetch(url, {
+        method,
+        headers,
+        body: JSON.stringify(payload)
+      });
+      
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.message || 'Error al guardar la categoría');
+      
+      toast.success(`Categoría ${editingCategory ? 'actualizada' : 'creada'} exitosamente`);
+      setIsDialogOpen(false);
+      setEditingCategory(null);
+      fetchCategories();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch(`${API_URL}/categorias/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (!res.ok) {
+        const resData = await res.json();
+        throw new Error(resData.message || 'Error al eliminar categoría');
+      }
+      toast.success('Categoría eliminada');
+      fetchCategories();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const toggleStatus = async (category: any) => {
+    try {
+      const res = await fetch(`${API_URL}/categorias/${category.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          nombre: category.name,
+          descripcion: category.description,
+          estado: category.status !== 'Activo'
+        })
+      });
+      if (!res.ok) {
+        const resData = await res.json();
+        throw new Error(resData.message || 'Error al actualizar estado');
+      }
+      toast.success('Estado actualizado');
+      fetchCategories();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const filtered = categories.filter(c =>
+    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-24">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   const stats = [
     { label: 'Total Categorías', value: categories.length, icon: Tag, color: 'text-blue-600' },
@@ -88,6 +185,7 @@ export function CategoriasProductos() {
             <TableHeader>
               <TableRow>
                 <TableHead>Categoría</TableHead>
+                <TableHead>Descripción</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -96,12 +194,14 @@ export function CategoriasProductos() {
               {paginated.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
-                    <p className="font-medium">{c.name}</p>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{c.description}</p>
+                    <p>{c.name}</p>
+                  </TableCell>
+                  <TableCell>
+                    <p>{c.description}</p>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Switch checked={c.status === 'Activo'} onCheckedChange={() => { setCategories(categories.map(cat => cat.id === c.id ? { ...cat, status: cat.status === 'Activo' ? 'Inactivo' : 'Activo' } : cat)); toast.success('Estado actualizado'); }} />
+                      <Switch checked={c.status === 'Activo'} onCheckedChange={() => toggleStatus(c)} />
                       <span className="text-sm">{c.status}</span>
                     </div>
                   </TableCell>
@@ -109,7 +209,14 @@ export function CategoriasProductos() {
                     <div className="flex justify-end gap-1">
                       <Button size="sm" variant="ghost" onClick={() => setViewingCategory(c)} className="text-blue-600"><Eye className="w-4 h-4" /></Button>
                       <Button size="sm" variant="ghost" onClick={() => { setEditingCategory(c); setIsDialogOpen(true); }} className="text-blue-600"><Edit className="w-4 h-4" /></Button>
-                      <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({ open: true, title: 'Eliminar Categoría', description: '¿Está seguro de que desea eliminar esta categoría?', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setCategories(categories.filter(cat => cat.id !== c.id)); toast.success('Categoría eliminada'); } })} className="text-red-600"><Trash2 className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({
+                        open: true,
+                        title: 'Eliminar Categoría',
+                        description: '¿Está seguro de que desea eliminar esta categoría?',
+                        confirmText: 'Eliminar',
+                        variant: 'delete',
+                        onConfirm: () => handleDelete(c.id)
+                      })} className="text-red-600"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -144,19 +251,37 @@ export function CategoriasProductos() {
           )}
         </DialogContent>
       </Dialog>
-      <ConfirmDialog open={confirmDialog.open} onOpenChange={o => setConfirmDialog(p => ({ ...p, open: o }))} {...confirmDialog} />
+      <ConfirmDialog onOpenChange={o => setConfirmDialog(p => ({ ...p, open: o }))} {...confirmDialog} />
     </div>
   );
 }
 
 function CategoryDialog({ category, onSave }: any) {
   const [form, setForm] = useState({ name: category?.name || '', description: category?.description || '' });
+
+  React.useEffect(() => {
+    if (category) {
+      setForm({ name: category.name || '', description: category.description || '' });
+    } else {
+      setForm({ name: '', description: '' });
+    }
+  }, [category]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name?.trim() || !form.description?.trim()) {
+      toast.error('Complete todos los campos obligatorios');
+      return;
+    }
+    onSave(form);
+  };
+
   return (
     <DialogContent className="max-w-2xl">
       <DialogHeader><DialogTitle>{category ? 'Editar' : 'Nueva'} Categoría</DialogTitle></DialogHeader>
-      <form onSubmit={e => { e.preventDefault(); onSave(form); }} className="space-y-4">
-        <div><Label>Nombre *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
-        <div><Label>Descripción *</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={4} required /></div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div><Label>Nombre *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+        <div><Label>Descripción *</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={4} /></div>
         <div className="flex justify-end"><Button type="submit" className="bg-blue-600 hover:bg-blue-700">{category ? 'Actualizar' : 'Crear'}</Button></div>
       </form>
     </DialogContent>

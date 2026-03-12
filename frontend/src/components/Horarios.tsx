@@ -437,7 +437,6 @@ function ScheduleDialog({ schedule, employees, daysOfWeek, onSave }: any) {
             value={formData.employeeId}
             onChange={(e) => setFormData(prev => ({ ...prev, employeeId: e.target.value }))}
             className="w-full px-3 py-2 mt-1 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            required
             disabled={!!schedule}
           >
             <option value="" className="bg-background text-foreground">Seleccionar mecánico</option>
@@ -470,11 +469,11 @@ function ScheduleDialog({ schedule, employees, daysOfWeek, onSave }: any) {
                     <div className="grid grid-cols-2 gap-4 pl-7">
                       <div>
                         <Label htmlFor={`start-${day}`} className="text-sm">Hora de Entrada</Label>
-                        <Input id={`start-${day}`} type="time" value={ds.startTime} onChange={(e) => updateDayTime(day, 'startTime', e.target.value)} className="mt-1" required />
+                        <Input id={`start-${day}`} type="time" value={ds.startTime} onChange={(e) => updateDayTime(day, 'startTime', e.target.value)} className="mt-1" />
                       </div>
                       <div>
                         <Label htmlFor={`end-${day}`} className="text-sm">Hora de Salida</Label>
-                        <Input id={`end-${day}`} type="time" value={ds.endTime} onChange={(e) => updateDayTime(day, 'endTime', e.target.value)} className="mt-1" required />
+                        <Input id={`end-${day}`} type="time" value={ds.endTime} onChange={(e) => updateDayTime(day, 'endTime', e.target.value)} className="mt-1" />
                       </div>
                       {ds.startTime && ds.endTime && ds.startTime < ds.endTime && (
                         <div className="col-span-2">

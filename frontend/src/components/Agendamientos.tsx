@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Edit, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Eye, Loader2, Wrench } from 'lucide-react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isToday } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isToday, parseISO, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
@@ -29,6 +29,7 @@ export function Agendamientos() {
   const [clients, setClients] = useState<any[]>([]);
   const [motorcycles, setMotorcycles] = useState<any[]>([]);
   const [mechanics, setMechanics] = useState<any[]>([]);
+  const [horarios, setHorarios] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -45,10 +46,11 @@ export function Agendamientos() {
       fetch(`${API_URL}/motocicletas`, { headers }),
       fetch(`${API_URL}/empleados`, { headers }),
       fetch(`${API_URL}/servicios`, { headers }),
+      fetch(`${API_URL}/horarios`, { headers }),
     ]);
 
     try {
-      const [resAg, resCli, resMot, resEmp, resSer] = results;
+      const [resAg, resCli, resMot, resEmp, resSer, resHor] = results;
 
       if (resAg.status === 'fulfilled' && resAg.value.ok) {
         const data = await resAg.value.json();
@@ -86,6 +88,10 @@ export function Agendamientos() {
       if (resSer.status === 'fulfilled' && resSer.value.ok) {
         const svcData = await resSer.value.json();
         setServices(svcData.filter((s: any) => s.Estado !== false));
+      }
+
+      if (resHor.status === 'fulfilled' && resHor.value.ok) {
+        setHorarios(await resHor.value.json());
       }
     } catch (err: any) {
       toast.error('Error al cargar datos');
@@ -167,14 +173,24 @@ export function Agendamientos() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (apt: any) => {
+    // 1 hour check
+    const aptDateTime = new Date(apt.date + 'T' + apt.startTime);
+    const now = new Date();
+    const diffHours = (aptDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (diffHours < 1) {
+      toast.error('Solo se puede eliminar con al menos una hora de anticipación.');
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/agendamientos/${id}`, {
+      const res = await fetch(`${API_URL}/agendamientos/${apt.id}`, {
         method: 'DELETE',
         headers
       });
       if (!res.ok) throw new Error('Error al eliminar');
-      toast.success('Agendamiento eliminado exitosamente');
+      toast.success('Agendamiento eliminado y reparación anulada exitosamente');
       setIsDetailsOpen(false);
       fetchData();
     } catch (err: any) {
@@ -235,6 +251,10 @@ export function Agendamientos() {
                   key={i}
                   onClick={() => {
                     if (!isClickable) return;
+                    if (isBefore(startOfDay(day), startOfDay(new Date()))) {
+                      toast.error('No se pueden agendar servicios en fechas pasadas');
+                      return;
+                    }
                     setSelectedDate(day);
                     setEditingApt(null);
                     setIsModalOpen(true);
@@ -297,6 +317,8 @@ export function Agendamientos() {
             motorcycles={motorcycles}
             mechanics={mechanics}
             services={services}
+            horarios={horarios}
+            existingAppointments={appointments}
             onSave={handleSave}
           />
         </DialogContent>
@@ -355,7 +377,7 @@ export function Agendamientos() {
                 <Button variant="outline" size="sm" onClick={() => { setEditingApt(selectedApt); setIsDetailsOpen(false); setIsModalOpen(true); }}>
                   <Edit className="w-4 h-4 mr-2" /> Editar
                 </Button>
-                <Button variant="destructive" size="sm" onClick={() => setConfirmDialog({ open: true, title: 'Eliminar Agendamiento', description: '¿Está seguro? La reparación vinculada no se eliminará.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => handleDelete(selectedApt.id) })}>
+                <Button variant="destructive" size="sm" onClick={() => setConfirmDialog({ open: true, title: 'Eliminar Agendamiento', description: '¿Está seguro? Esto también anulará la reparación vinculada.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => handleDelete(selectedApt) })}>
                   <Trash2 className="w-4 h-4 mr-2" /> Eliminar
                 </Button>
               </div>
@@ -391,7 +413,7 @@ export function Agendamientos() {
   );
 }
 
-function AptForm({ apt, date, clients, motorcycles, mechanics, services, onSave }: any) {
+function AptForm({ apt, date, clients, motorcycles, mechanics, services, horarios, existingAppointments, onSave }: any) {
   const [form, setForm] = useState({
     date: apt?.date || (date ? format(date, 'yyyy-MM-dd') : ''),
     startTime: apt?.startTime || '',
@@ -404,7 +426,11 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, onSave 
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  React.useEffect(() => {
+  const daysMap: Record<number, string> = {
+    1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo'
+  };
+
+  useEffect(() => {
     if (apt) {
       setForm({
         date: apt.date || '',
@@ -416,8 +442,58 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, onSave 
         serviceIds: apt.serviceIds || [],
         notes: apt.notes || ''
       });
+    } else if (date) {
+      setForm(prev => ({ ...prev, date: format(date, 'yyyy-MM-dd'), startTime: '' }));
     }
-  }, [apt]);
+  }, [apt, date]);
+
+  // Calculate available slots
+  const availableSlots = useMemo(() => {
+    if (!form.mechanicId || !form.date) return [];
+    
+    // Check if date is in the past
+    const selectedDate = parseISO(form.date);
+    if (isBefore(selectedDate, startOfDay(new Date()))) return [];
+
+    const dayName = daysMap[selectedDate.getDay()];
+    const mechanicSched = horarios.filter((h: any) => 
+      h.ID_Empleado === parseInt(form.mechanicId) && h.Dia === dayName && h.Estado
+    );
+
+    if (mechanicSched.length === 0) return [];
+
+    const slots: string[] = [];
+    mechanicSched.forEach((sched: any) => {
+      const startStr = sched.HoraEntrada || sched.Hora_entrada;
+      const endStr = sched.HoraSalida || sched.Hora_salida;
+
+      if (!startStr || !endStr) return;
+
+      let current = parseInt(startStr.split(':')[0]);
+      const end = parseInt(endStr.split(':')[0]);
+      
+      while (current < end) {
+        const slotTime = `${current.toString().padStart(2, '0')}:00`;
+        const slotEndTime = `${(current + 1).toString().padStart(2, '0')}:00`;
+        
+        // Check if slot is occupied
+        const isOccupied = existingAppointments.some((a: any) => 
+          a.mechanicId === parseInt(form.mechanicId) &&
+          a.date === form.date &&
+          a.id !== apt?.id && // Don't block self when editing
+          ((slotTime >= a.startTime && slotTime < a.endTime) || 
+           (slotEndTime > a.startTime && slotEndTime <= a.endTime))
+        );
+
+        if (!isOccupied) {
+          slots.push(slotTime);
+        }
+        current++;
+      }
+    });
+
+    return slots;
+  }, [form.mechanicId, form.date, horarios, existingAppointments, apt]);
 
   const clientMotorcycles = motorcycles.filter((m: any) =>
     !form.clientId || m.ID_Cliente === parseInt(form.clientId)
@@ -425,17 +501,18 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, onSave 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.motorcycleId || !form.mechanicId) {
+    if (!form.motorcycleId || !form.mechanicId || !form.startTime) {
       toast.error('Complete todos los campos obligatorios');
       return;
     }
-    if (form.startTime >= form.endTime) {
-      toast.error('La hora de inicio debe ser menor que la hora de fin');
-      return;
-    }
+    
+    // Auto-set endTime (1 hour later by default for slots)
+    const [h, m] = form.startTime.split(':');
+    const endTime = `${(parseInt(h) + 1).toString().padStart(2, '0')}:${m}`;
+    
     setIsSaving(true);
     try {
-      await onSave(form);
+      await onSave({ ...form, endTime });
     } finally {
       setIsSaving(false);
     }
@@ -452,84 +529,12 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, onSave 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 py-2">
-      {/* Date */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="col-span-3 space-y-1">
-          <Label htmlFor="apt-date">Fecha *</Label>
-          <Input
-            id="apt-date"
-            type="date"
-            value={form.date}
-            onChange={e => setForm({ ...form, date: e.target.value })}
-            required
-            disabled={!!apt}
-          />
-          {apt && <p className="text-xs text-muted-foreground">La fecha no se puede cambiar al editar.</p>}
-        </div>
-        <div className="col-span-1 space-y-1">
-          <Label>Entrada *</Label>
-          <Input type="time" value={form.startTime} onChange={e => setForm({ ...form, startTime: e.target.value })} required />
-        </div>
-        <div className="col-span-1 space-y-1">
-          <Label>Salida *</Label>
-          <Input type="time" value={form.endTime} onChange={e => setForm({ ...form, endTime: e.target.value })} required />
-        </div>
-        <div className="col-span-1 space-y-1 flex flex-col justify-end">
-          {form.startTime && form.endTime && form.startTime < form.endTime && (
-            <div className="h-10 flex items-center px-2 bg-blue-50 dark:bg-blue-950/30 rounded text-xs text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-              <Clock className="w-3 h-3 mr-1" />
-              {(() => {
-                const s = new Date(`2000-01-01T${form.startTime}`);
-                const e = new Date(`2000-01-01T${form.endTime}`);
-                const h = ((e.getTime() - s.getTime()) / 3600000).toFixed(1);
-                return `${h}h`;
-              })()}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Client */}
-      <div className="space-y-1">
-        <Label>Cliente *</Label>
-        <select
-          value={form.clientId}
-          onChange={e => setForm({ ...form, clientId: e.target.value, motorcycleId: '' })}
-          className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          required
-        >
-          <option value="">Seleccionar cliente...</option>
-          {clients.map((c: any) => (
-            <option key={c.ID_Cliente} value={c.ID_Cliente}>{c.Nombre} {c.Apellido || ''}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Motorcycle */}
-      <div className="space-y-1">
-        <Label>Motocicleta *</Label>
-        <select
-          value={form.motorcycleId}
-          onChange={e => setForm({ ...form, motorcycleId: e.target.value })}
-          className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          required
-          disabled={!form.clientId}
-        >
-          <option value="">Seleccionar motocicleta...</option>
-          {clientMotorcycles.map((m: any) => (
-            <option key={m.ID_Motocicleta} value={m.ID_Motocicleta}>
-              {m.Marca} {m.Modelo} — {m.Placa}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Mechanic */}
+      {/* 1. Mechanic Selection */}
       <div className="space-y-1">
         <Label>Mecánico *</Label>
         <select
           value={form.mechanicId}
-          onChange={e => setForm({ ...form, mechanicId: e.target.value })}
+          onChange={e => setForm({ ...form, mechanicId: e.target.value, startTime: '' })}
           className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           required
         >
@@ -538,9 +543,86 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, onSave 
             <option key={m.ID_Empleado} value={m.ID_Empleado}>{m.Nombre} {m.Apellido}</option>
           ))}
         </select>
-        {mechanics.length === 0 && (
-          <p className="text-xs text-amber-600 mt-1">No hay mecánicos disponibles. Verifica que existan empleados activos.</p>
+      </div>
+
+      {/* 2. Date Selection */}
+      <div className="space-y-1">
+        <Label>Fecha *</Label>
+        <Input
+          type="date"
+          min={format(new Date(), 'yyyy-MM-dd')}
+          value={form.date}
+          onChange={e => setForm({ ...form, date: e.target.value, startTime: '' })}
+          required
+          disabled={!!apt}
+        />
+        {apt && <p className="text-xs text-muted-foreground">La fecha no se puede cambiar al editar.</p>}
+        {form.mechanicId && !form.date && <p className="text-[10px] text-blue-600">Seleccione una fecha para ver horarios disponibles</p>}
+      </div>
+
+      {/* 3. Time Slot Selection */}
+      <div className="space-y-2">
+        <Label>Horarios Disponibles *</Label>
+        {form.mechanicId && form.date ? (
+          availableSlots.length > 0 ? (
+            <div className="grid grid-cols-4 gap-2">
+              {availableSlots.map(slot => (
+                <Button
+                  key={slot}
+                  type="button"
+                  variant={form.startTime === slot ? "default" : "outline"}
+                  className="text-xs h-9"
+                  onClick={() => setForm({ ...form, startTime: slot })}
+                >
+                  {slot}
+                </Button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-red-500 py-2">No hay horarios disponibles para este mecánico en la fecha seleccionada.</p>
+          )
+        ) : (
+          <p className="text-xs text-muted-foreground py-2 italic font-light">
+            {!form.mechanicId ? 'Seleccione un mecánico primero' : 'Seleccione una fecha primero'}
+          </p>
         )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {/* Client */}
+        <div className="space-y-1">
+          <Label>Cliente *</Label>
+          <select
+            value={form.clientId}
+            onChange={e => setForm({ ...form, clientId: e.target.value, motorcycleId: '' })}
+            className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            required
+          >
+            <option value="">Seleccionar cliente...</option>
+            {clients.map((c: any) => (
+              <option key={c.ID_Cliente} value={c.ID_Cliente}>{c.Nombre} {c.Apellido || ''}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Motorcycle */}
+        <div className="space-y-1">
+          <Label>Motocicleta *</Label>
+          <select
+            value={form.motorcycleId}
+            onChange={e => setForm({ ...form, motorcycleId: e.target.value })}
+            className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            required
+            disabled={!form.clientId}
+          >
+            <option value="">Seleccionar motocicleta...</option>
+            {clientMotorcycles.map((m: any) => (
+              <option key={m.ID_Motocicleta} value={m.ID_Motocicleta}>
+                {m.Marca} {m.Modelo} — {m.Placa}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Services */}
@@ -575,7 +657,6 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, onSave 
         />
       </div>
 
-      {/* Info box for new appointments */}
       {!apt && (
         <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
           <Wrench className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -583,10 +664,11 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, onSave 
         </div>
       )}
 
-      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isSaving}>
+      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 font-bold" disabled={isSaving || !form.startTime}>
         {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
         {apt ? 'Actualizar Agendamiento' : 'Crear Agendamiento'}
       </Button>
     </form>
   );
 }
+

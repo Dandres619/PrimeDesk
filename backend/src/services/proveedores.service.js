@@ -2,12 +2,32 @@ const { getPool } = require('../config/db');
 
 const getAll = async () => {
     const sql = await getPool();
-    return await sql`SELECT * FROM "Proveedores" ORDER BY "ID_Proveedor"`;
+    return await sql`
+        SELECT id_proveedor AS "ID_Proveedor", nombreempresa AS "NombreEmpresa", 
+               nit AS "NIT", personacontacto AS "PersonaContacto", 
+               especialidad AS "Especialidad", telefono AS "Telefono",
+               email AS "Email", direccion AS "Direccion", 
+               ciudad AS "Ciudad", pais AS "Pais", 
+               sitioweb AS "SitioWeb", notas AS "Notas", 
+               estado AS "Estado"
+        FROM proveedores 
+        ORDER BY id_proveedor
+    `;
 };
 
 const getById = async (id) => {
     const sql = await getPool();
-    const rows = await sql`SELECT * FROM "Proveedores" WHERE "ID_Proveedor" = ${id}`;
+    const rows = await sql`
+        SELECT id_proveedor AS "ID_Proveedor", nombreempresa AS "NombreEmpresa", 
+               nit AS "NIT", personacontacto AS "PersonaContacto", 
+               especialidad AS "Especialidad", telefono AS "Telefono",
+               email AS "Email", direccion AS "Direccion", 
+               ciudad AS "Ciudad", pais AS "Pais", 
+               sitioweb AS "SitioWeb", notas AS "Notas", 
+               estado AS "Estado"
+        FROM proveedores 
+        WHERE id_proveedor = ${id}
+    `;
     if (rows.length === 0) throw { status: 404, message: 'Proveedor no encontrado.' };
     return rows[0];
 };
@@ -18,11 +38,17 @@ const create = async (data) => {
         email, direccion, ciudad, pais, sitio_web, notas } = data;
 
     const [row] = await sql`
-        INSERT INTO "Proveedores" ("NombreEmpresa", "NIT", "PersonaContacto", "Especialidad", "Telefono",
-            "Email", "Direccion", "Ciudad", "Pais", "SitioWeb", "Notas", "Estado")
+        INSERT INTO proveedores (nombreempresa, nit, personacontacto, especialidad, telefono,
+            email, direccion, ciudad, pais, sitioweb, notas, estado)
         VALUES (${nombre_empresa}, ${nit || null}, ${persona_contacto}, ${especialidad || null}, ${telefono},
-            ${email}, ${direccion}, ${ciudad || 'Medellin'}, ${pais || 'Colombia'}, ${sitio_web || null}, ${notes || null}, 1)
-        RETURNING *
+            ${email}, ${direccion}, ${ciudad || 'Medellin'}, ${pais || 'Colombia'}, ${sitio_web || null}, ${notas || null}, TRUE)
+        RETURNING id_proveedor AS "ID_Proveedor", nombreempresa AS "NombreEmpresa", 
+                  nit AS "NIT", personacontacto AS "PersonaContacto", 
+                  especialidad AS "Especialidad", telefono AS "Telefono",
+                  email AS "Email", direccion AS "Direccion", 
+                  ciudad AS "Ciudad", pais AS "Pais", 
+                  sitioweb AS "SitioWeb", notas AS "Notas", 
+                  estado AS "Estado"
     `;
     return row;
 };
@@ -32,14 +58,22 @@ const update = async (id, data) => {
     const { nombre_empresa, nit, persona_contacto, especialidad, telefono,
         email, direccion, ciudad, pais, sitio_web, notas, estado } = data;
 
+    const boolEstado = estado === true || estado === 1 || estado === '1' || estado === 'Activo';
+
     const [row] = await sql`
-        UPDATE "Proveedores" 
-        SET "NombreEmpresa" = ${nombre_empresa}, "NIT" = ${nit || null}, "PersonaContacto" = ${persona_contacto},
-            "Especialidad" = ${especialidad || null}, "Telefono" = ${telefono}, "Email" = ${email}, 
-            "Direccion" = ${direccion}, "Ciudad" = ${ciudad || 'Medellin'}, "Pais" = ${pais || 'Colombia'}, 
-            "SitioWeb" = ${sitio_web || null}, "Notas" = ${notas || null}, "Estado" = ${estado}
-        WHERE "ID_Proveedor" = ${id}
-        RETURNING *
+        UPDATE proveedores 
+        SET nombreempresa = ${nombre_empresa}, nit = ${nit || null}, personacontacto = ${persona_contacto},
+            especialidad = ${especialidad || null}, telefono = ${telefono}, email = ${email}, 
+            direccion = ${direccion}, ciudad = ${ciudad || 'Medellin'}, pais = ${pais || 'Colombia'}, 
+            sitioweb = ${sitio_web || null}, notas = ${notas || null}, estado = ${boolEstado}
+        WHERE id_proveedor = ${id}
+        RETURNING id_proveedor AS "ID_Proveedor", nombreempresa AS "NombreEmpresa", 
+                  nit AS "NIT", personacontacto AS "PersonaContacto", 
+                  especialidad AS "Especialidad", telefono AS "Telefono",
+                  email AS "Email", direccion AS "Direccion", 
+                  ciudad AS "Ciudad", pais AS "Pais", 
+                  sitioweb AS "SitioWeb", notas AS "Notas", 
+                  estado AS "Estado"
     `;
     if (!row) throw { status: 404, message: 'Proveedor no encontrado.' };
     return row;
@@ -48,9 +82,9 @@ const update = async (id, data) => {
 const remove = async (id) => {
     const sql = await getPool();
     const [row] = await sql`
-        DELETE FROM "Proveedores" 
-        WHERE "ID_Proveedor" = ${id}
-        RETURNING "ID_Proveedor"
+        DELETE FROM proveedores 
+        WHERE id_proveedor = ${id}
+        RETURNING id_proveedor AS "ID_Proveedor"
     `;
     if (!row) throw { status: 404, message: 'Proveedor no encontrado.' };
     return { message: 'Proveedor eliminado.' };

@@ -125,17 +125,30 @@ const remove = async (id) => {
 
   try {
     await sql.begin(async (tx) => {
+      // 1. Marcar la reparación vinculada como 'Anulado' y desvincularla del agendamiento
+      // para evitar errores de llave foránea al borrar el agendamiento.
+      await tx`
+        UPDATE reparaciones 
+        SET estado = 'Anulado', id_agendamiento = NULL
+        WHERE id_agendamiento = ${id}
+      `;
+
+      // 2. Borrar servicios del agendamiento
       await tx`DELETE FROM agendamientos_servicios WHERE id_agendamiento = ${id}`;
+
+      // 3. Borrar el agendamiento
       const [deleted] = await tx`
         DELETE FROM agendamientos 
         WHERE id_agendamiento = ${id}
         RETURNING id_agendamiento AS "ID_Agendamiento"
       `;
+      
       if (!deleted) throw { status: 404, message: 'Agendamiento no encontrado.' };
     });
 
-    return { message: 'Agendamiento eliminado.' };
+    return { message: 'Agendamiento eliminado y reparación vinculada anulada.' };
   } catch (err) {
+    console.error('Error al eliminar agendamiento:', err);
     throw err;
   }
 };

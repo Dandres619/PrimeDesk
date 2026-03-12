@@ -10,15 +10,10 @@ import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, Truck, Users, Phone, Mail, MapPin } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Truck, Users, Phone, Mail, MapPin, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const initialSuppliers = [
-  { id: 1, name: 'Repuestos Honda Colombia', contact: 'Luis Martínez', phone: '+57 300 111 2222', email: 'luis@hondacol.com', address: 'Calle 100 #15-20, Bogotá', city: 'Bogotá', country: 'Colombia', taxId: '900123456-1', website: 'www.hondacol.com', specialty: 'Repuestos Honda', status: 'Activo', notes: 'Proveedor principal de repuestos Honda originales' },
-  { id: 2, name: 'Yamaha Parts & Service', contact: 'Ana Rodríguez', phone: '+57 301 333 4444', email: 'ana@yamahaparts.com', address: 'Av. El Dorado #45-67, Bogotá', city: 'Bogotá', country: 'Colombia', taxId: '900654321-2', website: 'www.yamahaparts.com', specialty: 'Repuestos Yamaha', status: 'Activo', notes: 'Especialistas en motos deportivas Yamaha' },
-  { id: 3, name: 'Suzuki Genuine Parts', contact: 'Carlos Mendoza', phone: '+57 302 555 6666', email: 'carlos@suzukiparts.com', address: 'Carrera 7 #85-12, Bogotá', city: 'Bogotá', country: 'Colombia', taxId: '900789123-3', website: 'www.suzukiparts.com', specialty: 'Repuestos Suzuki', status: 'Activo', notes: 'Distribuidor autorizado Suzuki' },
-  { id: 4, name: 'Kawasaki Original Parts', contact: 'María García', phone: '+57 303 777 8888', email: 'maria@kawasakiparts.com', address: 'Calle 72 #10-34, Bogotá', city: 'Bogotá', country: 'Colombia', taxId: '900456789-4', website: 'www.kawasakiparts.com', specialty: 'Repuestos Kawasaki', status: 'Inactivo', notes: 'Temporalmente suspendido por reorganización' }
-];
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
 export function Proveedores() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,19 +21,151 @@ export function Proveedores() {
   const [editingSupplier, setEditingSupplier] = useState<any>(null);
   const [viewingSupplier, setViewingSupplier] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [suppliers, setSuppliers] = useState(initialSuppliers);
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => {} });
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
 
-  const filtered = suppliers.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.contact.toLowerCase().includes(searchTerm.toLowerCase()) || s.email.toLowerCase().includes(searchTerm.toLowerCase()) || s.specialty.toLowerCase().includes(searchTerm.toLowerCase()));
-  const paginated = filtered.slice((currentPage - 1) * 2, currentPage * 2);
-  const totalPages = Math.ceil(filtered.length / 2);
-
-  const handleSave = (data: any) => {
-    editingSupplier ? setSuppliers(suppliers.map(s => s.id === editingSupplier.id ? { ...s, ...data } : s)) : setSuppliers([...suppliers, { id: Date.now(), ...data, status: 'Activo' }]);
-    setIsDialogOpen(false);
-    setEditingSupplier(null);
-    toast.success(`Proveedor ${editingSupplier ? 'actualizado' : 'registrado'} exitosamente`);
+  const headers = {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    'Content-Type': 'application/json'
   };
+
+  const fetchSuppliers = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/proveedores`, { headers });
+      if (!res.ok) throw new Error('Error al cargar proveedores');
+      const data = await res.json();
+      setSuppliers(data.map((s: any) => ({
+        id: s.ID_Proveedor,
+        name: s.NombreEmpresa,
+        taxId: s.NIT,
+        contact: s.PersonaContacto,
+        specialty: s.Especialidad,
+        phone: s.Telefono,
+        email: s.Email,
+        address: s.Direccion,
+        city: s.Ciudad,
+        country: s.Pais,
+        website: s.SitioWeb,
+        notes: s.Notas,
+        status: s.Estado ? 'Activo' : 'Inactivo'
+      })));
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchSuppliers();
+  }, []);
+
+  const handleSave = async (data: any) => {
+    try {
+      const method = editingSupplier ? 'PUT' : 'POST';
+      const url = editingSupplier ? `${API_URL}/proveedores/${editingSupplier.id}` : `${API_URL}/proveedores`;
+
+      const payload = {
+        nombre_empresa: data.name,
+        nit: data.taxId || null,
+        persona_contacto: data.contact,
+        especialidad: data.specialty || null,
+        telefono: data.phone,
+        email: data.email,
+        direccion: data.address,
+        ciudad: data.city,
+        pais: data.country,
+        sitio_web: data.website || null,
+        notas: data.notes || null,
+        estado: editingSupplier ? data.status === 'Activo' : true
+      };
+
+      const res = await fetch(url, {
+        method,
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.message || 'Error al guardar el proveedor');
+
+      toast.success(`Proveedor ${editingSupplier ? 'actualizado' : 'registrado'} exitosamente`);
+      setIsDialogOpen(false);
+      setEditingSupplier(null);
+      fetchSuppliers();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch(`${API_URL}/proveedores/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (!res.ok) {
+        const resData = await res.json();
+        throw new Error(resData.message || 'Error al eliminar proveedor');
+      }
+      toast.success('Proveedor eliminado');
+      fetchSuppliers();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const toggleStatus = async (supplier: any) => {
+    try {
+      const res = await fetch(`${API_URL}/proveedores/${supplier.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          nombre_empresa: supplier.name,
+          nit: supplier.taxId,
+          persona_contacto: supplier.contact,
+          especialidad: supplier.specialty,
+          telefono: supplier.phone,
+          email: supplier.email,
+          direccion: supplier.address,
+          ciudad: supplier.city,
+          pais: supplier.country,
+          sitio_web: supplier.website,
+          notas: supplier.notes,
+          estado: supplier.status !== 'Activo'
+        })
+      });
+      if (!res.ok) {
+        const resData = await res.json();
+        throw new Error(resData.message || 'Error al actualizar estado');
+      }
+      toast.success('Estado actualizado');
+      fetchSuppliers();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const filtered = suppliers.filter(s =>
+    s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    s.specialty?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-24">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   const stats = [{ icon: Truck, color: 'text-blue-600', val: suppliers.length, label: 'Total Proveedores' }, { icon: Users, color: 'text-green-600', val: suppliers.filter(s => s.status === 'Activo').length, label: 'Activos' }, { icon: Phone, color: 'text-purple-600', val: suppliers.filter(s => s.phone).length, label: 'Con Teléfono' }, { icon: Mail, color: 'text-orange-600', val: suppliers.filter(s => s.email).length, label: 'Con Email' }];
 
@@ -56,20 +183,90 @@ export function Proveedores() {
         <CardHeader><CardTitle className="flex items-center gap-2"><Truck className="w-5 h-5 text-blue-600" /> Listado de Proveedores</CardTitle></CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>Proveedor</TableHead><TableHead>Contacto</TableHead><TableHead>Especialidad</TableHead><TableHead>Ubicación</TableHead><TableHead>Estado</TableHead><TableHead>Acciones</TableHead></TableRow></TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Proveedor</TableHead>
+                <TableHead>NIT</TableHead>
+                <TableHead>Contacto</TableHead>
+                <TableHead>Teléfono</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Especialidad</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+
             <TableBody>
               {paginated.map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell><div><p className="font-medium">{s.name}</p><p className="text-sm text-muted-foreground">NIT: {s.taxId}</p></div></TableCell>
-                  <TableCell><div><p className="font-medium">{s.contact}</p><p className="text-sm text-muted-foreground">{s.phone}</p><p className="text-sm text-muted-foreground">{s.email}</p></div></TableCell>
-                  <TableCell><Badge variant="outline">{s.specialty}</Badge></TableCell>
-                  <TableCell><div className="text-sm"><p className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {s.city}</p><p className="text-muted-foreground">{s.country}</p></div></TableCell>
-                  <TableCell><div className="flex items-center gap-2"><Switch checked={s.status === 'Activo'} onCheckedChange={() => { setSuppliers(suppliers.map(sup => sup.id === s.id ? { ...sup, status: sup.status === 'Activo' ? 'Inactivo' : 'Activo' } : sup)); toast.success('Estado actualizado'); }} /><span className="text-sm">{s.status}</span></div></TableCell>
-                  <TableCell><div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => setViewingSupplier(s)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"><Eye className="w-4 h-4" /></Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setEditingSupplier(s); setIsDialogOpen(true); }} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"><Edit className="w-4 h-4" /></Button>
-                    <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({ open: true, title: 'Eliminar Proveedor', description: '¿Confirmar?', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => { setSuppliers(suppliers.filter(sup => sup.id !== s.id)); toast.success('Proveedor eliminado'); } })} className="text-red-600 hover:text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>
-                  </div></TableCell>
+                  <TableCell><p>{s.name}</p></TableCell>
+
+                  <TableCell>
+                    <p>{s.taxId || "N/A"}</p>
+                  </TableCell>
+
+                  <TableCell><p>{s.contact}</p></TableCell>
+                  <TableCell><p>{s.phone}</p></TableCell>
+                  <TableCell><p>{s.email}</p></TableCell>
+
+                  <TableCell>
+                    <p>{s.specialty || "N/A"}</p>
+                  </TableCell>
+
+                  {/* Estado */}
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={s.status === 'Activo'}
+                        onCheckedChange={() => toggleStatus(s)}
+                      />
+                      <span className="text-sm">{s.status}</span>
+                    </div>
+                  </TableCell>
+
+                  {/* Acciones */}
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setViewingSupplier(s)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingSupplier(s)
+                          setIsDialogOpen(true)
+                        }}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          setConfirmDialog({
+                            open: true,
+                            title: 'Eliminar Proveedor',
+                            description: '¿Confirmar eliminación?',
+                            confirmText: 'Eliminar',
+                            variant: 'delete',
+                            onConfirm: () => handleDelete(s.id),
+                          })
+                        }
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -96,27 +293,64 @@ export function Proveedores() {
           )}
         </DialogContent>
       </Dialog>
-      <ConfirmDialog open={confirmDialog.open} onOpenChange={o => setConfirmDialog(p => ({ ...p, open: o }))} {...confirmDialog} />
+      <ConfirmDialog onOpenChange={o => setConfirmDialog(p => ({ ...p, open: o }))} {...confirmDialog} />
     </div>
   );
 }
 
+
 function SupplierDialog({ supplier, onSave }: any) {
   const [form, setForm] = useState({ name: supplier?.name || '', contact: supplier?.contact || '', phone: supplier?.phone || '', email: supplier?.email || '', address: supplier?.address || '', city: supplier?.city || '', country: supplier?.country || 'Colombia', taxId: supplier?.taxId || '', website: supplier?.website || '', specialty: supplier?.specialty || '', notes: supplier?.notes || '' });
+
+  React.useEffect(() => {
+    if (supplier) {
+      setForm({
+        name: supplier.name || '',
+        contact: supplier.contact || '',
+        phone: supplier.phone || '',
+        email: supplier.email || '',
+        address: supplier.address || '',
+        city: supplier.city || '',
+        country: supplier.country || 'Colombia',
+        taxId: supplier.taxId || '',
+        website: supplier.website || '',
+        specialty: supplier.specialty || '',
+        notes: supplier.notes || ''
+      });
+    } else {
+      setForm({ name: '', contact: '', phone: '', email: '', address: '', city: '', country: 'Colombia', taxId: '', website: '', specialty: '', notes: '' });
+    }
+  }, [supplier]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name?.trim() || !form.contact?.trim() || !form.phone?.trim() || !form.email?.trim() || !form.address?.trim() || !form.city?.trim() || !form.country?.trim()) {
+      toast.error('Complete todos los campos obligatorios');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      toast.error('Ingrese un correo electrónico válido');
+      return;
+    }
+    onSave(form);
+  };
+
   return (
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader><DialogTitle>{supplier ? 'Editar' : 'Nuevo'} Proveedor</DialogTitle></DialogHeader>
-      <form onSubmit={e => { e.preventDefault(); onSave(form); }} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div><Label>Nombre</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
-          <div><Label>NIT</Label><Input value={form.taxId} onChange={e => setForm({ ...form, taxId: e.target.value })} required /></div>
-          <div><Label>Contacto</Label><Input value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })} required /></div>
-          <div><Label>Especialidad</Label><Input value={form.specialty} onChange={e => setForm({ ...form, specialty: e.target.value })} required /></div>
-          <div><Label>Teléfono</Label><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} required /></div>
-          <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required /></div>
-          <div className="col-span-2"><Label>Dirección</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} required /></div>
-          <div><Label>Ciudad</Label><Input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} required /></div>
-          <div><Label>País</Label><Input value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} required /></div>
+          <div><Label>Nombre *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          <div><Label>NIT (Opcional)</Label><Input value={form.taxId} onChange={e => setForm({ ...form, taxId: e.target.value })} /></div>
+          <div><Label>Contacto *</Label><Input value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })} /></div>
+          <div><Label>Especialidad (Opcional)</Label><Input value={form.specialty} onChange={e => setForm({ ...form, specialty: e.target.value })} /></div>
+          <div><Label>Teléfono *</Label><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+          <div><Label>Email *</Label><Input type="text" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Dirección *</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+          <div><Label>Ciudad *</Label><Input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} /></div>
+          <div><Label>País *</Label><Input value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} /></div>
+          <div className="col-span-2"><Label>Sitio Web (Opcional)</Label><Input value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} /></div>
         </div>
         <div><Label>Notas</Label><Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
         <div className="flex justify-end"><Button type="submit" className="bg-blue-600 hover:bg-blue-700">{supplier ? 'Actualizar' : 'Registrar'}</Button></div>
