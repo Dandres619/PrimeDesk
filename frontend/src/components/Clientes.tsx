@@ -98,16 +98,26 @@ export function Clientes() {
     }
   };
 
-  const deleteClient = async (id: number) => {
+  const deleteClient = async (client: any) => {
+    // Verificar si el cliente está activo
+    const isActive = client.ID_Usuario === null || client.EstadoUsuario === true || client.EstadoUsuario === 1;
+    if (isActive) {
+      toast.error('No se puede eliminar un cliente activo. Primero debe inactivarlo.');
+      return;
+    }
+
     setIsDeleting(true);
     try {
-      const response = await fetch(`${API_URL}/clientes/${id}`, {
+      const response = await fetch(`${API_URL}/clientes/${client.ID_Cliente}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      if (!response.ok) throw new Error('Error al eliminar');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al eliminar');
+      }
       toast.success('Cliente eliminado exitosamente');
       fetchClients();
     } catch (error: any) {
@@ -157,7 +167,7 @@ export function Clientes() {
   const actions = [
     { icon: Eye, onClick: (c: any) => setViewingClient(c), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
     { icon: Edit, onClick: (c: any) => { setEditingClient(c); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
-    { icon: Trash2, onClick: (c: any) => setConfirmDialog({ open: true, title: 'Eliminar Cliente', description: '¿Está seguro de que desea eliminar este cliente? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => deleteClient(c.ID_Cliente) }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
+    { icon: Trash2, onClick: (c: any) => setConfirmDialog({ open: true, title: 'Eliminar Cliente', description: '¿Está seguro de que desea eliminar este cliente? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => deleteClient(c) }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
   ];
 
   return (

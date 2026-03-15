@@ -100,9 +100,14 @@ export function Proveedores() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (supplier: any) => {
+    if (supplier.status === 'Activo') {
+      toast.error('No se puede eliminar un proveedor activo. Primero debe inactivarlo.');
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/proveedores/${id}`, {
+      const res = await fetch(`${API_URL}/proveedores/${supplier.id}`, {
         method: 'DELETE',
         headers
       });
@@ -258,7 +263,7 @@ export function Proveedores() {
                             description: '¿Confirmar eliminación?',
                             confirmText: 'Eliminar',
                             variant: 'delete',
-                            onConfirm: () => handleDelete(s.id),
+                            onConfirm: () => handleDelete(s),
                           })
                         }
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"

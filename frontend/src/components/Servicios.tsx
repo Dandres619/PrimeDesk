@@ -81,10 +81,15 @@ export function Servicios() {
     }
   };
 
-  const deleteService = async (id: number) => {
+  const deleteService = async (service: any) => {
+    if (service.Estado) {
+      toast.error('No se puede eliminar un servicio activo. Primero debe inactivarlo.');
+      return;
+    }
+
     setIsDeleting(true);
     try {
-      const response = await fetch(`${API_URL}/servicios/${id}`, {
+      const response = await fetch(`${API_URL}/servicios/${service.ID_Servicio}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -244,7 +249,7 @@ export function Servicios() {
                               description: `¿Está seguro de que desea eliminar el servicio ${s.Nombre}? Esta acción no se puede deshacer.`,
                               confirmText: 'Eliminar',
                               variant: 'delete',
-                              onConfirm: () => deleteService(s.ID_Servicio)
+                               onConfirm: () => deleteService(s)
                             })} className="text-red-600 hover:text-red-700 hover:bg-red-50">
                               <Trash2 className="w-4 h-4" />
                             </Button>

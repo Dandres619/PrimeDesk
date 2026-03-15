@@ -569,7 +569,7 @@ export function Ventas() {
                       <p className="text-foreground">{format(new Date(viewingSale.date), 'PPP', { locale: es })}</p>
                     </div>
                     <div>
-                      <Label>Pedido de Servicio</Label>
+                      <Label>Reparación</Label>
                       <p className="font-medium text-foreground">{viewingSale.serviceOrderNumber}</p>
                     </div>
                     <div>
@@ -783,7 +783,7 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <Label htmlFor="serviceOrderId">Pedido de Servicio *</Label>
+          <Label htmlFor="serviceOrderId">Reparación *</Label>
           <select
             id="serviceOrderId"
             value={formData.serviceOrderId}
@@ -791,7 +791,7 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
             className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             required
           >
-            <option value="" className="bg-background text-foreground">Seleccionar pedido de servicio</option>
+            <option value="" className="bg-background text-foreground">Seleccionar reparación</option>
             {serviceOrders
               .filter((order: any) => !order.associatedSaleId) // Solo mostrar pedidos sin venta asociada
               .map((order: any) => (

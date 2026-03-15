@@ -83,9 +83,14 @@ export function CategoriasProductos() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (category: any) => {
+    if (category.status === 'Activo') {
+      toast.error('No se puede eliminar una categoría activa. Primero debe inactivarla.');
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/categorias/${id}`, {
+      const res = await fetch(`${API_URL}/categorias/${category.id}`, {
         method: 'DELETE',
         headers
       });
@@ -215,7 +220,7 @@ export function CategoriasProductos() {
                         description: '¿Está seguro de que desea eliminar esta categoría?',
                         confirmText: 'Eliminar',
                         variant: 'delete',
-                        onConfirm: () => handleDelete(c.id)
+                        onConfirm: () => handleDelete(c)
                       })} className="text-red-600"><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </TableCell>

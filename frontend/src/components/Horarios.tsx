@@ -160,13 +160,21 @@ export function Horarios() {
     }
   };
 
-  const handleDelete = async (id_empleado: number) => {
+  const handleDelete = async (schedule: any) => {
+    if (schedule.status === 'Activo') {
+      toast.error('No se puede eliminar un horario activo. Primero debe inactivarlo.');
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/horarios/empleado/${id_empleado}`, {
+      const res = await fetch(`${API_URL}/horarios/empleado/${schedule.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Error al eliminar horario');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Error al eliminar horario');
+      }
       toast.success('Horario eliminado exitosamente');
       fetchData();
     } catch (err: any) {
@@ -251,12 +259,11 @@ export function Horarios() {
                 return (
                   <TableRow key={s.id}>
                     <TableCell>
-                      <p className="font-medium">{s.mechanicName}</p>
+                      <p>{s.mechanicName}</p>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{formatDays(s)}</p>
-                        <p className="text-sm text-muted-foreground">{enabledDays.length} días laborales</p>
+                        <p>{enabledDays.length} días laborales</p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -289,7 +296,8 @@ export function Horarios() {
                         <Button size="sm" variant="ghost" onClick={() => { setEditingSchedule(s); setIsDialogOpen(true); }} className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20">
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({ open: true, title: 'Eliminar Horario', description: `¿Está seguro de que desea eliminar el horario de ${s.mechanicName}? Esta acción no se puede deshacer.`, confirmText: 'Eliminar', variant: 'delete', onConfirm: () => handleDelete(s.id) })} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
+                        <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({ open: true, title: 'Eliminar Horario', description: `¿Está seguro de que desea eliminar el horario de ${s.mechanicName}? Esta acción no se puede deshacer.`, confirmText: 'Eliminar', variant: 'delete', onConfirm: () => handleDelete(s)
+                            })} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -328,7 +336,7 @@ export function Horarios() {
                   <p className="font-medium text-foreground mt-1">{viewingSchedule.mechanicName}</p>
                 </div>
                 <div>
-                  <Label>Estado General</Label>
+                  <Label>Estado</Label>
                   <div className="mt-1">
                     <Badge className={viewingSchedule.status === 'Activo' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}>
                       {viewingSchedule.status}

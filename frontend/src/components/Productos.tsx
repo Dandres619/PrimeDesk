@@ -105,9 +105,14 @@ export function Productos() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (product: any) => {
+    if (product.status === 'Activo') {
+      toast.error('No se puede eliminar un producto activo. Primero debe inactivarlo.');
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/productos/${id}`, {
+      const res = await fetch(`${API_URL}/productos/${product.id}`, {
         method: 'DELETE',
         headers
       });
@@ -212,7 +217,7 @@ export function Productos() {
                       description: '¿Está seguro de que desea eliminar este producto?',
                       confirmText: 'Eliminar',
                       variant: 'delete',
-                      onConfirm: () => handleDelete(p.id)
+                      onConfirm: () => handleDelete(p)
                     })} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-4 h-4" /></Button>
                   </div></TableCell>
                 </TableRow>

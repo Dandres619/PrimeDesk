@@ -147,16 +147,22 @@ export function Empleados() {
     }
   };
 
-  const deleteEmployee = async (id: number) => {
-    const emp = employees.find(e => e.ID_Empleado === id);
-    if (emp && currentUser.id_usuario === emp.ID_Usuario) {
+  const deleteEmployee = async (employee: any) => {
+    if (currentUser.id_usuario === employee.ID_Usuario) {
       toast.error('No puedes eliminar tu propia cuenta.');
+      return;
+    }
+
+    // Verificar si el empleado está activo
+    const isActive = employee.EstadoUsuario === true || employee.EstadoUsuario === 1;
+    if (isActive) {
+      toast.error('No se puede eliminar un empleado activo. Primero debe inactivarlo.');
       return;
     }
 
     setIsDeleting(true);
     try {
-      const response = await fetch(`${API_URL}/empleados/${id}`, {
+      const response = await fetch(`${API_URL}/empleados/${employee.ID_Empleado}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -185,7 +191,7 @@ export function Empleados() {
   const actions = [
     { icon: Eye, onClick: (e: any) => setViewingEmployee(e), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
     { icon: Edit, onClick: (e: any) => { setEditingEmployee(e); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
-    { icon: Trash2, onClick: (e: any) => setConfirmDialog({ open: true, title: 'Eliminar Empleado', description: '¿Está seguro de que desea eliminar este empleado? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => deleteEmployee(e.ID_Empleado) }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
+    { icon: Trash2, onClick: (e: any) => setConfirmDialog({ open: true, title: 'Eliminar Empleado', description: '¿Está seguro de que desea eliminar este empleado? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => deleteEmployee(e) }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
   ];
 
   return (

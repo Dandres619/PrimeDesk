@@ -95,10 +95,15 @@ export function Motos() {
     }
   };
 
-  const deleteMoto = async (id: number) => {
+  const deleteMoto = async (moto: any) => {
+    if (moto.Estado) {
+      toast.error('No se puede eliminar una motocicleta activa. Primero debe inactivarla.');
+      return;
+    }
+
     setIsDeleting(true);
     try {
-      const response = await fetch(`${API_URL}/motocicletas/${id}`, {
+      const response = await fetch(`${API_URL}/motocicletas/${moto.ID_Motocicleta}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -278,7 +283,7 @@ export function Motos() {
                               description: `¿Está seguro de que desea eliminar la motocicleta ${m.Placa}? Esta acción no se puede deshacer.`,
                               confirmText: 'Eliminar',
                               variant: 'delete',
-                              onConfirm: () => deleteMoto(m.ID_Motocicleta)
+                              onConfirm: () => deleteMoto(m)
                             })} className="text-red-600 hover:text-red-700 hover:bg-red-50">
                               <Trash2 className="w-4 h-4" />
                             </Button>
