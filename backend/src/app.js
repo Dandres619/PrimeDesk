@@ -57,8 +57,15 @@ app.use((_req, res) => {
 
 // ── Error handler global ────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
-    console.error('Error no manejado:', err);
-    res.status(500).json({ message: 'Error interno del servidor.' });
+    console.error('❌ Error detectado:', err.stack || err);
+    
+    const statusCode = err.status || 500;
+    const message = err.message || 'Error interno del servidor.';
+    
+    res.status(statusCode).json({ 
+        message,
+        error: process.env.NODE_ENV === 'development' ? err : {}
+    });
 });
 
 module.exports = app;

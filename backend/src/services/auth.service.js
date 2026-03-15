@@ -9,6 +9,8 @@ const fs = require('fs');
 
 require('dotenv').config();
 
+const path = require('path');
+
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
 /**
@@ -195,33 +197,32 @@ const updateProfile = async (id_usuario, data, file) => {
     let finalFoto = currentFoto;
     if (file) {
         try {
-            const fileBuffer = fs.readFileSync(file.path);
+            const fileBuffer = file.buffer;
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const ext = path.extname(file.originalname);
+            const fileName = `profile-${uniqueSuffix}${ext}`;
+
             const { data: uploadData, error } = await supabase.storage
                 .from('profiles')
-                .upload(file.filename, fileBuffer, {
+                .upload(fileName, fileBuffer, {
                     contentType: file.mimetype,
                     upsert: true
                 });
 
             if (error) {
                 console.error('❌ Error al subir a Supabase Storage:', error.message || error);
-                throw new Error(`Error en Supabase Storage: ${error.message || 'Bucket "profiles" no encontrado o sin permisos'}`);
+                throw new Error(`Error en Supabase Storage: ${error.message || 'Sin detalles'}`);
             } else {
-                console.log('✅ Foto subida exitosamente a Supabase Storage:', file.filename);
+                console.log('✅ Foto subida exitosamente a Supabase Storage:', fileName);
                 const { data: publicUrl } = supabase.storage
                     .from('profiles')
-                    .getPublicUrl(file.filename);
+                    .getPublicUrl(fileName);
 
                 finalFoto = publicUrl.publicUrl;
-
-                // Borrar archivo local tras subir a la nube
-                if (fs.existsSync(file.path)) {
-                    fs.unlinkSync(file.path);
-                }
             }
         } catch (uploadErr) {
             console.error('❌ Error crítico en el proceso de subida:', uploadErr.message);
-            throw uploadErr; // Lanzar el error para que el frontend lo vea
+            throw uploadErr; 
         }
     } else if (foto && foto.trim() !== '') {
         finalFoto = foto;

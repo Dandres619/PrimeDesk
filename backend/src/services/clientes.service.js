@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const emailService = require('./email.service');
 const supabase = require('../config/supabase');
 const fs = require('fs');
+const path = require('path');
 
 
 const getAll = async () => {
@@ -48,17 +49,20 @@ const create = async (data, file) => {
 
   if (file) {
     try {
-        const fileBuffer = fs.readFileSync(file.path);
+        const fileBuffer = file.buffer;
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        const fileName = `profile-${uniqueSuffix}${ext}`;
+
         const { data: uploadData, error } = await supabase.storage
             .from('profiles')
-            .upload(file.filename, fileBuffer, { contentType: file.mimetype, upsert: true });
+            .upload(fileName, fileBuffer, { contentType: file.mimetype, upsert: true });
 
         if (error) {
-            console.error('❌ Error al subir:', error.message);
+            console.error('❌ Error al subir a Supabase:', error.message);
         } else {
-            const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(file.filename);
+            const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(fileName);
             foto = publicUrl.publicUrl;
-            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
         }
     } catch (err) {
         console.error('Error subiendo foto:', err);
@@ -128,17 +132,20 @@ const update = async (id, data, file) => {
 
   if (file) {
     try {
-        const fileBuffer = fs.readFileSync(file.path);
+        const fileBuffer = file.buffer;
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        const fileName = `profile-${uniqueSuffix}${ext}`;
+
         const { data: uploadData, error } = await supabase.storage
             .from('profiles')
-            .upload(file.filename, fileBuffer, { contentType: file.mimetype, upsert: true });
+            .upload(fileName, fileBuffer, { contentType: file.mimetype, upsert: true });
 
         if (error) {
-            console.error('❌ Error al subir:', error.message);
+            console.error('❌ Error al subir a Supabase:', error.message);
         } else {
-            const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(file.filename);
+            const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(fileName);
             foto = publicUrl.publicUrl;
-            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
         }
     } catch (err) {
         console.error('Error subiendo foto:', err);
