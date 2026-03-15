@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Label } from './ui/label';
@@ -82,7 +81,7 @@ export function Agendamientos() {
 
       if (resEmp.status === 'fulfilled' && resEmp.value.ok) {
         const empData = await resEmp.value.json();
-        setMechanics(empData.filter((e: any) => e.NombreRol === 'Empleado' && e.EstadoUsuario !== false));
+        setMechanics(empData.filter((e: any) => e.ID_Rol === 2 && e.EstadoUsuario !== false));
       }
 
       if (resSer.status === 'fulfilled' && resSer.value.ok) {
@@ -219,7 +218,7 @@ export function Agendamientos() {
               <Badge variant="secondary" className="ml-2">{enrichedApts.length} total</Badge>
             </CardTitle>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="h-9 w-9 p-0">
+              <Button variant="outline" size="sm" onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="h-9 w-9 p-0" disabled={isSameMonth(currentDate, new Date())}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
               <div className="min-w-[200px] text-center px-4 py-2 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200/50 dark:border-blue-800/50">
@@ -227,7 +226,7 @@ export function Agendamientos() {
                   {format(currentDate, 'MMMM yyyy', { locale: es })}
                 </h3>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="h-9 w-9 p-0">
+              <Button variant="outline" size="sm" onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="h-9 w-9 p-0" disabled={isSameMonth(currentDate, addMonths(new Date(), 1))}>
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
@@ -450,13 +449,13 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, horario
   // Calculate available slots
   const availableSlots = useMemo(() => {
     if (!form.mechanicId || !form.date) return [];
-    
+
     // Check if date is in the past
     const selectedDate = parseISO(form.date);
     if (isBefore(selectedDate, startOfDay(new Date()))) return [];
 
     const dayName = daysMap[selectedDate.getDay()];
-    const mechanicSched = horarios.filter((h: any) => 
+    const mechanicSched = horarios.filter((h: any) =>
       h.ID_Empleado === parseInt(form.mechanicId) && h.Dia === dayName && h.Estado
     );
 
@@ -471,18 +470,32 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, horario
 
       let current = parseInt(startStr.split(':')[0]);
       const end = parseInt(endStr.split(':')[0]);
-      
-      while (current < end) {
+
+        while (current < end) {
         const slotTime = `${current.toString().padStart(2, '0')}:00`;
         const slotEndTime = `${(current + 1).toString().padStart(2, '0')}:00`;
-        
+
+        // Check past hour if date is today
+        if (isToday(selectedDate)) {
+          const now = new Date();
+          const currentHour = now.getHours();
+          if (current < currentHour) {
+            current++;
+            continue;
+          }
+          if (current === currentHour && now.getMinutes() > 0) {
+            current++;
+            continue;
+          }
+        }
+
         // Check if slot is occupied
-        const isOccupied = existingAppointments.some((a: any) => 
+        const isOccupied = existingAppointments.some((a: any) =>
           a.mechanicId === parseInt(form.mechanicId) &&
           a.date === form.date &&
           a.id !== apt?.id && // Don't block self when editing
-          ((slotTime >= a.startTime && slotTime < a.endTime) || 
-           (slotEndTime > a.startTime && slotEndTime <= a.endTime))
+          ((slotTime >= a.startTime && slotTime < a.endTime) ||
+            (slotEndTime > a.startTime && slotEndTime <= a.endTime))
         );
 
         if (!isOccupied) {
@@ -505,11 +518,11 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, horario
       toast.error('Complete todos los campos obligatorios');
       return;
     }
-    
+
     // Auto-set endTime (1 hour later by default for slots)
     const [h, m] = form.startTime.split(':');
     const endTime = `${(parseInt(h) + 1).toString().padStart(2, '0')}:${m}`;
-    
+
     setIsSaving(true);
     try {
       await onSave({ ...form, endTime });
@@ -529,7 +542,14 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, horario
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 py-2">
-      {/* 1. Mechanic Selection */}
+      <div className="space-y-1">
+        <Label>Fecha Seleccionada</Label>
+        <div className="w-full h-10 px-3 py-2 border border-input rounded-md bg-muted text-foreground flex items-center shadow-sm">
+          <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
+          <span className="font-medium">{form.date ? format(parseISO(form.date), 'EEEE, d MMMM yyyy', { locale: es }) : 'No seleccionada'}</span>
+        </div>
+      </div>
+
       <div className="space-y-1">
         <Label>Mecánico *</Label>
         <select
@@ -545,22 +565,6 @@ function AptForm({ apt, date, clients, motorcycles, mechanics, services, horario
         </select>
       </div>
 
-      {/* 2. Date Selection */}
-      <div className="space-y-1">
-        <Label>Fecha *</Label>
-        <Input
-          type="date"
-          min={format(new Date(), 'yyyy-MM-dd')}
-          value={form.date}
-          onChange={e => setForm({ ...form, date: e.target.value, startTime: '' })}
-          required
-          disabled={!!apt}
-        />
-        {apt && <p className="text-xs text-muted-foreground">La fecha no se puede cambiar al editar.</p>}
-        {form.mechanicId && !form.date && <p className="text-[10px] text-blue-600">Seleccione una fecha para ver horarios disponibles</p>}
-      </div>
-
-      {/* 3. Time Slot Selection */}
       <div className="space-y-2">
         <Label>Horarios Disponibles *</Label>
         {form.mechanicId && form.date ? (

@@ -13,7 +13,8 @@ const getAll = async () => {
                e.apellido AS "Apellido", e.tipodocumento AS "TipoDocumento", e.documento AS "Documento",
                e.telefono AS "Telefono", e.barrio AS "Barrio", e.direccion AS "Direccion", 
                e.fechanacimiento AS "FechaNacimiento", e.fechaingreso AS "FechaIngreso", 
-               e.foto AS "Foto", u.correo AS "Correo", r.nombre AS "NombreRol", u.estado AS "EstadoUsuario"
+               e.foto AS "Foto", u.correo AS "Correo", r.nombre AS "NombreRol", u.estado AS "EstadoUsuario",
+               u.id_rol AS "ID_Rol"
         FROM empleados e
         INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
         INNER JOIN roles r ON u.id_rol = r.id_rol

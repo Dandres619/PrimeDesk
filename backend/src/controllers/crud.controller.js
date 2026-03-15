@@ -5,7 +5,7 @@
 const makeCrudController = (service) => ({
     getAll: async (req, res) => {
         try {
-            const data = await service.getAll();
+            const data = await service.getAll(req.query);
             res.json(data);
         } catch (err) {
             res.status(err.status || 500).json({ message: err.message || 'Error interno.' });

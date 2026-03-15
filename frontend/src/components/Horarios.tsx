@@ -439,7 +439,7 @@ function ScheduleDialog({ schedule, employees, daysOfWeek, onSave }: any) {
             className="w-full px-3 py-2 mt-1 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             disabled={!!schedule}
           >
-            <option value="" className="bg-background text-foreground">Seleccionar mecánico</option>
+            <option value="" className="bg-background text-foreground">{schedule ? `${schedule.mechanicName}` : 'Seleccionar mecánico'}</option>
             {employees.map((emp: any) => (
               <option key={emp.ID_Empleado} value={emp.ID_Empleado.toString()} className="bg-background text-foreground">
                 {emp.Nombre} {emp.Apellido}

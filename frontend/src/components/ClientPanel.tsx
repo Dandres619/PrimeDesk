@@ -30,7 +30,7 @@ import {
   ChevronRight,
   Clock,
   Ban,
-  Wrench
+  Loader2
 } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isToday, isBefore, startOfDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -48,16 +48,7 @@ interface Moto {
   kilometraje: number;
 }
 
-interface ServicioHistorial {
-  id: number;
-  motoId: number;
-  fecha: string;
-  tipoServicio: string;
-  descripcion: string;
-  mecanico: string;
-  costo: number;
-  estado: 'completado' | 'en_proceso' | 'cancelado';
-}
+
 
 interface Agendamiento {
   id: number;
@@ -92,7 +83,7 @@ const clientMenuItems = [
 ];
 
 interface ClientPanelProps {
-  currentUser: { id?: number; id_cliente?: number; username: string; name: string };
+  currentUser: { id?: number; id_cliente?: number; username: string; name: string; last_name: string };
   onLogout: () => void;
 }
 
@@ -103,100 +94,111 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
   const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
-  React.useEffect(() => {
+  const [isLoadingData, setIsLoadingData] = React.useState(false);
+
+  const fetchClientData = React.useCallback(async (showLoading = true) => {
     const token = localStorage.getItem('token');
-    if (token) {
-      // Cargar Perfil
-      fetch(`${API_URL}/auth/me`, {
+    if (!token) return;
+
+    if (showLoading) setIsLoadingData(true);
+    try {
+      // 1. Obtener perfil para tener ID_Cliente
+      const meRes = await fetch(`${API_URL}/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
-      })
-        .then(res => res.json())
-        .then(data => {
-          // Cargar Motos si tenemos el ID del cliente
-          if (data.ID_Cliente) {
-            // Cargar Motos
-            fetch(`${API_URL}/motocicletas?id_cliente=${data.ID_Cliente}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            })
-              .then(res => res.json())
-              .then(motosData => {
-                const mappedMotos = motosData.map((m: any) => ({
-                  id: m.ID_Motocicleta,
-                  marca: m.Marca,
-                  modelo: m.Modelo,
-                  ano: m.Anio,
-                  placa: m.Placa,
-                  color: m.Color,
-                  cilindraje: m.Motor,
-                  kilometraje: m.Kilometraje
-                }));
-                setMotos(mappedMotos);
-              })
-              .catch(err => console.error('Error loading motos:', err));
+      });
+      if (!meRes.ok) throw new Error('Error al cargar perfil');
+      const userData = await meRes.json();
 
-            // Cargar Agendamientos
-            fetch(`${API_URL}/agendamientos?id_cliente=${data.ID_Cliente}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            })
-              .then(res => res.json())
-              .then(agData => {
-                const mappedAg = agData.map((a: any) => ({
-                  id: a.ID_Agendamiento,
-                  motoId: a.ID_Motocicleta,
-                  mechanicId: a.ID_Empleado,
-                  motoBrand: a.MarcaMoto,
-                  motoModel: a.Modelo,
-                  motoPlate: a.Placa,
-                  fecha: a.Dia.split('T')[0],
-                  startTime: a.HoraInicio,
-                  mechanicName: `${a.NombreEmpleado} ${a.ApellidoEmpleado}`,
-                  serviceTypes: a.Servicios || [],
-                  notes: a.Notas || ''
-                }));
-                setAgendamientos(mappedAg);
-              })
-              .catch(err => console.error('Error loading agendamientos:', err));
-          }
-
-          // Cargar Empleados (Mecánicos)
+      if (userData.ID_Cliente) {
+        // Peticiones en paralelo
+        const [resMotos, resAg, resEmp, resSrv, resHor] = await Promise.all([
+          fetch(`${API_URL}/motocicletas?id_cliente=${userData.ID_Cliente}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${API_URL}/agendamientos?id_cliente=${userData.ID_Cliente}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
           fetch(`${API_URL}/empleados`, {
             headers: { 'Authorization': `Bearer ${token}` }
-          })
-            .then(res => res.json())
-            .then(empData => {
-              setMechanics(empData.map((e: any) => ({
-                id: e.ID_Empleado,
-                nombre: e.Nombre,
-                apellido: e.Apellido
-              })));
-            })
-            .catch(err => console.error('Error loading employees:', err));
-
-          // Cargar Servicios
+          }),
           fetch(`${API_URL}/servicios`, {
             headers: { 'Authorization': `Bearer ${token}` }
-          })
-            .then(res => res.json())
-            .then(srvData => {
-              setAvailableServices(srvData.map((s: any) => ({
-                id: s.ID_Servicio,
-                nombre: s.Nombre,
-                descripcion: s.Descripcion
-              })));
-            })
-            .catch(err => console.error('Error loading services:', err));
-
-          // Cargar Horarios
+          }),
           fetch(`${API_URL}/horarios`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
-            .then(res => res.json())
-            .then(hData => setHorarios(hData))
-            .catch(err => console.error('Error loading horarios:', err));
-        })
-        .catch(err => console.error('Error loading profile:', err));
+        ]);
+
+        if (resMotos.ok) {
+          const motosData = await resMotos.json();
+          setMotos(motosData.map((m: any) => ({
+            id: m.ID_Motocicleta,
+            marca: m.Marca,
+            modelo: m.Modelo,
+            ano: m.Anio,
+            placa: m.Placa,
+            color: m.Color,
+            cilindraje: m.Motor,
+            kilometraje: m.Kilometraje
+          })));
+        }
+
+        if (resAg.ok) {
+          const agData = await resAg.json();
+          setAgendamientos(agData.map((a: any) => ({
+            id: a.ID_Agendamiento,
+            motoId: a.ID_Motocicleta,
+            mechanicId: a.ID_Empleado,
+            motoBrand: a.MarcaMoto,
+            motoModel: a.Modelo,
+            motoPlate: a.Placa,
+            fecha: a.Dia.split('T')[0],
+            startTime: a.HoraInicio,
+            mechanicName: `${a.NombreEmpleado} ${a.ApellidoEmpleado}`,
+            serviceTypes: a.Servicios || [],
+            notes: a.Notas || ''
+          })));
+        }
+
+        if (resEmp.ok) {
+          const empData = await resEmp.json();
+          const onlyMechanics = empData.filter((e: any) => e.ID_Rol === 2 && e.EstadoUsuario !== false);
+          setMechanics(onlyMechanics.map((e: any) => ({
+            id: e.ID_Empleado,
+            nombre: e.Nombre,
+            apellido: e.Apellido
+          })));
+        }
+
+        if (resSrv.ok) {
+          const srvData = await resSrv.json();
+          setAvailableServices(srvData.map((s: any) => ({
+            id: s.ID_Servicio,
+            nombre: s.Nombre,
+            descripcion: s.Descripcion
+          })));
+        }
+
+        if (resHor.ok) {
+          setHorarios(await resHor.json());
+        }
+      }
+    } catch (err) {
+      console.error('Error loading client data:', err);
+    } finally {
+      setIsLoadingData(false);
     }
-  }, []);
+  }, [API_URL]);
+
+  React.useEffect(() => {
+    fetchClientData();
+  }, [fetchClientData]);
+
+  React.useEffect(() => {
+    if (activeSection === 'motos' || activeSection === 'agendar') {
+      fetchClientData();
+    }
+  }, [activeSection, fetchClientData]);
 
   // Estado de las motos
   const [motos, setMotos] = useState<Moto[]>([]);
@@ -206,6 +208,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
   const [showMotoModal, setShowMotoModal] = useState(false);
   const [editingMoto, setEditingMoto] = useState<Moto | null>(null);
+  const [isSubmittingMoto, setIsSubmittingMoto] = useState(false);
+  const [isDeletingMoto, setIsDeletingMoto] = useState(false);
   const [motoFormData, setMotoFormData] = useState({
     marca: '',
     modelo: '',
@@ -213,11 +217,12 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     placa: '',
     color: '',
     cilindraje: '',
-    kilometraje: 0
+    kilometraje: '' as any
   });
 
   // Estado del historial de servicios
-  const [servicios] = useState<ServicioHistorial[]>([]);
+  const [motoHistory, setMotoHistory] = useState<any[]>([]);
+  const [isFetchingHistory, setIsFetchingHistory] = useState(false);
 
   // Estado de agendamientos
   const [agendamientos, setAgendamientos] = useState<Agendamiento[]>([]);
@@ -238,6 +243,10 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   const [selectedMotoForHistory, setSelectedMotoForHistory] = useState<number | null>(null);
   const [showDeleteMotoConfirm, setShowDeleteMotoConfirm] = useState(false);
   const [selectedMoto, setSelectedMoto] = useState<Moto | null>(null);
+  const [isCancellingApt, setIsCancellingApt] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [aptToCancel, setAptToCancel] = useState<Agendamiento | null>(null);
+  const [isSubmittingApt, setIsSubmittingApt] = useState(false);
 
   const resetMotoForm = () => {
     setMotoFormData({
@@ -247,9 +256,27 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       placa: '',
       color: '',
       cilindraje: '',
-      kilometraje: 0
+      kilometraje: ''
     });
     setEditingMoto(null);
+  };
+
+  const fetchMotoHistory = async (motoId: number) => {
+    setIsFetchingHistory(true);
+    setSelectedMotoForHistory(motoId);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/reparaciones?id_motocicleta=${motoId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Error al cargar historial');
+      const data = await res.json();
+      setMotoHistory(data);
+    } catch (err) {
+      toast.error('No se pudo cargar el historial de servicios');
+    } finally {
+      setIsFetchingHistory(false);
+    }
   };
 
   const handleSubmitMoto = async (e: React.FormEvent) => {
@@ -260,6 +287,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       return;
     }
 
+    setIsSubmittingMoto(true);
     try {
       const token = localStorage.getItem('token');
       if (!token || !currentUser?.id_cliente) {
@@ -286,8 +314,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
           anio: parseInt(motoFormData.ano.toString()),
           placa: motoFormData.placa,
           color: motoFormData.color,
-          motor: parseInt(motoFormData.cilindraje.toString()) || 0,
-          kilometraje: motoFormData.kilometraje,
+          motor: motoFormData.cilindraje || '0',
+          kilometraje: parseInt(motoFormData.kilometraje?.toString() || '0'),
           estado: true
         })
       });
@@ -301,14 +329,15 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       if (editingMoto) {
         setMotos(motos.map(moto =>
           moto.id === editingMoto.id
-            ? { ...moto, ...motoFormData }
+            ? { ...moto, ...motoFormData, kilometraje: parseInt(motoFormData.kilometraje?.toString() || '0') }
             : moto
         ));
         toast.success('Moto actualizada exitosamente');
       } else {
         const newMoto: Moto = {
           id: data.ID_Motocicleta,
-          ...motoFormData
+          ...motoFormData,
+          kilometraje: parseInt(motoFormData.kilometraje?.toString() || '0')
         };
         setMotos([...motos, newMoto]);
         toast.success('Moto agregada exitosamente');
@@ -318,6 +347,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       resetMotoForm();
     } catch (error: any) {
       toast.error(error.message || 'Error al conectar con el servidor');
+    } finally {
+      setIsSubmittingMoto(false);
     }
   };
 
@@ -335,6 +366,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   const confirmDeleteMoto = async () => {
     if (!selectedMoto) return;
 
+    setIsDeletingMoto(true);
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_URL}/motocicletas/${selectedMoto.id}`, {
@@ -349,11 +381,12 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
       setMotos(motos.filter(m => m.id !== selectedMoto.id));
       toast.success('Moto eliminada exitosamente');
+      setShowDeleteMotoConfirm(false);
+      setSelectedMoto(null);
     } catch (error: any) {
       toast.error(error.message || 'Error de conexión');
     } finally {
-      setShowDeleteMotoConfirm(false);
-      setSelectedMoto(null);
+      setIsDeletingMoto(false);
     }
   };
 
@@ -365,6 +398,12 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       return;
     }
 
+    if (!agendarFormData.motoId || !agendarFormData.mecanicoId || !agendarFormData.startTime) {
+      toast.error('Por favor complete todos los campos obligatorios');
+      return;
+    }
+
+    setIsSubmittingApt(true);
     try {
       const token = localStorage.getItem('token');
 
@@ -429,6 +468,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       });
     } catch (error: any) {
       toast.error(error.message || 'Error de conexión');
+    } finally {
+      setIsSubmittingApt(false);
     }
   };
 
@@ -443,6 +484,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       return;
     }
 
+    setIsCancellingApt(true);
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/agendamientos/${apt.id}`, {
@@ -452,18 +494,23 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
       if (!res.ok) throw new Error('Error al cancelar');
       setAgendamientos(prev => prev.filter(a => a.id !== apt.id));
       setAppointmentDetailsOpen(false);
+      setShowCancelConfirm(false);
       toast.success('Agendamiento cancelado exitosamente.');
     } catch (err: any) {
       toast.error(err.message || 'Error al conectar con el servidor');
+    } finally {
+      setIsCancellingApt(false);
     }
   };
+
   const getMotoName = (motoId: number) => {
     const moto = motos.find(m => m.id === motoId);
     return moto ? `${moto.marca} ${moto.modelo} - ${moto.placa}` : 'Moto no encontrada';
   };
 
   const getServiciosMoto = (motoId: number) => {
-    return servicios.filter(s => s.motoId === motoId);
+    // La información ya está filtrada por fetchMotoHistory(motoId)
+    return motoHistory;
   };
 
   const getEstadoBadge = (estado: string) => {
@@ -515,7 +562,22 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
         const slotTime = `${current.toString().padStart(2, '0')}:00`;
         const slotEndTime = `${(current + 1).toString().padStart(2, '0')}:00`;
 
-        // Check if slot is occupied
+        // Check past hour if date is today
+        const isTodaySelected = isToday(selectedDate);
+        if (isTodaySelected) {
+          const now = new Date();
+          const currentHour = now.getHours();
+          if (current < currentHour) {
+            current++;
+            continue;
+          }
+          // If same hour, also skip (optional, but safer to block current hour if it's already started)
+          if (current === currentHour && now.getMinutes() > 0) {
+            current++;
+            continue;
+          }
+        }
+
         const isOccupied = agendamientos.some((a: any) =>
           a.mechanicId === mecanicoId &&
           a.fecha === selectedDateStr &&
@@ -535,6 +597,14 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   };
 
   const renderContent = () => {
+    if (isLoadingData) {
+      return (
+        <div className="flex items-center justify-center p-24">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+        </div>
+      );
+    }
+
     switch (activeSection) {
       case 'perfil':
         return <MiPerfil />;
@@ -562,8 +632,10 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Moto</TableHead>
-                    <TableHead>Datos</TableHead>
+                    <TableHead>Marca</TableHead>
+                    <TableHead>Modelo</TableHead>
+                    <TableHead>Placa</TableHead>
+                    <TableHead>Año</TableHead>
                     <TableHead>Kilometraje</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
@@ -571,22 +643,11 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 <TableBody>
                   {motos.map((moto) => (
                     <TableRow key={moto.id}>
-                      <TableCell>
-                        <p className="font-medium">{moto.marca} {moto.modelo}</p>
-                        <p className="text-sm text-muted-foreground">Placa: {moto.placa}</p>
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="text-sm space-y-1">
-                          <p>Año: {moto.ano}</p>
-                          <p>Color: {moto.color}</p>
-                          <p>Cilindraje: {moto.cilindraje}</p>
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        <p className="font-medium">{moto.kilometraje.toLocaleString()} km</p>
-                      </TableCell>
+                      <TableCell>{moto.marca}</TableCell>
+                      <TableCell>{moto.modelo}</TableCell>
+                      <TableCell>{moto.placa}</TableCell>
+                      <TableCell>{moto.ano}</TableCell>
+                      <TableCell>{moto.kilometraje.toLocaleString()} km</TableCell>
 
                       <TableCell>
                         <div className="flex gap-1">
@@ -602,8 +663,9 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setSelectedMotoForHistory(moto.id)}
+                            onClick={() => fetchMotoHistory(moto.id)}
                             className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
+                            disabled={isFetchingHistory}
                           >
                             <History className="w-4 h-4" />
                           </Button>
@@ -643,22 +705,18 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Fecha</TableHead>
-                            <TableHead>Servicio</TableHead>
-                            <TableHead>Descripción</TableHead>
+                            <TableHead>Diagnóstico</TableHead>
                             <TableHead>Mecánico</TableHead>
-                            <TableHead>Costo</TableHead>
                             <TableHead>Estado</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {getServiciosMoto(selectedMotoForHistory).map((servicio) => (
+                          {getServiciosMoto(selectedMotoForHistory).map((servicio: any) => (
                             <TableRow key={servicio.id}>
-                              <TableCell>{servicio.fecha}</TableCell>
-                              <TableCell>{servicio.tipoServicio}</TableCell>
-                              <TableCell>{servicio.descripcion}</TableCell>
-                              <TableCell>{servicio.mecanico}</TableCell>
-                              <TableCell>${servicio.costo.toLocaleString()}</TableCell>
-                              <TableCell>{getEstadoBadge(servicio.estado)}</TableCell>
+                              <TableCell>{format(new Date(servicio.Fecha), 'dd/MM/yyyy HH:mm')}</TableCell>
+                              <TableCell>{servicio.Observaciones || 'Sin observaciones'}</TableCell>
+                              <TableCell>{servicio.Mecanico || 'Pendiente'}</TableCell>
+                              <TableCell>{getEstadoBadge(servicio.Estado)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -743,17 +801,18 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentDate(subMonths(currentDate, 1))}
+                      disabled={isSameMonth(currentDate, new Date())}
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
-                    <div className="min-w-[200px] text-center">
-                      {format(currentDate, 'MMMM yyyy', { locale: es }).charAt(0).toUpperCase() +
-                        format(currentDate, 'MMMM yyyy', { locale: es }).slice(1)}
+                    <div className="min-w-[200px] text-center font-semibold capitalize">
+                      {format(currentDate, 'MMMM yyyy', { locale: es })}
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentDate(addMonths(currentDate, 1))}
+                      disabled={isSameMonth(currentDate, addMonths(new Date(), 1))}
                     >
                       <ChevronRight className="w-4 h-4" />
                     </Button>
@@ -865,7 +924,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
             </div>
             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Bienvenido</p>
-              <p className="text-xs text-blue-700 dark:text-blue-400">{currentUser.name}</p>
+              <p className="text-xs text-blue-700 dark:text-blue-400">{currentUser.name} {currentUser.last_name}</p>
             </div>
           </SidebarHeader>
 
@@ -919,7 +978,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <User className="w-4 h-4" />
-                  <span>{currentUser.name}</span>
+                  <span>{currentUser.name} {currentUser.last_name}</span>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
                   <Sun className={`w-4 h-4 transition-colors ${theme === 'light' ? 'text-yellow-500' : 'text-muted-foreground'}`} />
@@ -1031,8 +1090,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
-                {editingMoto ? 'Actualizar Moto' : 'Agregar Moto'}
+              <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={isSubmittingMoto}>
+                {isSubmittingMoto ? 'Guardando...' : (editingMoto ? 'Actualizar Moto' : 'Agregar Moto')}
               </Button>
             </div>
           </form>
@@ -1170,8 +1229,12 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
-                Agendar Servicio
+              <Button
+                type="submit"
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                disabled={isSubmittingApt || !agendarFormData.startTime}
+              >
+                {isSubmittingApt ? 'Agendando...' : 'Agendar Servicio'}
               </Button>
             </div>
           </form>
@@ -1259,11 +1322,6 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
-                <Wrench className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span>Al crear este agendamiento se generó automáticamente una reparación para el seguimiento técnico.</span>
-              </div>
-
               {/* Notas */}
               {selectedAppointment.notes && (
                 <div className="flex items-start gap-3">
@@ -1291,13 +1349,14 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                   variant="destructive"
                   className="flex-1 bg-red-600 hover:bg-red-700"
                   onClick={() => {
-                    if (selectedAppointment && confirm('¿Estás seguro de que deseas cancelar este agendamiento?')) {
-                      handleCancelAgendamiento(selectedAppointment);
+                    if (selectedAppointment) {
+                      setAptToCancel(selectedAppointment);
+                      setShowCancelConfirm(true);
                     }
                   }}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Cancelar Cita
+                  Cancelar Agendamiento
                 </Button>
               </div>
             </div>
@@ -1324,6 +1383,19 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
         confirmText="Eliminar"
         onConfirm={confirmDeleteMoto}
         variant="delete"
+        loading={isDeletingMoto}
+      />
+
+      {/* Cancel Appointment Dialog */}
+      <ConfirmDialog
+        open={showCancelConfirm}
+        onOpenChange={setShowCancelConfirm}
+        title="Cancelar Agendamiento"
+        description="¿Estás seguro de que deseas cancelar este agendamiento?"
+        confirmText="Confirmar Cancelación"
+        onConfirm={() => aptToCancel && handleCancelAgendamiento(aptToCancel)}
+        variant="cancel"
+        loading={isCancellingApt}
       />
     </SidebarProvider>
   );

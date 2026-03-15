@@ -286,7 +286,7 @@ function ProductDialog({ product, onSave, categories, brands }: any) {
             <option value="" className="bg-background text-foreground">Marca...</option>{brands.map((b: any) => <option key={b} value={b} className="bg-background text-foreground">{b}</option>)}
           </select></div>
           <div><Label>Categoría *</Label><select value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })} className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="" className="bg-background text-foreground">Categoría...</option>{categories.map((c: any) => <option key={c.id} value={c.id} className="bg-background text-foreground">{c.name}</option>)}
+            <option value="" disabled hidden className="bg-background text-foreground">Categoría...</option>{categories.map((c: any) => <option key={c.id} value={c.id} className="bg-background text-foreground">{c.name}</option>)}
           </select></div>
           <div><Label>Cantidad *</Label><Input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></div>
         </div>

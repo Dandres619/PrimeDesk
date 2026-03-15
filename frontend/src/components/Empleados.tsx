@@ -16,7 +16,7 @@ const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000
 
 const roleBadges = {
   'Administrador': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  'Empleado': 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
+  'Mecánico': 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
 };
 
 const docTypes: any = { CC: 'Cédula de Ciudadanía', CE: 'Cédula de Extranjería', PP: 'Pasaporte' };
@@ -95,7 +95,7 @@ export function Empleados() {
     } catch (error: any) {
       let errorMsg = error.message || 'Error de conexión';
       if (errorMsg === 'Error de validación.' && error.errors) {
-         errorMsg = `Error de validación: ${error.errors.map((e: any) => `${e.campo}: ${e.mensaje}`).join(', ')}`;
+        errorMsg = `Error de validación: ${error.errors.map((e: any) => `${e.campo}: ${e.mensaje}`).join(', ')}`;
       }
       toast.error(errorMsg);
     } finally {
@@ -179,7 +179,7 @@ export function Empleados() {
     { icon: UserCog, color: 'text-blue-600', value: employees.length, label: 'Total Empleados' },
     { icon: UserCog, color: 'text-green-600', value: employees.filter(e => e.EstadoUsuario === true || e.EstadoUsuario === 1).length, label: 'Activos' },
     { icon: UserCog, color: 'text-red-600', value: employees.filter(e => e.NombreRol?.toLowerCase().includes('admin')).length, label: 'Administradores' },
-    { icon: UserCog, color: 'text-purple-600', value: employees.filter(e => e.NombreRol?.toLowerCase().includes('empleado')).length, label: 'Empleados' }
+    { icon: UserCog, color: 'text-purple-600', value: employees.filter(e => e.NombreRol?.toLowerCase().includes('mecánico')).length, label: 'Mecánicos' }
   ];
 
   const actions = [
@@ -453,9 +453,9 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
   const BASE_URL = API_URL.replace('/api', '');
 
   const getPhotoUrl = (photo: string | null) => {
-      if (!photo) return null;
-      if (photo.startsWith('http')) return photo;
-      return `${BASE_URL}${photo}`;
+    if (!photo) return null;
+    if (photo.startsWith('http')) return photo;
+    return `${BASE_URL}${photo}`;
   };
 
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
@@ -505,32 +505,32 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
   }, [employee]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      onFileChange(e.target.files);
+    onFileChange(e.target.files);
   };
 
   const onFileChange = (files: FileList | null) => {
-      if (files && files.length > 0) {
-          const file = files[0];
-          setFormData(prev => ({ ...prev, fotoFile: file, foto: '' }));
+    if (files && files.length > 0) {
+      const file = files[0];
+      setFormData(prev => ({ ...prev, fotoFile: file, foto: '' }));
 
-          const reader = new FileReader();
-          reader.onloadend = () => {
-              setFotoPreview(reader.result as string);
-          };
-          reader.readAsDataURL(file);
-      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const nextStep = () => {
     if (activeStep === 1) {
       let errors: Record<string, string> = {};
-      
+
       if (!formData.correo) errors.correo = 'Requerido';
       if (!employee && !formData.contrasena) errors.contrasena = 'Requerido';
       if (!employee && formData.contrasena !== formData.confirmarContrasena) {
         errors.confirmarContrasena = 'Las contraseñas no coinciden';
       }
-      
+
       const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
       if (!employee && formData.contrasena && !passwordRegex.test(formData.contrasena)) {
         errors.contrasena = 'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial';
@@ -551,10 +551,10 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
 
     if (!formData.nombre) errors.nombre = 'Requerido';
     if (!formData.apellido) errors.apellido = 'Requerido';
-    
+
     if (!formData.documento) errors.documento = 'Requerido';
     else if (!/^\d{7,10}$/.test(formData.documento) && !employee) errors.documento = 'Entre 7 y 10 números';
-    
+
     if (!formData.telefono) errors.telefono = 'Requerido';
     else if (!/^\d{10}$/.test(formData.telefono)) errors.telefono = 'Exactamente 10 números';
 
@@ -566,7 +566,7 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
       setFormErrors(errors);
       return;
     }
-    
+
     setFormErrors({});
     onSave(formData);
   };
@@ -602,22 +602,22 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                   <Label htmlFor="emp-correo">Correo electrónico *</Label>
-                   {formErrors.correo && <span className="text-red-500 text-xs">{formErrors.correo}</span>}
+                  <Label htmlFor="emp-correo">Correo electrónico *</Label>
+                  {formErrors.correo && <span className="text-red-500 text-xs">{formErrors.correo}</span>}
                 </div>
                 <Input id="emp-correo" type="email" value={formData.correo} onChange={(e) => setFormData(prev => ({ ...prev, correo: e.target.value }))} className={formErrors.correo ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                   <Label htmlFor="emp-pass">Contraseña *</Label>
-                   {formErrors.contrasena && <span className="text-red-500 text-xs max-w-[60%] text-right leading-tight">{formErrors.contrasena}</span>}
+                  <Label htmlFor="emp-pass">Contraseña *</Label>
+                  {formErrors.contrasena && <span className="text-red-500 text-xs max-w-[60%] text-right leading-tight">{formErrors.contrasena}</span>}
                 </div>
                 <Input id="emp-pass" type="password" value={formData.contrasena} onChange={(e) => setFormData(prev => ({ ...prev, contrasena: e.target.value }))} className={formErrors.contrasena ? 'border-red-500' : ''} required placeholder="********" />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                   <Label htmlFor="emp-confirm-pass">Confirmar *</Label>
-                   {formErrors.confirmarContrasena && <span className="text-red-500 text-xs">{formErrors.confirmarContrasena}</span>}
+                  <Label htmlFor="emp-confirm-pass">Confirmar *</Label>
+                  {formErrors.confirmarContrasena && <span className="text-red-500 text-xs">{formErrors.confirmarContrasena}</span>}
                 </div>
                 <Input id="emp-confirm-pass" type="password" value={formData.confirmarContrasena} onChange={(e) => setFormData(prev => ({ ...prev, confirmarContrasena: e.target.value }))} className={formErrors.confirmarContrasena ? 'border-red-500' : ''} required placeholder="********" />
               </div>
@@ -650,15 +650,15 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                   <Label htmlFor="nombre">Nombre *</Label>
-                   {formErrors.nombre && <span className="text-red-500 text-xs">{formErrors.nombre}</span>}
+                  <Label htmlFor="nombre">Nombre *</Label>
+                  {formErrors.nombre && <span className="text-red-500 text-xs">{formErrors.nombre}</span>}
                 </div>
                 <Input id="nombre" value={formData.nombre} onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))} className={formErrors.nombre ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                   <Label htmlFor="apellido">Apellido *</Label>
-                   {formErrors.apellido && <span className="text-red-500 text-xs">{formErrors.apellido}</span>}
+                  <Label htmlFor="apellido">Apellido *</Label>
+                  {formErrors.apellido && <span className="text-red-500 text-xs">{formErrors.apellido}</span>}
                 </div>
                 <Input id="apellido" value={formData.apellido} onChange={(e) => setFormData(prev => ({ ...prev, apellido: e.target.value }))} className={formErrors.apellido ? 'border-red-500' : ''} required />
               </div>
@@ -676,22 +676,22 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                   <Label htmlFor="documento">Núm. Documento *</Label>
-                   {formErrors.documento && <span className="text-red-500 text-xs">{formErrors.documento}</span>}
+                  <Label htmlFor="documento">Núm. Documento *</Label>
+                  {formErrors.documento && <span className="text-red-500 text-xs">{formErrors.documento}</span>}
                 </div>
                 <Input id="documento" value={formData.documento} onChange={(e) => setFormData(prev => ({ ...prev, documento: e.target.value }))} required disabled={!!employee} className={`${employee ? 'bg-muted ' : ''}${formErrors.documento ? 'border-red-500' : ''}`} />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                   <Label htmlFor="telefono">Teléfono *</Label>
-                   {formErrors.telefono && <span className="text-red-500 text-xs">{formErrors.telefono}</span>}
+                  <Label htmlFor="telefono">Teléfono *</Label>
+                  {formErrors.telefono && <span className="text-red-500 text-xs">{formErrors.telefono}</span>}
                 </div>
                 <Input id="telefono" value={formData.telefono} onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))} className={formErrors.telefono ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                   <Label htmlFor="fecha_nacimiento">Fec. Nacimiento *</Label>
-                   {formErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{formErrors.fecha_nacimiento}</span>}
+                  <Label htmlFor="fecha_nacimiento">Fec. Nacimiento *</Label>
+                  {formErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{formErrors.fecha_nacimiento}</span>}
                 </div>
                 <Input id="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={(e) => setFormData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))} className={formErrors.fecha_nacimiento ? 'border-red-500' : ''} required />
               </div>
@@ -701,15 +701,15 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                   <Label htmlFor="barrio">Barrio *</Label>
-                   {formErrors.barrio && <span className="text-red-500 text-xs">{formErrors.barrio}</span>}
+                  <Label htmlFor="barrio">Barrio *</Label>
+                  {formErrors.barrio && <span className="text-red-500 text-xs">{formErrors.barrio}</span>}
                 </div>
                 <Input id="barrio" value={formData.barrio} onChange={(e) => setFormData(prev => ({ ...prev, barrio: e.target.value }))} className={formErrors.barrio ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                   <Label htmlFor="direccion">Dirección *</Label>
-                   {formErrors.direccion && <span className="text-red-500 text-xs">{formErrors.direccion}</span>}
+                  <Label htmlFor="direccion">Dirección *</Label>
+                  {formErrors.direccion && <span className="text-red-500 text-xs">{formErrors.direccion}</span>}
                 </div>
                 <Input id="direccion" value={formData.direccion} onChange={(e) => setFormData(prev => ({ ...prev, direccion: e.target.value }))} className={formErrors.direccion ? 'border-red-500' : ''} required />
               </div>

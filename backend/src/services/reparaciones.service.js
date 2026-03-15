@@ -1,18 +1,31 @@
 const { getPool } = require('../config/db');
 
-const getAll = async (id_cliente = null) => {
+const getAll = async (filters = {}) => {
   const sql = await getPool();
+  const { id_cliente, id_motocicleta } = filters;
+
+  let where = sql``;
+  if (id_cliente && id_motocicleta) {
+    where = sql`WHERE m.id_cliente = ${id_cliente} AND rep.id_motocicleta = ${id_motocicleta}`;
+  } else if (id_cliente) {
+    where = sql`WHERE m.id_cliente = ${id_cliente}`;
+  } else if (id_motocicleta) {
+    where = sql`WHERE rep.id_motocicleta = ${id_motocicleta}`;
+  }
+
   const rows = await sql`
-        SELECT rep.id_reparacion AS "ID_Reparacion", rep.id_motocicleta AS "ID_Motocicleta", 
+        SELECT rep.id_reparacion AS "ID_Reparacion", rep.id_reparacion AS "id", rep.id_motocicleta AS "ID_Motocicleta", 
                rep.id_agendamiento AS "ID_Agendamiento", rep.fecha AS "Fecha", 
                rep.observaciones AS "Observaciones", rep.tiposervicio AS "TipoServicio", 
                rep.estado AS "Estado",
                m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "Modelo",
-               a.dia AS "DiaAgendamiento"
+               a.dia AS "DiaAgendamiento",
+               CONCAT(e.nombre, ' ', e.apellido) AS "Mecanico"
         FROM reparaciones rep
         INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
         LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
-        ${id_cliente ? sql`WHERE m.id_cliente = ${id_cliente}` : sql``}
+        LEFT JOIN empleados e ON a.id_empleado = e.id_empleado
+        ${where}
         ORDER BY rep.fecha DESC
     `;
   return rows;
