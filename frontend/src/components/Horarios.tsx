@@ -73,7 +73,7 @@ export function Horarios() {
         const dataEmp = await resEmp.value.json();
         // NombreRol 'Empleado' = rol 2 (mecánicos). EstadoUsuario may be boolean or string.
         const mechanics = dataEmp.filter((e: any) =>
-          e.NombreRol === 'Empleado' &&
+          (Number(e.ID_Rol) === 2 || Number(e.id_rol) === 2) &&
           e.EstadoUsuario !== false &&
           e.EstadoUsuario !== 'Inactivo'
         );

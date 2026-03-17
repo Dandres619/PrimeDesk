@@ -64,7 +64,7 @@ export function PedidosServicios() {
       setClients(dataCli);
       setMotorcycles(dataMot);
       // Mecánicos = rol 2 (Empleado) o EstadoUsuario Activo
-      setMechanics(dataEmp.filter((e: any) => (e.EstadoUsuario === true || e.EstadoUsuario === 'Activo') && e.NombreRol === 'Empleado'));
+      setMechanics(dataEmp.filter((e: any) => (e.EstadoUsuario === true || e.EstadoUsuario === 'Activo') && (Number(e.ID_Rol) === 2 || Number(e.id_rol) === 2)));
       setAvailableServices(dataSer.filter((s: any) => s.Estado === true || s.Estado === 'Activo'));
 
       setServiceOrders(dataRep.map((r: any) => ({

@@ -162,7 +162,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
         if (resEmp.ok) {
           const empData = await resEmp.json();
-          const onlyMechanics = empData.filter((e: any) => e.ID_Rol === 2 && e.EstadoUsuario !== false);
+          const onlyMechanics = empData.filter((e: any) => (Number(e.ID_Rol) === 2 || Number(e.id_rol) === 2) && e.EstadoUsuario !== false && e.EstadoUsuario !== 'Inactivo');
           setMechanics(onlyMechanics.map((e: any) => ({
             id: e.ID_Empleado,
             nombre: e.Nombre,
