@@ -26,23 +26,38 @@ export function PDFPreviewDialog({
 }: PDFPreviewDialogProps) {
 
   const handleGenerate = async () => {
-    const element = document.getElementById('pdf-content-wrapper');
+    // Apuntamos al primer hijo de 'pdf-content-wrapper' para capturar el contenido real sin el scroll
+    const wrapper = document.getElementById('pdf-content-wrapper');
+    const element = wrapper?.firstElementChild as HTMLElement;
     if (!element) return;
-    
+
+    // Generar nombre descriptivo según el tipo
+    let customFilename = `RafaMotos_${type}_${Date.now()}.pdf`;
+    if (type === 'purchase') {
+      customFilename = `Compras_RafaMotos_${data?.invoiceNumber || 'SinNumero'}.pdf`;
+    } else if (type === 'service-order') {
+      customFilename = `Reparaciones_RafaMotos_${data?.orderNumber || 'SinNumero'}.pdf`;
+    }
+
     const opt = {
-      margin:       10,
-      filename:     `RafaMotos_${type}_${Date.now()}.pdf`,
+      margin: 10,
+      filename: customFilename,
       image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        height: element.offsetHeight, // Forzamos la altura total del contenido
+        scrollY: -window.scrollY // Ajuste para evitar desplazamientos
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
     };
 
     try {
-        await html2pdf().set(opt).from(element).save();
-        onGenerate();
-        onOpenChange(false);
-    } catch(err) {
-        console.error(err);
+      await html2pdf().set(opt).from(element).save();
+      onGenerate();
+      onOpenChange(false);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -118,10 +133,10 @@ export function PDFPreviewDialog({
             {data?.items?.map((item: any, index: number) => (
               <TableRow key={index}>
                 <TableCell>{item.productName || item.product}</TableCell>
-                <TableCell><Badge variant="outline">{item.categoryName || item.category}</Badge></TableCell>
+                <TableCell>{item.categoryName || item.category}</TableCell>
                 <TableCell className="text-center">{item.quantity}</TableCell>
-                <TableCell className="text-right">${(item.unitPrice || item.unitCost)?.toLocaleString()}</TableCell>
-                <TableCell className="text-right">${item.total?.toLocaleString()}</TableCell>
+                <TableCell className="text-right font-medium text-slate-900">${(Number(item.unitPrice || item.unitCost))?.toLocaleString('es-CO')}</TableCell>
+                <TableCell className="text-right font-black text-blue-600">${Number(item.total)?.toLocaleString('es-CO')}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -135,12 +150,12 @@ export function PDFPreviewDialog({
         <div className="w-64 space-y-2">
           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span>${data?.subtotal?.toLocaleString()}</span>
+            <span>${Number(data?.subtotal)?.toLocaleString('es-CO')}</span>
           </div>
           <Separator />
           <div className="flex justify-between font-bold text-lg">
             <span>TOTAL:</span>
-            <span>${data?.total?.toLocaleString()}</span>
+            <span className="text-blue-600">${Number(data?.total)?.toLocaleString('es-CO')}</span>
           </div>
         </div>
       </div>
@@ -255,8 +270,8 @@ export function PDFPreviewDialog({
                     <TableRow key={index}>
                       <TableCell>{part.product}</TableCell>
                       <TableCell className="text-right">{part.quantity}</TableCell>
-                      <TableCell className="text-right">${part.unitCost?.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">${(part.quantity * part.unitCost)?.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">${Number(part.unitCost)?.toLocaleString('es-CO')}</TableCell>
+                      <TableCell className="text-right">${Number(part.quantity * (part.unitCost || 0))?.toLocaleString('es-CO')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -280,7 +295,7 @@ export function PDFPreviewDialog({
               ))}
               <div className="flex justify-between items-center py-2 font-medium">
                 <span>Total:</span>
-                <span>${data?.serviceCost?.toLocaleString()}</span>
+                <span>${Number(data?.serviceCost)?.toLocaleString('es-CO')}</span>
               </div>
             </div>
           </div>
@@ -296,25 +311,25 @@ export function PDFPreviewDialog({
             {data?.parts && data?.parts.length > 0 && (
               <div className="flex justify-between">
                 <span>Subtotal Repuestos:</span>
-                <span>${data.parts.reduce((sum: number, part: any) => sum + (part.total || 0), 0).toLocaleString()}</span>
+                <span>${Number(data.parts.reduce((sum: number, part: any) => sum + (part.total || 0), 0)).toLocaleString('es-CO')}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span>Total Servicios:</span>
-              <span>${data?.serviceCost?.toLocaleString()}</span>
+              <span>${Number(data?.serviceCost).toLocaleString('es-CO')}</span>
             </div>
             <div className="flex justify-between">
               <span>Subtotal:</span>
-              <span>${data?.subtotal?.toLocaleString()}</span>
+              <span>${Number(data?.subtotal).toLocaleString('es-CO')}</span>
             </div>
             <div className="flex justify-between">
               <span>IVA (19%):</span>
-              <span>${data?.tax?.toLocaleString()}</span>
+              <span>${Number(data?.tax).toLocaleString('es-CO')}</span>
             </div>
             <Separator />
             <div className="flex justify-between font-bold text-xl">
               <span>TOTAL A PAGAR:</span>
-              <span className="text-blue-600">${data?.total?.toLocaleString()}</span>
+              <span className="text-blue-600">${Number(data?.total).toLocaleString('es-CO')}</span>
             </div>
           </div>
         </div>

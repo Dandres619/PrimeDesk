@@ -18,7 +18,7 @@ const getAll = async (filters = {}) => {
                rep.id_agendamiento AS "ID_Agendamiento", rep.fecha AS "Fecha", 
                rep.observaciones AS "Observaciones", rep.tiposervicio AS "TipoServicio", 
                rep.estado AS "Estado",
-               m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "Modelo",
+               m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
                c.id_cliente AS "ID_Cliente", CONCAT(c.nombre, ' ', c.apellido) AS "NombreCliente",
                a.dia AS "DiaAgendamiento",
                CONCAT(e.nombre, ' ', e.apellido) AS "Mecanico",
@@ -46,7 +46,7 @@ const getById = async (id) => {
                rep.id_agendamiento AS "ID_Agendamiento", rep.fecha AS "Fecha", 
                rep.observaciones AS "Observaciones", rep.tiposervicio AS "TipoServicio", 
                rep.estado AS "Estado",
-               m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "Modelo",
+               m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
                a.dia AS "DiaAgendamiento"
         FROM reparaciones rep
         INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta

@@ -11,7 +11,7 @@ import { Checkbox } from './ui/checkbox';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
 import { PDFPreviewDialog } from './PDFPreviewDialog';
-import { Plus, Search, Eye, Edit2, XCircle, FileText, Wrench, Clock, CheckCircle, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, XCircle, FileText, Wrench, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -75,7 +75,7 @@ export function PedidosServicios() {
         motorcycleBrand: r.Marca,
         motorcycleModel: r.Modelo,
         motorcyclePlate: r.Placa,
-        motorcycleYear: '', // No lo da el backend en la vista
+        motorcycleYear: r.Anio,
         clientId: dataMot.find((m: any) => m.ID_Motocicleta === r.ID_Motocicleta)?.ID_Cliente,
         clientName: '', // Se llenará con la info del cliente
         clientPhone: '',
@@ -284,6 +284,8 @@ export function PedidosServicios() {
         const pdfData = {
           ...o,
           date: details.Fecha,
+          motorcycleBrand: details.Marca,
+          motorcycleYear: details.Anio,
           description: 'Reparación de motocicleta',
           observations: details.Observaciones,
           progress: details.avances.map((a: any) => ({ description: a.Descripcion, technician: `${a.NombreEmpleado} ${a.ApellidoEmpleado}` }))

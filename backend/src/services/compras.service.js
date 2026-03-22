@@ -6,7 +6,7 @@ const getAll = async () => {
         SELECT c.id_compra AS "ID_Compra", c.id_proveedor AS "ID_Proveedor", 
                c.id_motocicleta AS "ID_Motocicleta", c.fechacompra AS "FechaCompra", 
                c.total AS "Total", c.notas AS "Notas", c.estado AS "Estado",
-               p.nombreempresa AS "NombreEmpresa", m.placa AS "Placa"
+               p.nombreempresa AS "NombreEmpresa", p.telefono AS "TelefonoProveedor", p.email AS "EmailProveedor", m.placa AS "Placa"
         FROM compras c
         INNER JOIN proveedores p ON c.id_proveedor = p.id_proveedor
         INNER JOIN motocicletas m ON c.id_motocicleta = m.id_motocicleta
@@ -21,7 +21,7 @@ const getById = async (id) => {
         SELECT c.id_compra AS "ID_Compra", c.id_proveedor AS "ID_Proveedor", 
                c.id_motocicleta AS "ID_Motocicleta", c.fechacompra AS "FechaCompra", 
                c.total AS "Total", c.notas AS "Notas", c.estado AS "Estado",
-               p.nombreempresa AS "NombreEmpresa", m.placa AS "Placa"
+               p.nombreempresa AS "NombreEmpresa", p.telefono AS "TelefonoProveedor", p.email AS "EmailProveedor", m.placa AS "Placa"
         FROM compras c
         INNER JOIN proveedores p ON c.id_proveedor = p.id_proveedor
         INNER JOIN motocicletas m ON c.id_motocicleta = m.id_motocicleta
@@ -33,9 +33,10 @@ const getById = async (id) => {
         SELECT dc.id_detallecompra AS "ID_DetalleCompra", dc.id_compra AS "ID_Compra", 
                dc.id_producto AS "ID_Producto", dc.cantidad AS "Cantidad", 
                dc.preciounitario AS "PrecioUnitario", dc.subtotal AS "Subtotal",
-               pr.nombre AS "NombreProducto"
+               pr.nombre AS "NombreProducto", cat.nombre AS "NombreCategoria"
         FROM detalle_compras dc
         INNER JOIN productos pr ON dc.id_producto = pr.id_producto
+        INNER JOIN categorias_productos cat ON pr.id_categoria = cat.id_categoria
         WHERE dc.id_compra = ${id}
     `;
 

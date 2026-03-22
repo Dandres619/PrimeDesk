@@ -86,7 +86,7 @@ export function Compras() {
     setMotorbikes(data);
   };
 
-  const filteredPurchases = purchases.filter((p: any) => 
+  const filteredPurchases = purchases.filter((p: any) =>
     (p.ID_Compra?.toString() || '').includes(searchTerm.toLowerCase()) ||
     (p.NombreEmpresa || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -146,25 +146,39 @@ export function Compras() {
     }
   };
 
-  const handleGeneratePDF = (purchase: any) => {
-    setPdfData({
-      invoiceNumber: `COMP-${purchase.ID_Compra}`,
-      date: purchase.FechaCompra,
-      status: purchase.Estado,
-      supplier: purchase.NombreEmpresa,
-      supplierContact: purchase.NombreEmpresa,
-      items: (purchase.detalle || []).map((item: any) => ({
-        product: item.NombreProducto,
-        quantity: item.Cantidad,
-        unitCost: item.PrecioUnitario,
-        total: item.Subtotal
-      })),
-      subtotal: purchase.Total,
-      tax: 0,
-      total: purchase.Total,
-      notes: purchase.Notas
-    });
-    setShowPDFPreview(true);
+  const handleGeneratePDF = async (purchase: any) => {
+    try {
+      // Cargamos detalles completos desde el servidor para tener los productos
+      const resp = await fetch(`${API_URL}/compras/${purchase.ID_Compra}`, { 
+        headers: { 'Authorization': `Bearer ${token}` } 
+      });
+      const fullPurchase = await resp.json();
+
+      setPdfData({
+        invoiceNumber: `COMP-${fullPurchase.ID_Compra}`,
+        date: fullPurchase.FechaCompra,
+        status: fullPurchase.Estado,
+        supplier: fullPurchase.NombreEmpresa,
+        supplierContact: fullPurchase.NombreEmpresa,
+        supplierPhone: fullPurchase.TelefonoProveedor,
+        supplierEmail: fullPurchase.EmailProveedor,
+        // Usamos los items detallados que vienen en fullPurchase.detalle
+        items: (fullPurchase.detalle || []).map((item: any) => ({
+          product: item.NombreProducto,
+          category: item.NombreCategoria,
+          quantity: item.Cantidad,
+          unitCost: Number(item.PrecioUnitario), // Asegurar que sea número para toLocaleString()
+          total: Number(item.Subtotal)
+        })),
+        subtotal: Number(fullPurchase.Total),
+        tax: 0,
+        total: Number(fullPurchase.Total),
+        notes: fullPurchase.Notas
+      });
+      setShowPDFPreview(true);
+    } catch (error) {
+      toast.error('Error al cargar detalles para el PDF');
+    }
   };
 
   const fetchPurchaseDetails = async (id: number) => {
@@ -253,7 +267,7 @@ export function Compras() {
                           onClick={() => { setPurchaseToCancel(p); setShowConfirmDialog(true); }}
                           title="Anular compra"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <XCircle className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
@@ -298,7 +312,7 @@ export function Compras() {
         </DialogContent>
       </Dialog>
 
-      <PDFPreviewDialog open={showPDFPreview} onOpenChange={setShowPDFPreview} data={pdfData} type="purchase" onGenerate={() => {}} />
+      <PDFPreviewDialog open={showPDFPreview} onOpenChange={setShowPDFPreview} data={pdfData} type="purchase" onGenerate={() => { }} />
 
       <ConfirmDialog
         open={showConfirmDialog}
