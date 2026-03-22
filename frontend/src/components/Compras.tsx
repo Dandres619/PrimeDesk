@@ -391,9 +391,37 @@ function PurchaseDialog({ suppliers, availableProducts, motorbikes, onSave, isSa
           <div className="space-y-2">
             <Label>Fecha de Compra *</Label>
             <Popover>
-              <PopoverTrigger asChild><Button variant="outline" className="w-full text-left font-normal border-gray-300"><CalendarIcon className="mr-2 h-4 w-4" />{date ? format(date, "PPP", { locale: es }) : "Fecha"}</Button></PopoverTrigger>
-              <PopoverContent className="w-auto p-0 border-none shadow-2xl" align="start">
-                <Calendar mode="single" selected={date} onSelect={setDate} className="p-4" disabled={(d) => d > new Date()} style={{ '--cell-size': '45px' } as any} />
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-left font-normal h-10 border-slate-200 hover:border-blue-400 transition-colors">
+                  <CalendarIcon className="mr-2 h-4 w-4 text-blue-600" />
+                  {date ? format(date, "PPP", { locale: es }) : <span>Seleccionar fecha...</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[380px] p-2 border-none shadow-2xl rounded-xl overflow-hidden bg-white" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  locale={es}
+                  className="p-4"
+                  classNames={{
+                    months: "flex w-full flex-col",
+                    month: "w-full space-y-4",
+                    month_caption: "flex justify-center h-10 items-center relative",
+                    caption_label: "text-base font-bold text-slate-900",
+                    nav: "flex items-center space-x-1",
+                    button_previous: "absolute left-1 h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100 flex items-center justify-center border rounded-md border-slate-200",
+                    button_next: "absolute right-1 h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100 flex items-center justify-center border rounded-md border-slate-200",
+                    table: "w-full border-collapse",
+                    weekdays: "flex justify-between mb-2",
+                    weekday: "text-slate-500 rounded-md w-12 font-medium text-sm text-center uppercase",
+                    week: "flex w-full mt-2 justify-between",
+                    day: "h-12 w-12 p-0 font-medium text-center text-base relative focus-within:relative focus-within:z-20 aria-selected:bg-blue-600 aria-selected:text-white rounded-lg hover:bg-slate-100 cursor-pointer flex items-center justify-center transition-colors",
+                    today: "bg-slate-100 text-slate-900 font-bold",
+                    outside: "text-slate-300 opacity-50",
+                  }}
+                  disabled={(d) => d > new Date()}
+                />
               </PopoverContent>
             </Popover>
           </div>
