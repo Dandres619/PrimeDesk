@@ -95,7 +95,7 @@ export function MiPerfil() {
         if (!formData.apellido) errors.apellido = 'Requerido';
         
         if (!formData.telefono) errors.telefono = 'Requerido';
-        else if (!/^\d{10}$/.test(formData.telefono)) errors.telefono = 'Exactamente 10 números';
+        else if (!/^\d{7,15}$/.test(formData.telefono)) errors.telefono = 'Teléfono inválido (mínimo 7 dígitos)';
 
         if (!formData.barrio) errors.barrio = 'Requerido';
         if (!formData.direccion) errors.direccion = 'Requerido';

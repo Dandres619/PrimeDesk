@@ -81,13 +81,27 @@ const update = async (id, data) => {
 
 const remove = async (id) => {
     const sql = await getPool();
+
+    // 1. Verificar si el proveedor existe y su estado
+    const [prov] = await sql`SELECT nombreempresa, estado FROM proveedores WHERE id_proveedor = ${id}`;
+    if (!prov) throw { status: 404, message: 'Proveedor no encontrado.' };
+
+    if (prov.estado !== false && prov.estado !== 'Inactivo') {
+        throw { status: 400, message: `No se puede eliminar el proveedor ${prov.nombreempresa} porque está Activo. Primero debe inactivarlo.` };
+    }
+
+    // 2. Verificar asociaciones (compras)
+    const compras = await sql`SELECT COUNT(*) FROM compras WHERE id_proveedor = ${id}`;
+    if (parseInt(compras[0].count) > 0) {
+        throw { status: 400, message: `No se puede eliminar a ${prov.nombreempresa} porque tiene compras asociadas en el sistema.` };
+    }
+
     const [row] = await sql`
         DELETE FROM proveedores 
         WHERE id_proveedor = ${id}
         RETURNING id_proveedor AS "ID_Proveedor"
     `;
-    if (!row) throw { status: 404, message: 'Proveedor no encontrado.' };
-    return { message: 'Proveedor eliminado.' };
+    return { message: 'Proveedor eliminado correctamente.' };
 };
 
 module.exports = { getAll, getById, create, update, remove };

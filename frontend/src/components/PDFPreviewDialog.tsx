@@ -1,10 +1,9 @@
-import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { FileText, Download, Printer } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 // @ts-ignore
@@ -33,9 +32,9 @@ export function PDFPreviewDialog({
     const opt = {
       margin:       10,
       filename:     `RafaMotos_${type}_${Date.now()}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
     };
 
     try {
@@ -137,10 +136,6 @@ export function PDFPreviewDialog({
           <div className="flex justify-between">
             <span>Subtotal:</span>
             <span>${data?.subtotal?.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>IVA (19%):</span>
-            <span>${data?.tax?.toLocaleString()}</span>
           </div>
           <Separator />
           <div className="flex justify-between font-bold text-lg">

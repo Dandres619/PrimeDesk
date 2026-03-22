@@ -52,13 +52,27 @@ const updateCategoria = async (id, { nombre, descripcion, estado }) => {
 
 const deleteCategoria = async (id) => {
     const sql = await getPool();
+
+    // 1. Verificar si la categoría existe y su estado
+    const [cat] = await sql`SELECT nombre, estado FROM categorias_productos WHERE id_categoria = ${id}`;
+    if (!cat) throw { status: 404, message: 'Categoría no encontrada.' };
+
+    if (cat.estado !== false && cat.estado !== 'Inactivo') {
+        throw { status: 400, message: `No se puede eliminar la categoría ${cat.nombre} porque está Activa. Primero debe inactivarla.` };
+    }
+
+    // 2. Verificar asociaciones (productos)
+    const prods = await sql`SELECT COUNT(*) FROM productos WHERE id_categoria = ${id}`;
+    if (parseInt(prods[0].count) > 0) {
+        throw { status: 400, message: `No se puede eliminar la categoría ${cat.nombre} porque tiene productos asociados.` };
+    }
+
     const [row] = await sql`
         DELETE FROM categorias_productos 
         WHERE id_categoria = ${id}
         RETURNING id_categoria AS "ID_Categoria"
     `;
-    if (!row) throw { status: 404, message: 'Categoría no encontrada.' };
-    return { message: 'Categoría eliminada.' };
+    return { message: 'Categoría eliminada correctamente.' };
 };
 
 module.exports = { getAllCategorias, getCategoriaById, createCategoria, updateCategoria, deleteCategoria };

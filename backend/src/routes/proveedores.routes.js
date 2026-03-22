@@ -12,8 +12,8 @@ const router = Router();
 const validations = [
     body('nombre_empresa').notEmpty().withMessage('Nombre empresa requerido.'),
     body('persona_contacto').notEmpty().withMessage('Persona de contacto requerida.'),
-    body('telefono').isLength({ min: 7, max: 10 }).withMessage('Teléfono inválido.'),
-    body('email').isEmail().withMessage('Email inválido.'),
+    body('telefono').isLength({ min: 7 }).withMessage('Teléfono inválido.'),
+    body('email').isEmail().withMessage('Email inválido (ej: usuario@ejemplo.com).'),
     body('direccion').notEmpty().withMessage('Dirección requerida.'),
     handleValidation,
 ];

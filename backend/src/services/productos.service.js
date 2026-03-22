@@ -77,13 +77,32 @@ const updateStock = async (id, cantidad) => {
 
 const remove = async (id) => {
   const sql = await getPool();
-  const [row] = await sql`
+
+  // 1. Verificar si el producto existe y su estado
+  const [prod] = await sql`SELECT nombre, estado FROM productos WHERE id_producto = ${id}`;
+  if (!prod) throw { status: 404, message: 'Producto no encontrado.' };
+
+  if (prod.estado !== false && prod.estado !== 'Inactivo') {
+      throw { status: 400, message: `No se puede eliminar el producto ${prod.nombre} porque está Activo. Primero debe inactivarlo.` };
+  }
+
+  // 2. Verificar asociaciones (compras)
+  const compras = await sql`SELECT COUNT(*) FROM detalle_compras WHERE id_producto = ${id}`;
+  if (parseInt(compras[0].count) > 0) {
+      throw { status: 400, message: `No se puede eliminar ${prod.nombre} porque tiene compras registradas.` };
+  }
+
+  // 3. Verificar asociaciones (ventas)
+  const ventas = await sql`SELECT COUNT(*) FROM ventas_compras WHERE id_compra IN (SELECT id_compra FROM detalle_compras WHERE id_producto = ${id})`;
+  if (parseInt(ventas[0].count) > 0) {
+      throw { status: 400, message: `No se puede eliminar ${prod.nombre} porque tiene ventas registradas.` };
+  }
+
+  await sql`
         DELETE FROM productos 
         WHERE id_producto = ${id}
-        RETURNING id_producto AS "ID_Producto"
     `;
-  if (!row) throw { status: 404, message: 'Producto no encontrado.' };
-  return { message: 'Producto eliminado.' };
+  return { message: 'Producto eliminado correctamente.' };
 };
 
 module.exports = { getAll, getById, create, update, updateStock, remove };

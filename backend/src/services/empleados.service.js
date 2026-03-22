@@ -174,15 +174,25 @@ const update = async (id, data, file) => {
 const remove = async (id) => {
   const sql = await getPool();
 
-  // 1. Verificar agendamientos
-  const agendamientos = await sql`SELECT COUNT(*) FROM agendamientos WHERE id_empleado = ${id}`;
-  if (parseInt(agendamientos[0].count) > 0) {
-    throw { status: 400, message: 'No se puede eliminar este empleado porque tiene agendamientos asignados.' };
+  // 1. Verificar si el empleado existe y su estado
+  const [emp] = await sql`SELECT e.id_usuario, u.estado, e.nombre, e.apellido FROM empleados e INNER JOIN usuarios u ON e.id_usuario = u.id_usuario WHERE e.id_empleado = ${id}`;
+  if (!emp) throw { status: 404, message: 'Empleado no encontrado.' };
+
+  if (emp.estado !== false && emp.estado !== 'Inactivo') {
+    throw { status: 400, message: `No se puede eliminar un empleado activo. Primero debe inactivar a ${emp.nombre} ${emp.apellido} desde el módulo de Usuarios.` };
   }
 
-  // Obtener ID de usuario antes de borrar el empleado
-  const [emp] = await sql`SELECT id_usuario FROM empleados WHERE id_empleado = ${id}`;
-  if (!emp) throw { status: 404, message: 'Empleado no encontrado.' };
+  // 2. Verificar agendamientos
+  const agendamientos = await sql`SELECT COUNT(*) FROM agendamientos WHERE id_empleado = ${id}`;
+  if (parseInt(agendamientos[0].count) > 0) {
+    throw { status: 400, message: `No se puede eliminar a ${emp.nombre} ${emp.apellido} porque tiene agendamientos asignados en el calendario.` };
+  }
+
+  // 3. Verificar reparaciones (por si acaso aunque no tenga agendamiento directo)
+  const reparaciones = await sql`SELECT COUNT(*) FROM reparaciones_avances WHERE id_empleado = ${id}`;
+  if (parseInt(reparaciones[0].count) > 0) {
+    throw { status: 400, message: `No se puede eliminar a ${emp.nombre} ${emp.apellido} porque tiene avances de reparación registrados.` };
+  }
 
   try {
     return await sql.begin(async (tx) => {

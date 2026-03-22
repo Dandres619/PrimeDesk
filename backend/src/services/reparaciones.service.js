@@ -19,10 +19,18 @@ const getAll = async (filters = {}) => {
                rep.observaciones AS "Observaciones", rep.tiposervicio AS "TipoServicio", 
                rep.estado AS "Estado",
                m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "Modelo",
+               c.id_cliente AS "ID_Cliente", CONCAT(c.nombre, ' ', c.apellido) AS "NombreCliente",
                a.dia AS "DiaAgendamiento",
-               CONCAT(e.nombre, ' ', e.apellido) AS "Mecanico"
+               CONCAT(e.nombre, ' ', e.apellido) AS "Mecanico",
+               (
+                 SELECT json_agg(json_build_object('ID_Servicio', s.id_servicio, 'NombreServicio', s.nombre))
+                 FROM reparaciones_servicios rs
+                 JOIN servicios s ON rs.id_servicio = s.id_servicio
+                 WHERE rs.id_reparacion = rep.id_reparacion
+               ) AS "servicios"
         FROM reparaciones rep
         INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
+        INNER JOIN clientes c ON m.id_cliente = c.id_cliente
         LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
         LEFT JOIN empleados e ON a.id_empleado = e.id_empleado
         ${where}

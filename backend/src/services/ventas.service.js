@@ -54,14 +54,14 @@ const getById = async (id) => {
   return { ...sales[0], servicios: services, compras: purchases };
 };
 
-const create = async ({ id_reparacion, id_empleado, id_motocicleta, total, observaciones, servicios, compras }) => {
+const create = async ({ id_reparacion, id_empleado, id_motocicleta, fecha, total, observaciones, servicios, compras }) => {
   const sql = await getPool();
 
   try {
     const result = await sql.begin(async (tx) => {
       const [venta] = await tx`
                 INSERT INTO ventas (id_reparacion, id_empleado, id_motocicleta, fecha, total, observaciones, estado)
-                VALUES (${id_reparacion}, ${id_empleado}, ${id_motocicleta}, NOW(), ${total}, ${observaciones || null}, 1)
+                VALUES (${id_reparacion}, ${id_empleado}, ${id_motocicleta}, COALESCE(${fecha || null}::timestamp, NOW()), ${total}, ${observaciones || null}, true)
                 RETURNING id_venta AS "ID_Venta"
             `;
 
@@ -105,4 +105,14 @@ const update = async (id, { total, observaciones, estado }) => {
   return row;
 };
 
-module.exports = { getAll, getById, create, update };
+const remove = async (id) => {
+  const sql = await getPool();
+  const [row] = await sql`
+        UPDATE ventas SET estado = false WHERE id_venta = ${id}
+        RETURNING id_venta AS "ID_Venta"
+    `;
+  if (!row) throw { status: 404, message: 'Venta no encontrada.' };
+  return row;
+};
+
+module.exports = { getAll, getById, create, update, remove };

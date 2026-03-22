@@ -62,7 +62,7 @@ export function CategoriasProductos() {
       const payload = {
         nombre: data.name,
         descripcion: data.description,
-        estado: editingCategory ? (data.status === 'Activo') : true
+        estado: editingCategory ? (editingCategory.status === 'Activo') : true
       };
 
       const res = await fetch(url, {
@@ -107,13 +107,14 @@ export function CategoriasProductos() {
 
   const toggleStatus = async (category: any) => {
     try {
+      const newStatus = category.status !== 'Activo';
       const res = await fetch(`${API_URL}/categorias/${category.id}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({
           nombre: category.name,
           descripcion: category.description,
-          estado: category.status !== 'Activo'
+          estado: newStatus
         })
       });
       if (!res.ok) {

@@ -440,7 +440,7 @@ export function Ventas() {
                         {format(new Date(sale.date), 'PPP', { locale: es })}
                       </p>
                       {sale.anulada && (
-                        <Badge className="bg-red-100 text-red-800 mt-1">
+                        <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 mt-1">
                           Anulada
                         </Badge>
                       )}
@@ -479,7 +479,7 @@ export function Ventas() {
                         size="sm"
                         variant="ghost"
                         onClick={() => setViewingSale(sale)}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -487,7 +487,7 @@ export function Ventas() {
                         size="sm"
                         variant="ghost"
                         onClick={() => showPDFPreview(sale.id)}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                       >
                         <FileText className="w-4 h-4" />
                       </Button>
@@ -496,7 +496,7 @@ export function Ventas() {
                           size="sm"
                           variant="ghost"
                           onClick={() => showCancelConfirm(sale.id)}
-                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                          className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                         >
                           <XCircle className="w-4 h-4" />
                         </Button>
@@ -569,7 +569,7 @@ export function Ventas() {
                       <p className="text-foreground">{format(new Date(viewingSale.date), 'PPP', { locale: es })}</p>
                     </div>
                     <div>
-                      <Label>Reparación</Label>
+                      <Label>Pedido de Servicio</Label>
                       <p className="font-medium text-foreground">{viewingSale.serviceOrderNumber}</p>
                     </div>
                     <div>
@@ -783,15 +783,15 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <Label htmlFor="serviceOrderId">Reparación *</Label>
+          <Label htmlFor="serviceOrderId">Pedido de Servicio *</Label>
           <select
             id="serviceOrderId"
             value={formData.serviceOrderId}
             onChange={(e) => handleServiceOrderChange(e.target.value)}
-            className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           >
-            <option value="" className="bg-background text-foreground">Seleccionar reparación</option>
+            <option value="">Seleccionar pedido de servicio</option>
             {serviceOrders
               .filter((order: any) => !order.associatedSaleId) // Solo mostrar pedidos sin venta asociada
               .map((order: any) => (
@@ -817,13 +817,13 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
               id="clientId"
               value={formData.clientId}
               onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value }))}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={true}
               required
             >
-              <option value="" className="bg-background text-foreground">Seleccionar cliente</option>
+              <option value="">Seleccionar cliente</option>
               {clients.map((client: any) => (
-                <option key={client.id} value={client.id} className="bg-background text-foreground">
+                <option key={client.id} value={client.id}>
                   {client.name}
                 </option>
               ))}
@@ -835,15 +835,15 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
               id="motorcycleId"
               value={formData.motorcycleId}
               onChange={(e) => setFormData(prev => ({ ...prev, motorcycleId: e.target.value }))}
-              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={true}
               required
             >
-              <option value="" className="bg-background text-foreground">Seleccionar motocicleta</option>
+              <option value="">Seleccionar motocicleta</option>
               {motorcycles
                 .filter((m: any) => !formData.clientId || m.clientId === parseInt(formData.clientId))
                 .map((moto: any) => (
-                  <option key={moto.id} value={moto.id} className="bg-background text-foreground">
+                  <option key={moto.id} value={moto.id}>
                     {moto.brand} {moto.model} - {moto.plate}
                   </option>
                 ))

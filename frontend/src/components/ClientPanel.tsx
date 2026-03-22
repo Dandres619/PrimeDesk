@@ -161,8 +161,11 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
         }
 
         if (resEmp.ok) {
-          const empData = await resEmp.json();
-          const onlyMechanics = empData.filter((e: any) => (Number(e.ID_Rol) === 2 || Number(e.id_rol) === 2) && e.EstadoUsuario !== false && e.EstadoUsuario !== 'Inactivo');
+          const empData = await resEmp.ok ? await resEmp.json() : [];
+          const onlyMechanics = empData.filter((e: any) => 
+            (Number(e.ID_Rol) === 2 || Number(e.id_rol) === 2 || e.NombreRol === 'Mecánico') && 
+            e.EstadoUsuario !== false && e.EstadoUsuario !== 'Inactivo'
+          );
           setMechanics(onlyMechanics.map((e: any) => ({
             id: e.ID_Empleado,
             nombre: e.Nombre,
@@ -192,7 +195,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
   React.useEffect(() => {
     fetchClientData();
-  }, [fetchClientData]);
+  }, [fetchClientData, activeSection]);
 
   React.useEffect(() => {
     if (activeSection === 'motos' || activeSection === 'agendar') {
@@ -508,7 +511,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     return moto ? `${moto.marca} ${moto.modelo} - ${moto.placa}` : 'Moto no encontrada';
   };
 
-  const getServiciosMoto = (motoId: number) => {
+  const getServiciosMoto = () => {
     // La información ya está filtrada por fetchMotoHistory(motoId)
     return motoHistory;
   };
@@ -711,7 +714,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {getServiciosMoto(selectedMotoForHistory).map((servicio: any) => (
+                          {getServiciosMoto().map((servicio: any) => (
                             <TableRow key={servicio.id}>
                               <TableCell>{format(new Date(servicio.Fecha), 'dd/MM/yyyy HH:mm')}</TableCell>
                               <TableCell>{servicio.Observaciones || 'Sin observaciones'}</TableCell>
@@ -723,7 +726,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                       </Table>
                     </div>
 
-                    {getServiciosMoto(selectedMotoForHistory).length === 0 && (
+                    {getServiciosMoto().length === 0 && (
                       <div className="text-center py-8 text-muted-foreground">
                         No hay servicios registrados para esta moto
                       </div>
@@ -1071,8 +1074,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                   id="kilometraje"
                   type="number"
                   value={motoFormData.kilometraje}
-                  onChange={(e) => setMotoFormData(prev => ({ ...prev, kilometraje: parseInt(e.target.value) || 0 }))}
-                  placeholder="0"
+                  onChange={(e) => setMotoFormData(prev => ({ ...prev, kilometraje: e.target.value }))}
+                  placeholder="Ingrese el kilometraje"
                   min="0"
                 />
               </div>
@@ -1091,7 +1094,12 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 Cancelar
               </Button>
               <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700" disabled={isSubmittingMoto}>
-                {isSubmittingMoto ? 'Guardando...' : (editingMoto ? 'Actualizar Moto' : 'Agregar Moto')}
+                {isSubmittingMoto ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Grabando...
+                  </>
+                ) : (editingMoto ? 'Actualizar Moto' : 'Agregar Moto')}
               </Button>
             </div>
           </form>

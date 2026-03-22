@@ -25,5 +25,6 @@ router.put('/:id', verifyToken, requirePermiso('gestionar_ventas'),
     [body('total').isDecimal().withMessage('Total inválido.'), handleValidation],
     ctrl.update
 );
+router.delete('/:id', verifyToken, requirePermiso('gestionar_ventas'), ctrl.remove);
 
 module.exports = router;

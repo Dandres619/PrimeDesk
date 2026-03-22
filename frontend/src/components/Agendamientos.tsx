@@ -81,7 +81,10 @@ export function Agendamientos() {
 
       if (resEmp.status === 'fulfilled' && resEmp.value.ok) {
         const empData = await resEmp.value.json();
-        setMechanics(empData.filter((e: any) => (Number(e.ID_Rol) === 2 || Number(e.id_rol) === 2) && e.EstadoUsuario !== false && e.EstadoUsuario !== 'Inactivo'));
+        setMechanics(empData.filter((e: any) => 
+          (Number(e.ID_Rol) === 2 || Number(e.id_rol) === 2 || e.NombreRol === 'Mecánico') && 
+          e.EstadoUsuario !== false && e.EstadoUsuario !== 'Inactivo'
+        ));
       }
 
       if (resSer.status === 'fulfilled' && resSer.value.ok) {

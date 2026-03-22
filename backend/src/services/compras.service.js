@@ -42,14 +42,14 @@ const getById = async (id) => {
   return { ...purchases[0], detalle: detail };
 };
 
-const create = async ({ id_proveedor, id_motocicleta, total, notas, detalle }) => {
+const create = async ({ id_proveedor, id_motocicleta, fechacompra, total, notas, detalle }) => {
   const sql = await getPool();
 
   try {
     const result = await sql.begin(async (tx) => {
       const [compra] = await tx`
                 INSERT INTO compras (id_proveedor, id_motocicleta, fechacompra, total, notas, estado)
-                VALUES (${id_proveedor}, ${id_motocicleta}, NOW(), ${total}, ${notas || null}, 1)
+                VALUES (${id_proveedor}, ${id_motocicleta}, COALESCE(${fechacompra || null}::timestamp, NOW()), ${total}, ${notas || null}, 'Pendiente de venta')
                 RETURNING id_compra AS "ID_Compra"
             `;
 
@@ -64,11 +64,11 @@ const create = async ({ id_proveedor, id_motocicleta, total, notas, detalle }) =
 
         await tx`INSERT INTO detalle_compras ${sql(itemInserts, 'id_compra', 'id_producto', 'cantidad', 'preciounitario', 'subtotal')}`;
 
-        // Actualizar stock de los productos
+        // Actualizar stock de los productos a 0 según requerimiento especial
         for (const item of detalle) {
           await tx`
                         UPDATE productos 
-                        SET cantidad = cantidad + ${item.cantidad} 
+                        SET cantidad = 0 
                         WHERE id_producto = ${item.id_producto}
                     `;
         }
@@ -97,4 +97,26 @@ const update = async (id, { id_proveedor, id_motocicleta, total, notas, estado }
   return row;
 };
 
-module.exports = { getAll, getById, create, update };
+const remove = async (id) => {
+  const sql = await getPool();
+
+  // 1. Validar que la compra no esté asociada a una venta
+  const association = await sql`SELECT 1 FROM ventas_compras WHERE id_compra = ${id} LIMIT 1`;
+  if (association.length > 0) {
+    throw { status: 400, message: 'No se puede anular la compra porque ya está asociada a una venta.' };
+  }
+
+  // 2. Anular la compra y revertir el stock de productos
+  try {
+    await sql.begin(async (tx) => {
+      // Marcar compra como anulada
+      await tx`UPDATE compras SET estado = 'Anulado' WHERE id_compra = ${id}`;
+    });
+    return { message: 'Compra anulada y stock actualizado.' };
+  } catch (err) {
+    console.error('Error al anular compra:', err);
+    throw err;
+  }
+};
+
+module.exports = { getAll, getById, create, update, remove };
