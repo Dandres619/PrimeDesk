@@ -159,7 +159,7 @@ export function Servicios() {
           </div>
           <div>
             <h1 className="text-2xl font-semibold">Servicios</h1>
-            <p className="text-muted-foreground">Catálogo de reparaciones y mantenimientos</p>
+            <p className="text-muted-foreground">Catálogo de servicios para motocicletas</p>
           </div>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -205,8 +205,7 @@ export function Servicios() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-blue-600" />
-                Listado de Servicios ({filteredServices.length})
+                Lista de Servicios ({filteredServices.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -249,7 +248,7 @@ export function Servicios() {
                               description: `¿Está seguro de que desea eliminar el servicio ${s.Nombre}? Esta acción no se puede deshacer.`,
                               confirmText: 'Eliminar',
                               variant: 'delete',
-                               onConfirm: () => deleteService(s)
+                              onConfirm: () => deleteService(s)
                             })} className="text-red-600 hover:text-red-700 hover:bg-red-50">
                               <Trash2 className="w-4 h-4" />
                             </Button>

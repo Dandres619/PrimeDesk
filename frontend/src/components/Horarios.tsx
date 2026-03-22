@@ -232,7 +232,6 @@ export function Horarios() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-blue-600" />
             Horarios de Trabajo ({filteredSchedules.length})
           </CardTitle>
         </CardHeader>
@@ -296,8 +295,9 @@ export function Horarios() {
                         <Button size="sm" variant="ghost" onClick={() => { setEditingSchedule(s); setIsDialogOpen(true); }} className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20">
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({ open: true, title: 'Eliminar Horario', description: `¿Está seguro de que desea eliminar el horario de ${s.mechanicName}? Esta acción no se puede deshacer.`, confirmText: 'Eliminar', variant: 'delete', onConfirm: () => handleDelete(s)
-                            })} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
+                        <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({
+                          open: true, title: 'Eliminar Horario', description: `¿Está seguro de que desea eliminar el horario de ${s.mechanicName}? Esta acción no se puede deshacer.`, confirmText: 'Eliminar', variant: 'delete', onConfirm: () => handleDelete(s)
+                        })} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>

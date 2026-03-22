@@ -185,7 +185,7 @@ export function Proveedores() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">{stats.map((s, i) => (<Card key={i}><CardContent className="flex items-center p-6"><s.icon className={`w-8 h-8 ${s.color} mr-4`} /><div><p className="text-2xl font-bold">{s.val}</p><p className="text-muted-foreground">{s.label}</p></div></CardContent></Card>))}</div>
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Truck className="w-5 h-5 text-blue-600" /> Listado de Proveedores</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2">Lista de Proveedores ({filtered.length})</CardTitle></CardHeader>
         <CardContent>
           <Table>
             <TableHeader>

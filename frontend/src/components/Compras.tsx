@@ -149,8 +149,8 @@ export function Compras() {
   const handleGeneratePDF = async (purchase: any) => {
     try {
       // Cargamos detalles completos desde el servidor para tener los productos
-      const resp = await fetch(`${API_URL}/compras/${purchase.ID_Compra}`, { 
-        headers: { 'Authorization': `Bearer ${token}` } 
+      const resp = await fetch(`${API_URL}/compras/${purchase.ID_Compra}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       const fullPurchase = await resp.json();
 
@@ -199,7 +199,7 @@ export function Compras() {
     switch (status) {
       case 'Pendiente de venta':
         return <Badge className="bg-blue-100 text-blue-800 border-none">{status}</Badge>;
-      case 'Anulado':
+      case 'Anulada':
         return <Badge variant="destructive" className="bg-red-100 text-red-800 border-none">{status}</Badge>;
       case 'Con Venta':
         return <Badge className="bg-green-100 text-green-800 border-none">{status}</Badge>;
@@ -222,12 +222,12 @@ export function Compras() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card><CardContent className="flex items-center p-6"><ShoppingCart className="w-8 h-8 text-blue-600 mr-4" /><div><p className="text-2xl font-bold">{purchases.length}</p><p className="text-muted-foreground">Total Compras</p></div></CardContent></Card>
-        <Card><CardContent className="flex items-center p-6"><XCircle className="w-8 h-8 text-red-600 mr-4" /><div><p className="text-2xl font-bold">{purchases.filter((p: any) => p.Estado === 'Anulado').length}</p><p className="text-muted-foreground">Anuladas</p></div></CardContent></Card>
-        <Card><CardContent className="flex items-center p-6"><TrendingUp className="w-8 h-8 text-purple-600 mr-4" /><div><p className="text-2xl font-bold">${purchases.filter((p: any) => p.Estado !== 'Anulado').reduce((s: any, p: any) => s + parseFloat(p.Total), 0).toLocaleString()}</p><p className="text-muted-foreground">Total Invertido</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center p-6"><XCircle className="w-8 h-8 text-red-600 mr-4" /><div><p className="text-2xl font-bold">{purchases.filter((p: any) => p.Estado === 'Anulada').length}</p><p className="text-muted-foreground">Anuladas</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center p-6"><TrendingUp className="w-8 h-8 text-purple-600 mr-4" /><div><p className="text-2xl font-bold">${purchases.filter((p: any) => p.Estado !== 'Anulada').reduce((s: any, p: any) => s + parseFloat(p.Total), 0).toLocaleString()}</p><p className="text-muted-foreground">Total Invertido</p></div></CardContent></Card>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Compras ({filteredPurchases.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Lista de Compras ({filteredPurchases.length})</CardTitle></CardHeader>
         <CardContent>
           <Table>
             <TableHeader><TableRow><TableHead>Compra</TableHead><TableHead>Proveedor</TableHead><TableHead>Fecha</TableHead><TableHead>Total</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>

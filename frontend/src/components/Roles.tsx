@@ -271,8 +271,7 @@ export function Roles() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-blue-600" />
-              Gestión de Roles ({filteredRoles.length})
+              Lista de Roles ({filteredRoles.length})
             </CardTitle>
           </CardHeader>
           <CardContent>

@@ -227,8 +227,7 @@ export function Motos() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Bike className="w-5 h-5 text-blue-600" />
-                Listado de Motocicletas ({filteredMotos.length})
+                Lista de Motocicletas ({filteredMotos.length})
               </CardTitle>
             </CardHeader>
             <CardContent>

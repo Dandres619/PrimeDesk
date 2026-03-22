@@ -82,7 +82,7 @@ export function PedidosServicios() {
         clientDocument: '',
         observations: r.Observaciones,
         associatedSaleId: null, // Si tiene venta asociada en el futuro
-        anulado: r.Estado === 'Anulado',
+        anulada: r.Estado === 'Anulada',
         estadoBase: r.Estado,
         // Los servicios y avances no vienen en getAll por defecto en esta versión simplificada
         // Pero el backend de getById sí los trae. Solo marcaremos selectedServices vacío aquí y lo rellenamos al abrir.
@@ -234,7 +234,7 @@ export function PedidosServicios() {
       const res = await fetch(`${API_URL}/reparaciones/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ estado: 'Anulado', tipo_servicio: 'Directo' })
+        body: JSON.stringify({ estado: 'Anulada', tipo_servicio: 'Directo' })
       });
       if (!res.ok) {
         const resData = await res.json();
@@ -269,9 +269,9 @@ export function PedidosServicios() {
   const paginatedServiceOrders = filteredServiceOrders.slice((currentPage - 1) * 5, currentPage * 5);
 
   const stats = [
-    { icon: Wrench, color: 'text-blue-600', value: richServiceOrders.filter(o => !o.anulado).length, label: 'Total Activos' },
-    { icon: CheckCircle, color: 'text-green-600', value: richServiceOrders.filter(o => !o.anulado && o.associatedSaleId).length, label: 'Con Venta' },
-    { icon: Clock, color: 'text-orange-600', value: richServiceOrders.filter(o => !o.anulado && !o.associatedSaleId).length, label: 'Pendientes de Venta' }
+    { icon: Wrench, color: 'text-blue-600', value: richServiceOrders.filter(o => !o.anulada).length, label: 'Total Activos' },
+    { icon: CheckCircle, color: 'text-green-600', value: richServiceOrders.filter(o => !o.anulada && o.associatedSaleId).length, label: 'Con Venta' },
+    { icon: Clock, color: 'text-orange-600', value: richServiceOrders.filter(o => !o.anulada && !o.associatedSaleId).length, label: 'Pendientes de Venta' }
   ];
 
   const actions = (o: any) => [
@@ -293,7 +293,7 @@ export function PedidosServicios() {
         setPdfPreview({ open: true, data: pdfData, type: 'service-order' })
       }, color: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20'
     },
-    ...(o.anulado ? [] : [
+    ...(o.anulada ? [] : [
       { icon: Edit2, onClick: () => handleOpenEdit(o), color: 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20' },
       { icon: XCircle, onClick: () => { if (o.associatedSaleId) { toast.error('No se puede anular una reparación con venta asociada'); return; } setConfirmDialog({ open: true, title: 'Anular Reparación', description: '¿Está seguro de que desea anular esta reparación?', confirmText: 'Anular', variant: 'cancel', onConfirm: () => anularOrder(o.id) }); }, color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
     ])
@@ -342,8 +342,7 @@ export function PedidosServicios() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Wrench className="w-5 h-5 text-blue-600" />
-            Listado de Reparaciones ({filteredServiceOrders.length})
+            Lista de Reparaciones ({filteredServiceOrders.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -353,6 +352,8 @@ export function PedidosServicios() {
                 <TableHead>Reparación</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Motocicleta</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -362,23 +363,26 @@ export function PedidosServicios() {
                   <TableCell>
                     <div>
                       <p className="font-medium">{o.orderNumber}</p>
-                      <p className="text-sm text-muted-foreground">{format(new Date(o.date), 'PPP', { locale: es })}</p>
-                      <div className="flex gap-1 mt-1 flex-wrap">
-                        {o.anulado && <Badge className="bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-300">Anulado</Badge>}
-                        {!o.anulado && o.associatedSaleId && <Badge className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-300">Facturado</Badge>}
-                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium text-foreground">{o.clientName}</p>
-                      <p className="text-sm text-muted-foreground">{o.clientPhone}</p>
+                      <p>{o.clientName}</p>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium text-foreground">{o.motorcycleBrand} {o.motorcycleModel}</p>
-                      <p className="text-sm text-muted-foreground">Placa: {o.motorcyclePlate}</p>
+                      <p>{o.motorcycleBrand} {o.motorcycleModel}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p>{format(new Date(o.date), 'PPP', { locale: es })}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p><Badge variant="destructive" className="bg-red-100 text-red-800 border-none">{o.estadoBase}</Badge></p>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -418,7 +422,7 @@ export function PedidosServicios() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 {[
-                  { title: 'Información de la Reparación', fields: [['Número de la Reparación', viewingServiceOrder.orderNumber], ['Fecha de Recepción', format(new Date(viewingServiceOrder.date), 'PPP', { locale: es })], ['Estado', viewingServiceOrder.anulado ? <Badge key="status" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Anulado</Badge> : viewingServiceOrder.associatedSaleId ? <Badge key="status" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Facturado</Badge> : <Badge key="status" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Pendiente de Venta</Badge>]] },
+                  { title: 'Información de la Reparación', fields: [['Número de la Reparación', viewingServiceOrder.orderNumber], ['Fecha de Recepción', format(new Date(viewingServiceOrder.date), 'PPP', { locale: es })], ['Estado', viewingServiceOrder.anulada ? <Badge key="status" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Anulada</Badge> : viewingServiceOrder.associatedSaleId ? <Badge key="status" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Facturado</Badge> : <Badge key="status" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Pendiente de Venta</Badge>]] },
                   { title: 'Cliente y Motocicleta', fields: [['Cliente', <div key="client"><p className="font-medium text-foreground">{viewingServiceOrder.clientName}</p><p className="text-sm text-muted-foreground">{viewingServiceOrder.clientPhone}</p></div>], ['Motocicleta', <div key="moto"><p className="font-medium text-foreground">{viewingServiceOrder.motorcycleBrand} {viewingServiceOrder.motorcycleModel}</p><p className="text-sm text-muted-foreground">Placa: {viewingServiceOrder.motorcyclePlate}</p></div>]] }
                 ].map((section, i) => (
                   <div key={i}>

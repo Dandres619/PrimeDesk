@@ -70,10 +70,10 @@ export function CategoriasProductos() {
         headers,
         body: JSON.stringify(payload)
       });
-      
+
       const resData = await res.json();
       if (!res.ok) throw new Error(resData.message || 'Error al guardar la categoría');
-      
+
       toast.success(`Categoría ${editingCategory ? 'actualizada' : 'creada'} exitosamente`);
       setIsDialogOpen(false);
       setEditingCategory(null);
@@ -182,7 +182,6 @@ export function CategoriasProductos() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Tag className="w-5 h-5 text-blue-600" />
             Categorías de Productos ({filtered.length})
           </CardTitle>
         </CardHeader>

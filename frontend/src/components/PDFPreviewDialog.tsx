@@ -183,7 +183,7 @@ export function PDFPreviewDialog({
       {/* Header */}
       <div className="text-center border-b pb-6">
         <h1 className="text-3xl font-bold text-blue-600">RAFA MOTOS</h1>
-        <p className="text-sm text-muted-foreground">Taller de Motocicletas Especializado</p>
+        <p className="text-sm text-muted-foreground">Taller de Motocicletas</p>
         <p className="text-sm text-muted-foreground">Carrera 54 #96a-17, Barrio Aranjuez, Medellín, Antioquia</p>
         <p className="text-sm text-muted-foreground">Tel: +57 300 123 4567 | Email: info@rafamotos.com</p>
         <p className="text-sm text-muted-foreground">NIT: 900.123.456-7</p>
@@ -197,7 +197,7 @@ export function PDFPreviewDialog({
             <p><span className="font-medium">Número:</span> {data?.invoiceNumber}</p>
             <p><span className="font-medium">Fecha:</span> {data?.date ? format(new Date(data.date), 'PPP', { locale: es }) : ''}</p>
             {data?.serviceOrderNumber && (
-              <p><span className="font-medium">Pedido de Servicio:</span> {data.serviceOrderNumber}</p>
+              <p><span className="font-medium">Reparación:</span> {data.serviceOrderNumber}</p>
             )}
           </div>
         </div>
@@ -220,10 +220,10 @@ export function PDFPreviewDialog({
       {data?.serviceOrderNumber && (
         <>
           <div>
-            <h3 className="font-semibold mb-3 text-lg">INFORMACIÓN DEL PEDIDO DE SERVICIO</h3>
+            <h3 className="font-semibold mb-3 text-lg">INFORMACIÓN DE LA REPARACIÓN</h3>
             <div className="grid grid-cols-2 gap-6 text-sm">
               <div>
-                <p><span className="font-medium">Número de Pedido:</span> {data.serviceOrderNumber}</p>
+                <p><span className="font-medium">Número de Reparación:</span> {data.serviceOrderNumber}</p>
               </div>
             </div>
           </div>
@@ -406,14 +406,15 @@ export function PDFPreviewDialog({
       {/* Document Info */}
       <div className="grid grid-cols-2 gap-6">
         <div>
-          <h3 className="font-semibold mb-3 text-lg">PEDIDO DE SERVICIO</h3>
+          <h3 className="font-semibold mb-3 text-lg">REPARACIÓN</h3>
           <div className="space-y-1 text-sm">
             <p><span className="font-medium">Número:</span> {data?.orderNumber}</p>
             <p><span className="font-medium">Fecha de Recepción:</span> {data?.date ? format(new Date(data.date), 'PPP', { locale: es }) : ''}</p>
-            {data?.anulado && (
+            {data?.anulada && (
               <div className="mt-2">
+                <p><span className="font-medium">Estado:</span></p>
                 <Badge className="bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-300">
-                  PEDIDO ANULADO
+                  REPARACIÓN ANULADA
                 </Badge>
               </div>
             )}
