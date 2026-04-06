@@ -274,7 +274,7 @@ function ProductDialog({ product, onSave, categories, brands }: any) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name?.trim() || !form.brand?.trim() || !form.categoryId || !form.description?.trim()) {
+    if (!form.name?.trim() || !form.brand?.trim() || !form.categoryId) {
       toast.error('Complete todos los campos obligatorios');
       return;
     }
@@ -295,7 +295,7 @@ function ProductDialog({ product, onSave, categories, brands }: any) {
           </select></div>
           <div><Label>Cantidad *</Label><Input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></div>
         </div>
-        <div><Label>Descripción *</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} /></div>
+        <div><Label>Descripción</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} /></div>
         <div className="flex justify-end"><Button type="submit" className="bg-blue-600 hover:bg-blue-700">{product ? 'Actualizar' : 'Crear'}</Button></div>
       </form>
     </DialogContent>

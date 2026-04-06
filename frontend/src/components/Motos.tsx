@@ -6,11 +6,10 @@ import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Label } from './ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Switch } from './ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, Bike, Calendar, Wrench, History, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Bike, Wrench, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -244,59 +243,51 @@ export function Motos() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedMotos.length > 0 ? (
-                    paginatedMotos.map(m => (
-                      <TableRow key={m.ID_Motocicleta}>
-                        <TableCell>
-                          <p>{m.Placa}</p>
-                        </TableCell>
-                        <TableCell>
-                          <p>{m.Marca}</p>
-                        </TableCell>
-                        <TableCell>
-                          <p>{m.Modelo}</p>
-                        </TableCell>
-                        <TableCell>
-                          <p>{m.Anio}</p>
-                        </TableCell>
-                        <TableCell>
-                          <p>{m.NombreCliente} {m.ApellidoCliente}</p>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Switch checked={m.Estado} onCheckedChange={() => toggleStatus(m)} />
-                            <span>{m.Estado ? 'Activo' : 'Inactivo'}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button size="sm" variant="ghost" onClick={() => setViewingMoto(m)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => { setEditingMoto(m); setIsDialogOpen(true); }} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({
-                              open: true,
-                              title: 'Eliminar Motocicleta',
-                              description: `¿Está seguro de que desea eliminar la motocicleta ${m.Placa}? Esta acción no se puede deshacer.`,
-                              confirmText: 'Eliminar',
-                              variant: 'delete',
-                              onConfirm: () => deleteMoto(m)
-                            })} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                        No se encontraron motocicletas.
+                  {paginatedMotos.map(m => (
+                    <TableRow key={m.ID_Motocicleta}>
+                      <TableCell>
+                        <p>{m.Placa}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p>{m.Marca}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p>{m.Modelo}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p>{m.Anio}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p>{m.NombreCliente} {m.ApellidoCliente}</p>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch checked={m.Estado} onCheckedChange={() => toggleStatus(m)} />
+                          <span>{m.Estado ? 'Activo' : 'Inactivo'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => setViewingMoto(m)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setEditingMoto(m); setIsDialogOpen(true); }} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({
+                            open: true,
+                            title: 'Eliminar Motocicleta',
+                            description: `¿Está seguro de que desea eliminar la motocicleta ${m.Placa}? Esta acción no se puede deshacer.`,
+                            confirmText: 'Eliminar',
+                            variant: 'delete',
+                            onConfirm: () => deleteMoto(m)
+                          })} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  )}
+                  ))}
                 </TableBody>
               </Table>
 
