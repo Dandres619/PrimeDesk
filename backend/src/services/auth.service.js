@@ -117,7 +117,7 @@ const register = async (data) => {
             const userEmail = result.correo || data.correo;
             const token = crypto.randomBytes(32).toString('hex');
             const tokenHash = await bcrypt.hash(token, 10);
-            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
 
             await sql`
                 INSERT INTO email_verifications (id_usuario, token_hash, expires_at, used)

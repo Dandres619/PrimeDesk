@@ -90,7 +90,7 @@ const create = async (data, file) => {
       try {
         const token = crypto.randomBytes(32).toString('hex');
         const tokenHash = await bcrypt.hash(token, 10);
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
 
         await tx`
                 INSERT INTO email_verifications (id_usuario, token_hash, expires_at, used)

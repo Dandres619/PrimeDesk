@@ -88,6 +88,10 @@ export function Roles() {
 
   const handleSaveRole = async (formData: any) => {
     try {
+      if (!formData.permissions || formData.permissions.length === 0) {
+        throw new Error('Debe seleccionar, por lo menos, un permiso.');
+      }
+
       const roleData = {
         nombre: formData.name,
         descripcion: formData.description,

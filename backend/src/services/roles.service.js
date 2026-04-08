@@ -14,6 +14,11 @@ const getById = async (id) => {
 
 const create = async ({ nombre, descripcion }) => {
     const sql = await getPool();
+    
+    // Verificar si ya existe un rol con ese nombre
+    const existing = await sql`SELECT 1 FROM roles WHERE LOWER(nombre) = LOWER(${nombre})`;
+    if (existing.length > 0) throw { status: 409, message: 'Ya existe un rol con ese nombre.' };
+
     const [row] = await sql`
         INSERT INTO roles (nombre, descripcion, estado)
         VALUES (${nombre}, ${descripcion || null}, TRUE)
@@ -24,6 +29,10 @@ const create = async ({ nombre, descripcion }) => {
 
 const update = async (id, { nombre, descripcion, estado }) => {
     const sql = await getPool();
+
+    // Verificar si ya existe otro rol con ese nombre (excluyendo el actual)
+    const existing = await sql`SELECT 1 FROM roles WHERE LOWER(nombre) = LOWER(${nombre}) AND id_rol <> ${id}`;
+    if (existing.length > 0) throw { status: 409, message: 'Ya existe otro rol con ese nombre.' };
 
     // Si se intenta desactivar el rol (estado = false)
     if (estado === false) {
