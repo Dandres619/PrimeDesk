@@ -266,7 +266,7 @@ export function PedidosServicios() {
       case 'Anulada':
         return <Badge variant="destructive" className="bg-red-100 text-red-800 border-none">{status}</Badge>;
       case 'Reparación finalizada':
-        return <Badge className="bg-green-100 text-green-800 border-none">{status}</Badge>;
+        return <Badge variant="outline">{status}</Badge>;
       case 'En proceso':
         return <Badge className="bg-blue-100 text-blue-800 border-none">{status}</Badge>;
       default:

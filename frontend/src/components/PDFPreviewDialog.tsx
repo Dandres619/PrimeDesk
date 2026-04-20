@@ -97,9 +97,10 @@ export function PDFPreviewDialog({
           <div className="space-y-1 text-sm">
             <p><span className="font-medium">Número:</span> {data?.invoiceNumber}</p>
             <p><span className="font-medium">Fecha:</span> {data?.date ? format(new Date(data.date), 'PPP', { locale: es }) : ''}</p>
-            {data?.status === 'Anulada' && (
-              <p><span className="font-medium">Estado:</span> <Badge className="ml-1">{data?.status}</Badge></p>
-            )}
+            <div className="mt-2 text-sm">
+              <span className="font-medium mr-1">Estado de la Compra:</span>
+              <span className="uppercase">{data?.status}</span>
+            </div>
           </div>
         </div>
 
@@ -199,6 +200,10 @@ export function PDFPreviewDialog({
             {data?.serviceOrderNumber && (
               <p><span className="font-medium">Reparación:</span> {data.serviceOrderNumber}</p>
             )}
+            <div className="mt-2 text-sm">
+              <span className="font-medium mr-1">Estado de la Venta:</span> 
+              <span className="uppercase">{data?.anulada ? 'ANULADA' : 'COMPLETADA'}</span>
+            </div>
           </div>
         </div>
 
@@ -406,21 +411,10 @@ export function PDFPreviewDialog({
           <div className="space-y-1 text-sm">
             <p><span className="font-medium">Número:</span> {data?.orderNumber}</p>
             <p><span className="font-medium">Fecha de Recepción:</span> {data?.date ? format(new Date(data.date), 'PPP', { locale: es }) : ''}</p>
-            {data?.anulada && (
-              <div className="mt-2">
-                <p><span className="font-medium">Estado:</span></p>
-                <Badge className="bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-300">
-                  REPARACIÓN ANULADA
-                </Badge>
-              </div>
-            )}
-            {data?.associatedSaleId && (
-              <div className="mt-2">
-                <Badge className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-300">
-                  Facturado
-                </Badge>
-              </div>
-            )}
+            <div className="mt-2 text-sm">
+              <span className="font-medium mr-1">Estado de la Reparación:</span>
+              <span className="uppercase">{data?.estadoBase || (data?.anulada ? 'Anulada' : data?.associatedSaleId ? 'Reparación finalizada' : 'Pendiente de Venta')}</span>
+            </div>
           </div>
         </div>
 
