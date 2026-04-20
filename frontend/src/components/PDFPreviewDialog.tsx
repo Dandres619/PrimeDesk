@@ -322,10 +322,6 @@ export function PDFPreviewDialog({
               <span>Subtotal:</span>
               <span>${Number(data?.subtotal).toLocaleString('es-CO')}</span>
             </div>
-            <div className="flex justify-between">
-              <span>IVA (19%):</span>
-              <span>${Number(data?.tax).toLocaleString('es-CO')}</span>
-            </div>
             <Separator />
             <div className="flex justify-between font-bold text-xl">
               <span>TOTAL A PAGAR:</span>

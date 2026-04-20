@@ -13,8 +13,8 @@ router.get('/', verifyToken, ctrl.getAll);
 router.get('/:id', verifyToken, ctrl.getById);
 router.post('/', verifyToken, requirePermiso('gestionar_ventas'),
     [
-        body('id_reparacion').isInt({ min: 1 }).withMessage('ID reparación inválido.'),
-        body('id_empleado').isInt({ min: 1 }).withMessage('ID empleado inválido.'),
+        body('id_reparacion').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('ID reparación inválido.'),
+        body('id_empleado').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }).withMessage('ID empleado inválido.'),
         body('id_motocicleta').isInt({ min: 1 }).withMessage('ID motocicleta inválido.'),
         body('total').isDecimal().withMessage('Total inválido.'),
         handleValidation,

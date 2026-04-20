@@ -22,6 +22,7 @@ const getAll = async (filters = {}) => {
                c.id_cliente AS "ID_Cliente", CONCAT(c.nombre, ' ', c.apellido) AS "NombreCliente",
                a.dia AS "DiaAgendamiento",
                CONCAT(e.nombre, ' ', e.apellido) AS "Mecanico",
+               v_assoc.id_venta AS "AssociatedSaleId",
                (
                  SELECT json_agg(json_build_object('ID_Servicio', s.id_servicio, 'NombreServicio', s.nombre))
                  FROM reparaciones_servicios rs
@@ -33,6 +34,7 @@ const getAll = async (filters = {}) => {
         INNER JOIN clientes c ON m.id_cliente = c.id_cliente
         LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
         LEFT JOIN empleados e ON a.id_empleado = e.id_empleado
+        LEFT JOIN ventas v_assoc ON rep.id_reparacion = v_assoc.id_reparacion
         ${where}
         ORDER BY rep.fecha DESC
     `;

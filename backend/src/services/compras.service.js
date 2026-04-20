@@ -6,7 +6,20 @@ const getAll = async () => {
         SELECT c.id_compra AS "ID_Compra", c.id_proveedor AS "ID_Proveedor", 
                c.id_motocicleta AS "ID_Motocicleta", c.fechacompra AS "FechaCompra", 
                c.total AS "Total", c.notas AS "Notas", c.estado AS "Estado",
-               p.nombreempresa AS "NombreEmpresa", p.telefono AS "TelefonoProveedor", p.email AS "EmailProveedor", m.placa AS "Placa"
+               p.nombreempresa AS "NombreEmpresa", p.telefono AS "TelefonoProveedor", p.email AS "EmailProveedor", m.placa AS "Placa",
+               (
+                 SELECT COALESCE(json_agg(json_build_object(
+                    'id', pr.id_producto,
+                    'product', pr.nombre, 
+                    'category', cat.nombre,
+                    'quantity', dc.cantidad, 
+                    'unitCost', dc.preciounitario
+                 )), '[]'::json)
+                 FROM detalle_compras dc
+                 JOIN productos pr ON dc.id_producto = pr.id_producto
+                 JOIN categorias_productos cat ON pr.id_categoria = cat.id_categoria
+                 WHERE dc.id_compra = c.id_compra
+               ) AS "items"
         FROM compras c
         INNER JOIN proveedores p ON c.id_proveedor = p.id_proveedor
         INNER JOIN motocicletas m ON c.id_motocicleta = m.id_motocicleta

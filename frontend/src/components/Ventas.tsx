@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -29,9 +29,21 @@ export function Ventas() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewingSale, setViewingSale] = useState<any>(null);
 
+  // States para la conexión al backend
+  const [sales, setSales] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [motorcycles, setMotorcycles] = useState<any[]>([]);
+  const [purchases, setPurchases] = useState<any[]>([]);
+  const [serviceTypes, setServiceTypes] = useState<any[]>([]);
+  const [serviceOrders, setServiceOrders] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+  const token = localStorage.getItem('token');
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 2;
+  const itemsPerPage = 6; // Cambiado a 6 para un mejor display visual
 
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
@@ -59,184 +71,119 @@ export function Ventas() {
     type: 'sale'
   });
 
-  const [sales, setSales] = useState([
-    {
-      id: 1,
-      date: '2024-01-16',
-      invoiceNumber: 'VEN-001',
-      serviceOrderId: 1,
-      serviceOrderNumber: 'OS-001',
-      clientId: 1,
-      clientName: 'Juan Carlos Pérez',
-      clientPhone: '+57 300 123 4567',
-      clientDocument: '12345678',
-      clientEmail: 'juan.perez@email.com',
-      clientAddress: 'Calle 123 #45-67, Chapinero',
-      motorcycleId: 1,
-      motorcycleBrand: 'Honda',
-      motorcycleModel: 'CB600F',
-      motorcyclePlate: 'ABC123',
-      motorcycleYear: '2020',
-      serviceTypes: ['Mantenimiento Preventivo', 'Cambio de Aceite'],
-      purchaseIds: [1, 2],
-      purchaseInvoices: ['COMP-001', 'COMP-002'],
-      parts: [
-        { id: 1, product: 'Aceite Motor 10W-40', quantity: 1, unitCost: 25000, total: 25000 },
-        { id: 2, product: 'Filtro de Aceite', quantity: 1, unitCost: 15000, total: 15000 }
-      ],
-      serviceCost: 80000,
-      partsCost: 40000,
-      partsTotal: 40000,
-      subtotal: 120000,
-      tax: 22800,
-      total: 142800,
-      notes: 'Mantenimiento según programación',
-      anulada: false
-    },
-    {
-      id: 2,
-      date: '2024-01-22',
-      invoiceNumber: 'VEN-002',
-      serviceOrderId: 2,
-      serviceOrderNumber: 'OS-002',
-      clientId: 2,
-      clientName: 'María García López',
-      clientPhone: '+57 301 234 5678',
-      clientDocument: '87654321',
-      clientEmail: 'maria.garcia@email.com',
-      clientAddress: 'Carrera 67 #89-12, El Poblado',
-      motorcycleId: 2,
-      motorcycleBrand: 'Yamaha',
-      motorcycleModel: 'R6',
-      motorcyclePlate: 'XYZ789',
-      motorcycleYear: '2019',
-      serviceTypes: ['Reparación de Frenos'],
-      purchaseIds: [3],
-      purchaseInvoices: ['COMP-003'],
-      parts: [
-        { id: 1, product: 'Pastillas de Freno R6', quantity: 1, unitCost: 80000, total: 80000 },
-        { id: 2, product: 'Disco de Freno Delantero', quantity: 1, unitCost: 120000, total: 120000 }
-      ],
-      serviceCost: 150000,
-      partsCost: 200000,
-      partsTotal: 200000,
-      subtotal: 350000,
-      tax: 66500,
-      total: 416500,
-      notes: 'Reparación urgente, cliente esperando',
-      anulada: false
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      const [resVentas, resClientes, resMotos, resCompras, resServicios, resReparaciones] = await Promise.all([
+        fetch(`${API_URL}/ventas`, { headers }),
+        fetch(`${API_URL}/clientes`, { headers }),
+        fetch(`${API_URL}/motocicletas`, { headers }),
+        fetch(`${API_URL}/compras`, { headers }),
+        fetch(`${API_URL}/servicios`, { headers }),
+        fetch(`${API_URL}/reparaciones`, { headers })
+      ]);
+
+      if (resVentas.ok) {
+        const dataVentas = await resVentas.json();
+        const mappedSales = dataVentas.map((v: any) => ({
+          ...v,
+          id: v.ID_Venta,
+          invoiceNumber: `VEN-${v.ID_Venta.toString().padStart(3, '0')}`,
+          date: v.Fecha,
+          serviceOrderId: v.ID_Reparacion,
+          serviceOrderNumber: v.ID_Reparacion ? `R-${v.ID_Reparacion.toString().padStart(3, '0')}` : '',
+          clientName: `${v.NombreCliente} ${v.ApellidoCliente}`.trim(),
+          clientPhone: v.TelefonoCliente,
+          clientDocument: v.DocumentoCliente,
+          clientEmail: v.EmailCliente,
+          clientAddress: v.DireccionCliente,
+          motorcycleBrand: v.MarcaMoto,
+          motorcycleModel: v.ModeloMoto,
+          motorcyclePlate: v.Placa,
+          motorcycleYear: v.AnioMoto,
+          serviceTypes: v.TiposServicio || [],
+          parts: v.Repuestos || [],
+          purchaseInvoices: v.FacturasCompras || [],
+          serviceCost: parseFloat(v.CostoServicios || 0),
+          partsCost: v.Repuestos?.reduce((sum: number, p: any) => sum + (p.quantity * (parseFloat(p.unitCost) || 0)), 0) || 0,
+          partsTotal: v.Repuestos?.reduce((sum: number, p: any) => sum + parseFloat(p.total || 0), 0) || 0,
+          subtotal: parseFloat(v.Total),
+          tax: 0,
+          total: parseFloat(v.Total),
+          notes: v.Observaciones || v.NotasReparacion,
+          anulada: v.Estado === false
+        }));
+        setSales(mappedSales);
+      }
+
+      if (resClientes.ok) {
+        const data = await resClientes.json();
+        setClients(data.map((c: any) => ({
+          id: c.ID_Cliente,
+          name: `${c.Nombre} ${c.Apellido}`.trim(),
+          phone: c.Telefono,
+          document: c.Documento,
+          email: c.Correo,
+          address: c.Direccion
+        })));
+      }
+
+      if (resMotos.ok) {
+        const data = await resMotos.json();
+        setMotorcycles(data.map((m: any) => ({
+          id: m.ID_Motocicleta,
+          brand: m.Marca,
+          model: m.Modelo,
+          plate: m.Placa,
+          year: m.Anio,
+          clientId: m.ID_Cliente
+        })));
+      }
+
+      if (resCompras.ok) {
+        const data = await resCompras.json();
+        setPurchases(data.filter((c: any) => c.Estado === 'Pendiente de venta').map((c: any) => ({
+          id: c.ID_Compra,
+          invoiceNumber: `COMP-${c.ID_Compra.toString().padStart(3, '0')}`,
+          total: parseFloat(c.Total),
+          items: c.items || []
+        })));
+      }
+
+      if (resServicios.ok) {
+        const data = await resServicios.json();
+        setServiceTypes(data.map((s: any) => ({ id: s.ID_Servicio.toString(), name: s.Nombre })));
+      }
+
+      if (resReparaciones.ok) {
+        const data = await resReparaciones.json();
+        setServiceOrders(data.map((r: any) => ({
+          id: r.ID_Reparacion,
+          orderNumber: r.id ? `R-${r.id.toString().padStart(3, '0')}` : r.ID_Reparacion,
+          clientId: r.ID_Cliente,
+          clientName: r.NombreCliente,
+          motorcycleId: r.ID_Motocicleta,
+          motorcycleBrand: r.Marca,
+          motorcycleModel: r.Modelo,
+          motorcyclePlate: r.Placa,
+          description: r.Observaciones,
+          status: r.Estado,
+          associatedSaleId: r.AssociatedSaleId,
+          services: r.servicios || []
+        })));
+      }
+    } catch (e) {
+      toast.error('Error cargando datos del servidor');
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
 
-  const clients = [
-    { id: 1, name: 'Juan Carlos Pérez', phone: '+57 300 123 4567', document: '12345678', email: 'juan.perez@email.com', address: 'Calle 123 #45-67, Chapinero' },
-    { id: 2, name: 'María García López', phone: '+57 301 234 5678', document: '87654321', email: 'maria.garcia@email.com', address: 'Carrera 67 #89-12, El Poblado' },
-    { id: 3, name: 'Carlos Eduardo López', phone: '+57 302 345 6789', document: '11223344', email: 'carlos.lopez@email.com', address: 'Avenida 45 #12-34, Granada' }
-  ];
-
-  const motorcycles = [
-    { id: 1, brand: 'Honda', model: 'CB600F', plate: 'ABC123', year: '2020', clientId: 1 },
-    { id: 2, brand: 'Yamaha', model: 'R6', plate: 'XYZ789', year: '2019', clientId: 2 },
-    { id: 3, brand: 'Suzuki', model: 'GSX-R750', plate: 'DEF456', year: '2021', clientId: 3 }
-  ];
-
-  const purchases = [
-    {
-      id: 1,
-      invoiceNumber: 'COMP-001',
-      total: 40000, // 25000 + 15000
-      items: [
-        { id: 1, product: 'Aceite Motor 10W-40', category: 'Lubricantes', quantity: 1, unitCost: 25000 },
-        { id: 2, product: 'Filtro de Aceite', category: 'Filtros', quantity: 1, unitCost: 15000 }
-      ]
-    },
-    {
-      id: 2,
-      invoiceNumber: 'COMP-002',
-      total: 200000, // 80000 + 120000
-      items: [
-        { id: 1, product: 'Pastillas de Freno R6', category: 'Frenos', quantity: 1, unitCost: 80000 },
-        { id: 2, product: 'Disco de Freno Delantero', category: 'Frenos', quantity: 1, unitCost: 120000 }
-      ]
-    },
-    {
-      id: 3,
-      invoiceNumber: 'COMP-003',
-      total: 235000, // 150000 + 85000
-      items: [
-        { id: 1, product: 'Cadena de Transmisión', category: 'Transmisión', quantity: 1, unitCost: 150000 },
-        { id: 2, product: 'Piñón Trasero', category: 'Transmisión', quantity: 1, unitCost: 85000 }
-      ]
-    }
-  ];
-
-  // Servicios disponibles (estos deberían venir del módulo de Servicios en una implementación real)
-  const serviceTypes = [
-    'Mantenimiento Preventivo',
-    'Reparación de Motor',
-    'Reparación de Frenos',
-    'Cambio de Transmisión',
-    'Diagnóstico General',
-    'Personalización',
-    'Cambio de Aceite',
-    'Afinación'
-  ];
-
-  // Pedidos de servicio disponibles para vincular con ventas
-  const serviceOrders = [
-    {
-      id: 1,
-      orderNumber: 'OS-001',
-      clientId: 1,
-      clientName: 'Juan Carlos Pérez',
-      motorcycleId: 1,
-      motorcycleBrand: 'Honda',
-      motorcycleModel: 'CB600F',
-      motorcyclePlate: 'ABC123',
-      description: 'Mantenimiento preventivo y cambio de aceite',
-      status: 'completado',
-      associatedSaleId: 1
-    },
-    {
-      id: 2,
-      orderNumber: 'OS-002',
-      clientId: 2,
-      clientName: 'María García López',
-      motorcycleId: 2,
-      motorcycleBrand: 'Yamaha',
-      motorcycleModel: 'R6',
-      motorcyclePlate: 'XYZ789',
-      description: 'Reparación sistema de frenos - Cambio de pastillas y discos',
-      status: 'completado',
-      associatedSaleId: 2
-    },
-    {
-      id: 3,
-      orderNumber: 'OS-003',
-      clientId: 1,
-      clientName: 'Juan Carlos Pérez',
-      motorcycleId: 1,
-      motorcycleBrand: 'Honda',
-      motorcycleModel: 'CB600F',
-      motorcyclePlate: 'ABC123',
-      description: 'Reparación de transmisión',
-      status: 'completado',
-      associatedSaleId: null
-    },
-    {
-      id: 4,
-      orderNumber: 'OS-004',
-      clientId: 3,
-      clientName: 'Carlos Eduardo López',
-      motorcycleId: 3,
-      motorcycleBrand: 'Suzuki',
-      motorcycleModel: 'GSX-R750',
-      motorcyclePlate: 'DEF456',
-      description: 'Diagnóstico general y afinación',
-      status: 'completado',
-      associatedSaleId: null
-    }
-  ];
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const filteredSales = sales.filter(sale =>
     sale.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -251,66 +198,50 @@ export function Ventas() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedSales = filteredSales.slice(startIndex, startIndex + itemsPerPage);
 
-  const handleSaveSale = (saleData: any) => {
-    const client = clients.find(c => c.id === parseInt(saleData.clientId));
-    const motorcycle = motorcycles.find(m => m.id === parseInt(saleData.motorcycleId));
-    const serviceOrder = serviceOrders.find(so => so.id === parseInt(saleData.serviceOrderId));
-
-    // Obtener productos de las compras seleccionadas
+  const handleSaveSale = async (saleData: any) => {
+    // Calcular totales
     const selectedPurchases = purchases.filter(p => saleData.selectedPurchases.includes(p.id));
     const allProducts = selectedPurchases.flatMap(purchase =>
-      purchase.items.map(item => ({
+      purchase.items.map((item: any) => ({
         ...item,
         purchaseInvoice: purchase.invoiceNumber,
-        quantity: 1, // Por defecto 1, en una implementación real sería configurable
-        total: item.unitCost * 1
+        quantity: item.quantity,
+        total: item.unitCost * item.quantity
       }))
     );
 
-    // Calcular totales
-    const partsCost = allProducts.reduce((sum: number, part: any) => sum + (part.quantity * part.unitCost), 0);
     const partsTotal = allProducts.reduce((sum: number, part: any) => sum + part.total, 0);
-    const subtotal = partsTotal + parseInt(saleData.serviceCost);
-    const tax = subtotal * 0.19;
-    const total = subtotal + tax;
+    const total = partsTotal + parseFloat(saleData.serviceCost || '0');
 
-    const purchaseInvoices = saleData.selectedPurchases.map((id: number) =>
-      purchases.find((p: any) => p.id === id)?.invoiceNumber || ''
-    );
-
-    const completeData = {
-      ...saleData,
-      serviceOrderId: serviceOrder?.id || null,
-      serviceOrderNumber: serviceOrder?.orderNumber || '',
-      clientName: client?.name || '',
-      clientPhone: client?.phone || '',
-      clientDocument: client?.document || '',
-      clientEmail: client?.email || '',
-      clientAddress: client?.address || '',
-      motorcycleBrand: motorcycle?.brand || '',
-      motorcycleModel: motorcycle?.model || '',
-      motorcyclePlate: motorcycle?.plate || '',
-      motorcycleYear: motorcycle?.year || '',
-      purchaseInvoices,
-      parts: allProducts,
-      partsCost,
-      partsTotal,
-      subtotal,
-      tax,
-      total,
-      serviceCost: parseInt(saleData.serviceCost),
-      serviceTypes: saleData.selectedServices,
-      anulada: false
+    const payload = {
+      id_reparacion: saleData.serviceOrderId ? parseInt(saleData.serviceOrderId) : null,
+      id_motocicleta: parseInt(saleData.motorcycleId),
+      fecha: saleData.date,
+      total: total,
+      observaciones: saleData.notes,
+      servicios: saleData.selectedServices.map((idServ: string) => ({
+        id_servicio: parseInt(idServ),
+        costo: parseFloat(saleData.serviceCost || '0') / saleData.selectedServices.length
+      })),
+      compras: selectedPurchases.map(p => ({
+        id_compra: p.id,
+        subtotal: p.total
+      }))
     };
 
-    const newSale = {
-      id: Date.now(),
-      ...completeData,
-      invoiceNumber: `VEN-${(sales.length + 1).toString().padStart(3, '0')}`
-    };
-    setSales([...sales, newSale]);
-    setIsDialogOpen(false);
-    toast.success('Venta creada exitosamente');
+    try {
+      const res = await fetch(`${API_URL}/ventas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Error al registrar la venta');
+      toast.success('Venta registrada exitosamente');
+      setIsDialogOpen(false);
+      fetchData();
+    } catch (e) {
+      toast.error('Ocurrió un error al guardar la venta');
+    }
   };
 
   const showCancelConfirm = (saleId: number) => {
@@ -324,13 +255,21 @@ export function Ventas() {
     });
   };
 
-  const cancelSale = (saleId: number) => {
-    setSales(sales.map(sale =>
-      sale.id === saleId
-        ? { ...sale, anulada: true }
-        : sale
-    ));
-    toast.success('Venta anulada exitosamente');
+  const cancelSale = async (saleId: number) => {
+    const sale = sales.find(s => s.id === saleId);
+    if (!sale) return;
+    try {
+      const res = await fetch(`${API_URL}/ventas/${saleId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ total: sale.total, observaciones: sale.notes, estado: false })
+      });
+      if (!res.ok) throw new Error('Error al anular la venta');
+      toast.success('Venta anulada exitosamente');
+      fetchData();
+    } catch (e) {
+      toast.error('Error al anular la venta');
+    }
   };
 
   const showPDFPreview = (saleId: number) => {
@@ -423,6 +362,7 @@ export function Ventas() {
             <TableHeader>
               <TableRow>
                 <TableHead>Venta</TableHead>
+                <TableHead>Fecha</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Moto</TableHead>
                 <TableHead>Servicios</TableHead>
@@ -435,10 +375,7 @@ export function Ventas() {
                 <TableRow key={sale.id}>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{sale.invoiceNumber}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(sale.date), 'PPP', { locale: es })}
-                      </p>
+                      <p>{sale.invoiceNumber}</p>
                       {sale.anulada && (
                         <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 mt-1">
                           Anulada
@@ -448,29 +385,29 @@ export function Ventas() {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{sale.clientName}</p>
+                      <p>{format(new Date(sale.date), 'PPP', { locale: es })}</p>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{sale.motorcycleBrand} {sale.motorcycleModel}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Placa: {sale.motorcyclePlate}
+                      <p>{sale.clientName}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p>Placa: {sale.motorcyclePlate}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p>
+                        ${sale.serviceCost.toLocaleString()}
                       </p>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{sale.serviceTypes.join(', ')}</p>
-                      <p className="text-sm text-muted-foreground">{sale.parts.length} repuestos</p>
-                      <p className="text-sm text-muted-foreground">
-                        Servicios: ${sale.serviceCost.toLocaleString()}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">${sale.total.toLocaleString()}</p>
+                      <p>${sale.total.toLocaleString()}</p>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -569,7 +506,7 @@ export function Ventas() {
                       <p className="text-foreground">{format(new Date(viewingSale.date), 'PPP', { locale: es })}</p>
                     </div>
                     <div>
-                      <Label>Pedido de Servicio</Label>
+                      <Label>Reparación</Label>
                       <p className="font-medium text-foreground">{viewingSale.serviceOrderNumber}</p>
                     </div>
                     <div>
@@ -651,15 +588,7 @@ export function Ventas() {
                 <div className="flex justify-end">
                   <div className="w-64">
                     <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>Subtotal:</span>
-                        <span>${viewingSale.subtotal.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>IVA (19%):</span>
-                        <span>${viewingSale.tax.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between font-bold text-lg border-t pt-2">
+                      <div className="flex justify-between font-bold text-lg mt-2">
                         <span>Total:</span>
                         <span>${viewingSale.total.toLocaleString()}</span>
                       </div>
@@ -761,7 +690,8 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
       ...prev,
       serviceOrderId,
       clientId: selectedOrder ? selectedOrder.clientId.toString() : '',
-      motorcycleId: selectedOrder ? selectedOrder.motorcycleId.toString() : ''
+      motorcycleId: selectedOrder ? selectedOrder.motorcycleId.toString() : '',
+      selectedServices: selectedOrder && selectedOrder.services ? selectedOrder.services.map((s: any) => s.ID_Servicio.toString()) : []
     }));
   };
 
@@ -783,7 +713,7 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <Label htmlFor="serviceOrderId">Pedido de Servicio *</Label>
+          <Label htmlFor="serviceOrderId">Reparación *</Label>
           <select
             id="serviceOrderId"
             value={formData.serviceOrderId}
@@ -791,7 +721,7 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-background text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           >
-            <option value="">Seleccionar pedido de servicio</option>
+            <option value="">Seleccionar reparación</option>
             {serviceOrders
               .filter((order: any) => !order.associatedSaleId) // Solo mostrar pedidos sin venta asociada
               .map((order: any) => (
@@ -901,18 +831,24 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
         <div>
           <Label>Tipos de Servicio *</Label>
           <div className="grid grid-cols-2 gap-2 mt-2 max-h-32 overflow-y-auto border rounded p-2">
-            {serviceTypes.map((service: string) => (
-              <div key={service} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`service-${service}`}
-                  checked={formData.selectedServices.includes(service)}
-                  onCheckedChange={(checked) => handleServiceChange(service, checked as boolean)}
-                />
-                <Label htmlFor={`service-${service}`} className="text-sm">
-                  {service}
-                </Label>
-              </div>
-            ))}
+            {!formData.serviceOrderId ? (
+              <p className="text-sm text-muted-foreground col-span-2 pl-1">Seleccione una reparación obligatoriamente para cargar los servicios.</p>
+            ) : (
+              serviceTypes
+                .filter((service: any) => formData.selectedServices.includes(service.id))
+                .map((service: any) => (
+                  <div key={service.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`service-${service.id}`}
+                      checked={true}
+                      disabled={true}
+                    />
+                    <Label htmlFor={`service-${service.id}`} className="text-sm">
+                      {service.name}
+                    </Label>
+                  </div>
+                ))
+            )}
           </div>
         </div>
 

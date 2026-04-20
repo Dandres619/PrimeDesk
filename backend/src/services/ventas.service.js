@@ -8,12 +8,50 @@ const getAll = async () => {
                v.fecha AS "Fecha", v.total AS "Total", v.observaciones AS "Observaciones", 
                v.estado AS "Estado",
                e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado",
-               m.placa AS "Placa", m.marca AS "MarcaMoto"
+               m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "ModeloMoto", m.anio AS "AnioMoto",
+               c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente", c.telefono AS "TelefonoCliente", 
+               c.documento AS "DocumentoCliente", '' AS "EmailCliente", c.direccion AS "DireccionCliente",
+               (
+                 SELECT COALESCE(json_agg(s.nombre), '[]'::json)
+                 FROM ventas_servicios vs
+                 JOIN servicios s ON vs.id_servicio = s.id_servicio
+                 WHERE vs.id_venta = v.id_venta
+               ) AS "TiposServicio",
+               (
+                 SELECT COALESCE(SUM(vs.costoservicios), 0)
+                 FROM ventas_servicios vs
+                 WHERE vs.id_venta = v.id_venta
+               ) AS "CostoServicios",
+               (
+                 SELECT COALESCE(json_agg(json_build_object(
+                    'id', p.id_producto,
+                    'product', p.nombre, 
+                    'category', cat.nombre,
+                    'quantity', dc.cantidad, 
+                    'unitCost', dc.preciounitario, 
+                    'total', dc.subtotal,
+                    'purchaseInvoice', CONCAT('COMP-', c_ref.id_compra)
+                 )), '[]'::json)
+                 FROM ventas_compras vc
+                 JOIN compras c_ref ON vc.id_compra = c_ref.id_compra
+                 JOIN detalle_compras dc ON c_ref.id_compra = dc.id_compra
+                 JOIN productos p ON dc.id_producto = p.id_producto
+                 JOIN categorias_productos cat ON p.id_categoria = cat.id_categoria
+                 WHERE vc.id_venta = v.id_venta
+               ) AS "Repuestos",
+               (
+                 SELECT COALESCE(json_agg(CONCAT('COMP-', vc.id_compra)), '[]'::json)
+                 FROM ventas_compras vc
+                 WHERE vc.id_venta = v.id_venta
+               ) AS "FacturasCompras",
+               rep.observaciones AS "NotasReparacion",
+               rep.id_reparacion AS "ID_Rep"
         FROM ventas v
-        INNER JOIN empleados e ON v.id_empleado = e.id_empleado
-        INNER JOIN motocicletas m ON v.id_motocicleta = m.id_motocicleta
-        ORDER BY v.fecha DESC
-    `;
+        LEFT JOIN empleados e ON v.id_empleado = e.id_empleado
+        LEFT JOIN motocicletas m ON v.id_motocicleta = m.id_motocicleta
+        LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
+        LEFT JOIN reparaciones rep ON v.id_reparacion = rep.id_reparacion
+        ORDER BY v.fecha DESC`;
   return rows;
 };
 
@@ -25,12 +63,47 @@ const getById = async (id) => {
                v.fecha AS "Fecha", v.total AS "Total", v.observaciones AS "Observaciones", 
                v.estado AS "Estado",
                e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado",
-               m.placa AS "Placa", m.marca AS "MarcaMoto"
+               m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "ModeloMoto", m.anio AS "AnioMoto",
+               c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente", c.telefono AS "TelefonoCliente", 
+               c.documento AS "DocumentoCliente", '' AS "EmailCliente", c.direccion AS "DireccionCliente",
+               (
+                 SELECT COALESCE(json_agg(s.nombre), '[]'::json)
+                 FROM ventas_servicios vs
+                 JOIN servicios s ON vs.id_servicio = s.id_servicio
+                 WHERE vs.id_venta = v.id_venta
+               ) AS "TiposServicio",
+               (
+                 SELECT COALESCE(SUM(vs.costoservicios), 0)
+                 FROM ventas_servicios vs
+                 WHERE vs.id_venta = v.id_venta
+               ) AS "CostoServicios",
+               (
+                 SELECT COALESCE(json_agg(json_build_object(
+                    'id', p.id_producto,
+                    'product', p.nombre, 
+                    'category', cat.nombre,
+                    'quantity', dc.cantidad, 
+                    'unitCost', dc.preciounitario, 
+                    'total', dc.subtotal,
+                    'purchaseInvoice', CONCAT('COMP-', c_ref.id_compra)
+                 )), '[]'::json)
+                 FROM ventas_compras vc
+                 JOIN compras c_ref ON vc.id_compra = c_ref.id_compra
+                 JOIN detalle_compras dc ON c_ref.id_compra = dc.id_compra
+                 JOIN productos p ON dc.id_producto = p.id_producto
+                 JOIN categorias_productos cat ON p.id_categoria = cat.id_categoria
+                 WHERE vc.id_venta = v.id_venta
+               ) AS "Repuestos",
+               (
+                 SELECT COALESCE(json_agg(CONCAT('COMP-', vc.id_compra)), '[]'::json)
+                 FROM ventas_compras vc
+                 WHERE vc.id_venta = v.id_venta
+               ) AS "FacturasCompras"
         FROM ventas v
-        INNER JOIN empleados e ON v.id_empleado = e.id_empleado
-        INNER JOIN motocicletas m ON v.id_motocicleta = m.id_motocicleta
-        WHERE v.id_venta = ${id}
-    `;
+        LEFT JOIN empleados e ON v.id_empleado = e.id_empleado
+        LEFT JOIN motocicletas m ON v.id_motocicleta = m.id_motocicleta
+        LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
+        WHERE v.id_venta = ${id}`;
   if (sales.length === 0) throw { status: 404, message: 'Venta no encontrada.' };
 
   const services = await sql`
@@ -59,9 +132,15 @@ const create = async ({ id_reparacion, id_empleado, id_motocicleta, fecha, total
 
   try {
     const result = await sql.begin(async (tx) => {
+      let final_id_empleado = id_empleado;
+      if (!final_id_empleado) {
+          const emp = await tx`SELECT id_empleado FROM empleados LIMIT 1`;
+          final_id_empleado = emp.length ? emp[0].id_empleado : null;
+      }
+
       const [venta] = await tx`
                 INSERT INTO ventas (id_reparacion, id_empleado, id_motocicleta, fecha, total, observaciones, estado)
-                VALUES (${id_reparacion}, ${id_empleado}, ${id_motocicleta}, COALESCE(${fecha || null}::timestamp, NOW()), ${total}, ${observaciones || null}, true)
+                VALUES (${id_reparacion}, ${final_id_empleado}, ${id_motocicleta}, COALESCE(${fecha || null}::timestamp, NOW()), ${total}, ${observaciones || null}, true)
                 RETURNING id_venta AS "ID_Venta"
             `;
 

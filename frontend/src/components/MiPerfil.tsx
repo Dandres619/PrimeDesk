@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { User, Lock, Mail, Briefcase, Loader2, Camera, Image as ImageIcon, Calendar } from 'lucide-react';
+import { User, Lock, Mail, Briefcase, Loader2, Camera, Image as ImageIcon, Calendar, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function MiPerfil() {
@@ -14,6 +14,9 @@ export function MiPerfil() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isProcessingPassword, setIsProcessingPassword] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // States for Profile Update
     const [formData, setFormData] = useState({
@@ -91,15 +94,35 @@ export function MiPerfil() {
         e.preventDefault();
 
         let errors: Record<string, string> = {};
-        if (!formData.nombre) errors.nombre = 'Requerido';
-        if (!formData.apellido) errors.apellido = 'Requerido';
+        if (!formData.nombre) {
+            toast.error('El nombre es obligatorio');
+            errors.nombre = 'Requerido';
+        }
+        if (!formData.apellido) {
+            toast.error('El apellido es obligatorio');
+            errors.apellido = 'Requerido';
+        }
         
-        if (!formData.telefono) errors.telefono = 'Requerido';
-        else if (!/^\d{7,15}$/.test(formData.telefono)) errors.telefono = 'Teléfono inválido (mínimo 7 dígitos)';
+        if (!formData.telefono) {
+            toast.error('El teléfono es obligatorio');
+            errors.telefono = 'Requerido';
+        } else if (!/^\d{10}$/.test(formData.telefono)) {
+            toast.error('El teléfono debe tener exactamente 10 dígitos');
+            errors.telefono = 'Exactamente 10 dígitos';
+        }
 
-        if (!formData.barrio) errors.barrio = 'Requerido';
-        if (!formData.direccion) errors.direccion = 'Requerido';
-        if (!formData.fecha_nacimiento) errors.fecha_nacimiento = 'Requerido';
+        if (!formData.barrio) {
+            toast.error('El barrio es obligatorio');
+            errors.barrio = 'Requerido';
+        }
+        if (!formData.direccion) {
+            toast.error('La dirección es obligatoria');
+            errors.direccion = 'Requerido';
+        }
+        if (!formData.fecha_nacimiento) {
+            toast.error('La fecha de nacimiento es obligatoria');
+            errors.fecha_nacimiento = 'Requerido';
+        }
 
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
@@ -166,6 +189,19 @@ export function MiPerfil() {
 
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!passwordData.contrasena_actual) {
+            toast.error('La contraseña actual es obligatoria');
+            return;
+        }
+        if (!passwordData.nueva_contrasena) {
+            toast.error('La nueva contraseña es obligatoria');
+            return;
+        }
+        if (!passwordData.confirmar_contrasena) {
+            toast.error('Debes confirmar la nueva contraseña');
+            return;
+        }
 
         if (passwordData.nueva_contrasena !== passwordData.confirmar_contrasena) {
             toast.error('Las contraseñas nuevas no coinciden');
@@ -263,7 +299,7 @@ export function MiPerfil() {
                                 <CardDescription>Actualiza tu información básica de contacto.</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <form onSubmit={handleProfileSubmit} className="space-y-4">
+                                <form onSubmit={handleProfileSubmit} className="space-y-4" noValidate>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <div className="flex justify-between items-center">
@@ -403,15 +439,66 @@ export function MiPerfil() {
                                 <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md" noValidate>
                                     <div className="space-y-2">
                                         <Label htmlFor="current-pass">Contraseña Actual *</Label>
-                                        <Input id="current-pass" type="password" value={passwordData.contrasena_actual} onChange={e => setPasswordData({ ...passwordData, contrasena_actual: e.target.value })} required placeholder="********" />
+                                        <div className="relative">
+                                            <Input 
+                                                id="current-pass" 
+                                                type={showCurrentPassword ? "text" : "password"} 
+                                                value={passwordData.contrasena_actual} 
+                                                onChange={e => setPasswordData({ ...passwordData, contrasena_actual: e.target.value })} 
+                                                required 
+                                                placeholder="********" 
+                                                className="pr-10"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                            >
+                                                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="new-pass">Nueva Contraseña *</Label>
-                                        <Input id="new-pass" type="password" value={passwordData.nueva_contrasena} onChange={e => setPasswordData({ ...passwordData, nueva_contrasena: e.target.value })} required placeholder="********" />
+                                        <div className="relative">
+                                            <Input 
+                                                id="new-pass" 
+                                                type={showNewPassword ? "text" : "password"} 
+                                                value={passwordData.nueva_contrasena} 
+                                                onChange={e => setPasswordData({ ...passwordData, nueva_contrasena: e.target.value })} 
+                                                required 
+                                                placeholder="********" 
+                                                className="pr-10"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                            >
+                                                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="confirm-pass">Confirmar Nueva Contraseña *</Label>
-                                        <Input id="confirm-pass" type="password" value={passwordData.confirmar_contrasena} onChange={e => setPasswordData({ ...passwordData, confirmar_contrasena: e.target.value })} required placeholder="********" />
+                                        <div className="relative">
+                                            <Input 
+                                                id="confirm-pass" 
+                                                type={showConfirmPassword ? "text" : "password"} 
+                                                value={passwordData.confirmar_contrasena} 
+                                                onChange={e => setPasswordData({ ...passwordData, confirmar_contrasena: e.target.value })} 
+                                                required 
+                                                placeholder="********" 
+                                                className="pr-10"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                            >
+                                                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
                                     </div>
                                     <Button type="submit" variant="secondary" disabled={isProcessingPassword} className="w-full sm:w-auto mt-2">
                                         {isProcessingPassword ? (
