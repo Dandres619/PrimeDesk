@@ -18,7 +18,8 @@ import {
   FileText,
   DollarSign,
   TrendingUp,
-  XCircle
+  XCircle,
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -285,6 +286,14 @@ export function Ventas() {
     toast.success('PDF generado exitosamente');
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-24">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -395,7 +404,7 @@ export function Ventas() {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p>Placa: {sale.motorcyclePlate}</p>
+                      <p>{sale.motorcyclePlate}</p>
                     </div>
                   </TableCell>
                   <TableCell>

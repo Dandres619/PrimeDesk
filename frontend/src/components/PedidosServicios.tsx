@@ -258,6 +258,22 @@ export function PedidosServicios() {
     };
   });
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Pendiente de Venta':
+      case 'Pendiente de venta':
+        return <Badge className="bg-yellow-100 text-yellow-800 border-none">{status}</Badge>;
+      case 'Anulada':
+        return <Badge variant="destructive" className="bg-red-100 text-red-800 border-none">{status}</Badge>;
+      case 'Reparación finalizada':
+        return <Badge className="bg-green-100 text-green-800 border-none">{status}</Badge>;
+      case 'En proceso':
+        return <Badge className="bg-blue-100 text-blue-800 border-none">{status}</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
   const filteredServiceOrders = richServiceOrders.filter(o =>
     o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -270,8 +286,8 @@ export function PedidosServicios() {
 
   const stats = [
     { icon: Wrench, color: 'text-blue-600', value: richServiceOrders.filter(o => !o.anulada).length, label: 'Total Activos' },
-    { icon: CheckCircle, color: 'text-green-600', value: richServiceOrders.filter(o => !o.anulada && o.associatedSaleId).length, label: 'Con Venta' },
-    { icon: Clock, color: 'text-orange-600', value: richServiceOrders.filter(o => !o.anulada && !o.associatedSaleId).length, label: 'Pendientes de Venta' }
+    { icon: CheckCircle, color: 'text-green-600', value: richServiceOrders.filter(o => !o.anulada && (o.estadoBase === 'Reparación finalizada' || o.associatedSaleId)).length, label: 'Finalizadas' },
+    { icon: Clock, color: 'text-orange-600', value: richServiceOrders.filter(o => !o.anulada && o.estadoBase !== 'Reparación finalizada' && !o.associatedSaleId).length, label: 'Pendientes' }
   ];
 
   const actions = (o: any) => [
@@ -293,9 +309,9 @@ export function PedidosServicios() {
         setPdfPreview({ open: true, data: pdfData, type: 'service-order' })
       }, color: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20'
     },
-    ...(o.anulada ? [] : [
+    ...(o.anulada || o.estadoBase === 'Reparación finalizada' || o.associatedSaleId ? [] : [
       { icon: Edit2, onClick: () => handleOpenEdit(o), color: 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20' },
-      { icon: XCircle, onClick: () => { if (o.associatedSaleId) { toast.error('No se puede anular una reparación con venta asociada'); return; } setConfirmDialog({ open: true, title: 'Anular Reparación', description: '¿Está seguro de que desea anular esta reparación?', confirmText: 'Anular', variant: 'cancel', onConfirm: () => anularOrder(o.id) }); }, color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
+      { icon: XCircle, onClick: () => { setConfirmDialog({ open: true, title: 'Anular Reparación', description: '¿Está seguro de que desea anular esta reparación?', confirmText: 'Anular', variant: 'cancel', onConfirm: () => anularOrder(o.id) }); }, color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
     ])
   ];
 
@@ -381,9 +397,7 @@ export function PedidosServicios() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div>
-                      <p><Badge variant="destructive" className="bg-red-100 text-red-800 border-none">{o.estadoBase}</Badge></p>
-                    </div>
+                    <p>{getStatusBadge(o.estadoBase)}</p>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -422,7 +436,7 @@ export function PedidosServicios() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 {[
-                  { title: 'Información de la Reparación', fields: [['Número de la Reparación', viewingServiceOrder.orderNumber], ['Fecha de Recepción', format(new Date(viewingServiceOrder.date), 'PPP', { locale: es })], ['Estado', viewingServiceOrder.anulada ? <Badge key="status" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Anulada</Badge> : viewingServiceOrder.associatedSaleId ? <Badge key="status" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Facturado</Badge> : <Badge key="status" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">Pendiente de Venta</Badge>]] },
+                  { title: 'Información de la Reparación', fields: [['Número de la Reparación', viewingServiceOrder.orderNumber], ['Fecha de Recepción', format(new Date(viewingServiceOrder.date), 'PPP', { locale: es })], ['Estado', getStatusBadge(viewingServiceOrder.estadoBase)]] },
                   { title: 'Cliente y Motocicleta', fields: [['Cliente', <div key="client"><p className="font-medium text-foreground">{viewingServiceOrder.clientName}</p><p className="text-sm text-muted-foreground">{viewingServiceOrder.clientPhone}</p></div>], ['Motocicleta', <div key="moto"><p className="font-medium text-foreground">{viewingServiceOrder.motorcycleBrand} {viewingServiceOrder.motorcycleModel}</p><p className="text-sm text-muted-foreground">Placa: {viewingServiceOrder.motorcyclePlate}</p></div>]] }
                 ].map((section, i) => (
                   <div key={i}>

@@ -160,6 +160,14 @@ const create = async ({ id_reparacion, id_empleado, id_motocicleta, fecha, total
           subtotal: comp.subtotal
         }));
         await tx`INSERT INTO ventas_compras ${sql(purchaseInserts, 'id_venta', 'id_compra', 'subtotal')}`;
+
+        for (const comp of compras) {
+           await tx`UPDATE compras SET estado = 'Compra finalizada' WHERE id_compra = ${comp.id_compra}`;
+        }
+      }
+
+      if (id_reparacion) {
+        await tx`UPDATE reparaciones SET estado = 'Reparación finalizada' WHERE id_reparacion = ${id_reparacion}`;
       }
 
       return venta;
