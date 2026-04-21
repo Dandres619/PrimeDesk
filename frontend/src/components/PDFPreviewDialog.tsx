@@ -1,6 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { FileText, Download } from 'lucide-react';
@@ -201,7 +200,7 @@ export function PDFPreviewDialog({
               <p><span className="font-medium">Reparación:</span> {data.serviceOrderNumber}</p>
             )}
             <div className="mt-2 text-sm">
-              <span className="font-medium mr-1">Estado de la Venta:</span> 
+              <span className="font-medium mr-1">Estado de la Venta:</span>
               <span className="uppercase">{data?.anulada ? 'ANULADA' : 'COMPLETADA'}</span>
             </div>
           </div>
