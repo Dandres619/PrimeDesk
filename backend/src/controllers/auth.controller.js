@@ -88,4 +88,14 @@ const verify = async (req, res) => {
     }
 };
 
-module.exports = { login, register, getMe, updateProfile, changePassword, forgotPassword, resetPassword, verify };
+const checkEmail = async (req, res) => {
+    try {
+        const { correo } = req.body;
+        const data = await authService.checkEmail(correo);
+        res.status(200).json(data);
+    } catch (err) {
+        res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
+    }
+};
+
+module.exports = { login, register, getMe, updateProfile, changePassword, forgotPassword, resetPassword, verify, checkEmail };

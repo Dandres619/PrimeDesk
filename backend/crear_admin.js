@@ -3,7 +3,7 @@ const { sql } = require('./src/config/db');
 
 async function crearEmpleados() {
     const empleados = [
-        { correo: 'adminchris@primedesk.com', password: 'adminchris', nombre: "Christian", apellido: "Romero", id_rol: 1 }
+        { correo: 'danielmta618@gmail.com', password: '1wdV9ihV*', nombre: "Daniel", apellido: "Estrada", id_rol: 1 }
     ];
 
     try {

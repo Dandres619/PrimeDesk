@@ -102,4 +102,14 @@ router.post(
     authController.changePassword
 );
 
+// POST /api/auth/check-email
+router.post(
+    '/check-email',
+    [
+        body('correo').isEmail().withMessage('Correo inválido.'),
+        handleValidation,
+    ],
+    authController.checkEmail
+);
+
 module.exports = router;

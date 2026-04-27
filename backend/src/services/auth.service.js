@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { getPool } = require('../config/db');
+const { getPool, sql } = require('../config/db');
 const jwtConfig = require('../config/jwt');
 const emailService = require('./email.service');
 const supabase = require('../config/supabase');
@@ -377,4 +377,17 @@ const verifyEmailToken = async (token) => {
     return { message: 'Correo verificado correctamente.' };
 };
 
-module.exports = { login, register, getMe, updateProfile, changePassword, requestPasswordReset, resetPassword, verifyEmailToken };
+/**
+ * Verificar si un correo ya existe.
+ */
+const checkEmail = async (correo) => {
+    try {
+        const existing = await sql`SELECT id_usuario FROM usuarios WHERE correo = ${correo} LIMIT 1`;
+        return { exists: existing.length > 0 };
+    } catch (err) {
+        console.error('Error in checkEmail service:', err);
+        throw err;
+    }
+};
+
+module.exports = { login, register, getMe, updateProfile, changePassword, requestPasswordReset, resetPassword, verifyEmailToken, checkEmail };

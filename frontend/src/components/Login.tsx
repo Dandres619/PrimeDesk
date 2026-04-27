@@ -198,7 +198,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     setActiveStep(prev => prev - 1);
   };
 
-  const handleNextStep = (e?: React.MouseEvent | React.KeyboardEvent) => {
+  const handleNextStep = async (e?: React.MouseEvent | React.KeyboardEvent) => {
     if (e && e.type === 'keydown' && (e as React.KeyboardEvent).key !== 'Enter') return;
     if (e && e.type === 'click') e.preventDefault();
 
@@ -208,8 +208,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       if (!registerData.apellido) errs.apellido = 'Requerido';
       if (!registerData.documento) errs.documento = 'Requerido';
       else if (!/^\d{7,10}$/.test(registerData.documento)) errs.documento = 'Entre 7 y 10 números';
-      if (!registerData.telefono) errs.telefono = 'Requerido';
-      else if (!/^\d{10}$/.test(registerData.telefono)) errs.telefono = 'Exactamente 10 números';
+      if (!registerData.fecha_nacimiento) errs.fecha_nacimiento = 'Requerido';
 
       if (Object.keys(errs).length > 0) {
         setRegisterErrors(errs);
@@ -223,14 +222,45 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerData.email)) errs.email = 'Correo inválido';
       if (!registerData.barrio) errs.barrio = 'Requerido';
       if (!registerData.direccion) errs.direccion = 'Requerido';
-      if (!registerData.fecha_nacimiento) errs.fecha_nacimiento = 'Requerido';
+      if (!registerData.telefono) errs.telefono = 'Requerido';
+      else if (!/^\d{10}$/.test(registerData.telefono)) errs.telefono = 'Exactamente 10 números';
 
       if (Object.keys(errs).length > 0) {
         setRegisterErrors(errs);
         return;
       }
-      setRegisterErrors({});
-      nextStep();
+
+      // Verificar si el correo ya existe
+      setIsLoading(true);
+      
+      try {
+        const response = await fetch(`${API_URL}/auth/check-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo: registerData.email.toLowerCase().trim() })
+        });
+        
+        if (!response.ok) {
+           const errorData = await response.json().catch(() => ({}));
+           throw new Error(errorData.message || `Error del servidor: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.exists) {
+          setRegisterErrors({ email: 'Correo ya registrado' });
+          toast.error('Este correo electrónico ya está registrado.');
+          setIsLoading(false);
+          return;
+        }
+
+        setRegisterErrors({});
+        nextStep();
+      } catch (error: any) {
+        console.error('Error al verificar correo:', error);
+        toast.error(`Error de conexión: ${error.message}`);
+      } finally {
+        setIsLoading(false);
+      }
     } else if (activeStep === 3) {
       const errs: Record<string, string> = {};
       if (!registerData.contrasena) errs.contrasena = 'Requerido';
@@ -637,8 +667,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                               <Label htmlFor="reg-nombre" className="text-gray-700">Nombre *</Label>
-                               {registerErrors.nombre && <span className="text-red-500 text-xs">{registerErrors.nombre}</span>}
+                              <Label htmlFor="reg-nombre" className="text-gray-700">Nombre *</Label>
+                              {registerErrors.nombre && <span className="text-red-500 text-xs">{registerErrors.nombre}</span>}
                             </div>
                             <Input
                               id="reg-nombre"
@@ -650,8 +680,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                               <Label htmlFor="reg-apellido" className="text-gray-700">Apellido *</Label>
-                               {registerErrors.apellido && <span className="text-red-500 text-xs">{registerErrors.apellido}</span>}
+                              <Label htmlFor="reg-apellido" className="text-gray-700">Apellido *</Label>
+                              {registerErrors.apellido && <span className="text-red-500 text-xs">{registerErrors.apellido}</span>}
                             </div>
                             <Input
                               id="reg-apellido"
@@ -680,8 +710,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                               <Label htmlFor="reg-doc" className="text-gray-700">Número de documento *</Label>
-                               {registerErrors.documento && <span className="text-red-500 text-xs">{registerErrors.documento}</span>}
+                              <Label htmlFor="reg-doc" className="text-gray-700">Número de documento *</Label>
+                              {registerErrors.documento && <span className="text-red-500 text-xs">{registerErrors.documento}</span>}
                             </div>
                             <div className="relative">
                               <CreditCard className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -698,18 +728,17 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                             <Label htmlFor="reg-tel" className="text-gray-700">Teléfono *</Label>
-                             {registerErrors.telefono && <span className="text-red-500 text-xs">{registerErrors.telefono}</span>}
+                            <Label htmlFor="reg-nac" className="text-gray-700">Fecha de Nacimiento *</Label>
+                            {registerErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{registerErrors.fecha_nacimiento}</span>}
                           </div>
                           <div className="relative">
-                            <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                             <Input
-                              id="reg-tel"
-                              type="tel"
-                              placeholder="+57 300 123 4567"
-                              value={registerData.telefono}
-                              onChange={(e) => setRegisterData(prev => ({ ...prev, telefono: e.target.value }))}
-                              className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.telefono ? 'border-red-500' : ''}`}
+                              id="reg-nac"
+                              type="date"
+                              value={registerData.fecha_nacimiento}
+                              onChange={(e) => setRegisterData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))}
+                              className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 text-gray-500 ${registerErrors.fecha_nacimiento ? 'border-red-500' : ''}`}
                             />
                           </div>
                         </div>
@@ -721,8 +750,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                       <div className="space-y-6 animate-fadeIn">
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                             <Label htmlFor="reg-email" className="text-gray-700">Correo electrónico *</Label>
-                             {registerErrors.email && <span className="text-red-500 text-xs">{registerErrors.email}</span>}
+                            <Label htmlFor="reg-email" className="text-gray-700">Correo electrónico *</Label>
+                            {registerErrors.email && <span className="text-red-500 text-xs">{registerErrors.email}</span>}
                           </div>
                           <div className="relative">
                             <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -740,8 +769,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                               <Label htmlFor="reg-barrio" className="text-gray-700">Barrio *</Label>
-                               {registerErrors.barrio && <span className="text-red-500 text-xs">{registerErrors.barrio}</span>}
+                              <Label htmlFor="reg-barrio" className="text-gray-700">Barrio *</Label>
+                              {registerErrors.barrio && <span className="text-red-500 text-xs">{registerErrors.barrio}</span>}
                             </div>
                             <div className="relative">
                               <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -756,17 +785,18 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                               <Label htmlFor="reg-nac" className="text-gray-700">Fecha de Nacimiento *</Label>
-                               {registerErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{registerErrors.fecha_nacimiento}</span>}
+                              <Label htmlFor="reg-tel" className="text-gray-700">Teléfono *</Label>
+                              {registerErrors.telefono && <span className="text-red-500 text-xs">{registerErrors.telefono}</span>}
                             </div>
                             <div className="relative">
-                              <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                              <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                               <Input
-                                id="reg-nac"
-                                type="date"
-                                value={registerData.fecha_nacimiento}
-                                onChange={(e) => setRegisterData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))}
-                                className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 text-gray-500 ${registerErrors.fecha_nacimiento ? 'border-red-500' : ''}`}
+                                id="reg-tel"
+                                type="tel"
+                                placeholder="+57 300 123 4567"
+                                value={registerData.telefono}
+                                onChange={(e) => setRegisterData(prev => ({ ...prev, telefono: e.target.value }))}
+                                className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.telefono ? 'border-red-500' : ''}`}
                               />
                             </div>
                           </div>
@@ -774,8 +804,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                             <Label htmlFor="reg-dir" className="text-gray-700">Dirección *</Label>
-                             {registerErrors.direccion && <span className="text-red-500 text-xs">{registerErrors.direccion}</span>}
+                            <Label htmlFor="reg-dir" className="text-gray-700">Dirección *</Label>
+                            {registerErrors.direccion && <span className="text-red-500 text-xs">{registerErrors.direccion}</span>}
                           </div>
                           <div className="relative">
                             <Home className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -796,8 +826,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                       <div className="space-y-6 animate-fadeIn">
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                             <Label htmlFor="reg-password" className="text-gray-700">Contraseña *</Label>
-                             {registerErrors.contrasena && <span className="text-red-500 text-xs max-w-[60%] text-right leading-tight">{registerErrors.contrasena}</span>}
+                            <Label htmlFor="reg-password" className="text-gray-700">Contraseña *</Label>
+                            {registerErrors.contrasena && <span className="text-red-500 text-xs max-w-[60%] text-right leading-tight">{registerErrors.contrasena}</span>}
                           </div>
                           <div className="relative">
                             <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -822,8 +852,8 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                             <Label htmlFor="reg-confirm-password" className="text-gray-700">Confirmar contraseña *</Label>
-                             {registerErrors.confirmarContrasena && <span className="text-red-500 text-xs">{registerErrors.confirmarContrasena}</span>}
+                            <Label htmlFor="reg-confirm-password" className="text-gray-700">Confirmar contraseña *</Label>
+                            {registerErrors.confirmarContrasena && <span className="text-red-500 text-xs">{registerErrors.confirmarContrasena}</span>}
                           </div>
                           <div className="relative">
                             <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
@@ -877,10 +907,20 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                         <Button
                           type="button"
                           onClick={(e) => handleNextStep(e)}
+                          disabled={isLoading}
                           className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-12 shadow-lg shadow-indigo-200"
                         >
-                          Continuar
-                          <ArrowRight className="w-4 h-4 ml-2" />
+                          {isLoading && activeStep === 2 ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Verificando...
+                            </>
+                          ) : (
+                            <>
+                              Continuar
+                              <ArrowRight className="w-4 h-4 ml-2" />
+                            </>
+                          )}
                         </Button>
                       ) : (
                         <Button
