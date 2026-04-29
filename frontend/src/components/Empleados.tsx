@@ -223,7 +223,7 @@ export function Empleados() {
               Nuevo Empleado
             </Button>
           </DialogTrigger>
-          <EmployeeDialog employee={editingEmployee} onSave={handleSave} isSaving={isSaving} />
+          <EmployeeDialog employee={editingEmployee} onSave={handleSave} isSaving={isSaving} onOpenChange={setIsDialogOpen} open={isDialogOpen} />
         </Dialog>
       </div>
 
@@ -433,7 +433,7 @@ export function Empleados() {
   );
 }
 
-function EmployeeDialog({ employee, onSave, isSaving }: any) {
+function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any) {
   const [activeStep, setActiveStep] = useState(1);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
@@ -466,6 +466,8 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
 
   React.useEffect(() => {
+    if (!open) return;
+
     if (employee) {
       setFormData({
         correo: employee.Correo || '',
@@ -506,8 +508,105 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
       });
       setFotoPreview(null);
       setFormErrors({});
+      setActiveStep(1);
     }
-  }, [employee]);
+  }, [employee, open]);
+
+  const handleCancel = () => {
+    setFormData({
+      correo: '',
+      contrasena: '',
+      confirmarContrasena: '',
+      nombre: '',
+      apellido: '',
+      telefono: '',
+      direccion: '',
+      barrio: '',
+      fecha_nacimiento: '',
+      fecha_ingreso: new Date().toISOString().split('T')[0],
+      foto: '',
+      documento: '',
+      tipo_documento: 'CC',
+      id_rol: 2,
+      fotoFile: null
+    });
+    setFotoPreview(null);
+    setFormErrors({});
+    setActiveStep(1);
+    onOpenChange(false);
+  };
+
+  const validateField = (name: string, value: string, currentData: any) => {
+    let error = '';
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+    switch (name) {
+      case 'correo':
+        if (!value) error = 'Requerido';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Correo inválido';
+        break;
+      case 'contrasena':
+        if (!employee && !value) error = 'Requerido';
+        else if (!employee && value && !passwordRegex.test(value)) {
+          error = 'Mín. 8 caracteres, mayúscula, número y especial';
+        }
+        break;
+      case 'confirmarContrasena':
+        if (!employee && value !== currentData.contrasena) {
+          error = 'Las contraseñas no coinciden';
+        }
+        break;
+      case 'nombre':
+        if (!value) error = 'Requerido';
+        break;
+      case 'apellido':
+        if (!value) error = 'Requerido';
+        break;
+      case 'documento':
+        if (!value) error = 'Requerido';
+        else if (!/^\d{7,10}$/.test(value) && !employee) error = 'Entre 7 y 10 números';
+        break;
+      case 'telefono':
+        if (!value) error = 'Requerido';
+        else if (!/^\d{10}$/.test(value)) error = 'Exactamente 10 números';
+        break;
+      case 'fecha_nacimiento':
+        if (!value) error = 'Requerido';
+        break;
+      case 'barrio':
+        if (!value) error = 'Requerido';
+        break;
+      case 'direccion':
+        if (!value) error = 'Requerido';
+        break;
+    }
+
+    setFormErrors(prev => {
+      const newErrors = { ...prev };
+      if (error) {
+        newErrors[name] = error;
+      } else {
+        delete newErrors[name];
+      }
+
+      if (name === 'contrasena' && !employee) {
+        if (currentData.confirmarContrasena && value !== currentData.confirmarContrasena) {
+          newErrors.confirmarContrasena = 'Las contraseñas no coinciden';
+        } else if (currentData.confirmarContrasena) {
+          delete newErrors.confirmarContrasena;
+        }
+      }
+      return newErrors;
+    });
+  };
+
+  const handleChange = (name: string, value: any) => {
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+      validateField(name, value, newData);
+      return newData;
+    });
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFileChange(e.target.files);
@@ -531,6 +630,7 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
       let errors: Record<string, string> = {};
 
       if (!formData.correo) errors.correo = 'Requerido';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) errors.correo = 'Correo inválido';
       if (!employee && !formData.contrasena) errors.contrasena = 'Requerido';
       if (!employee && formData.contrasena !== formData.confirmarContrasena) {
         errors.confirmarContrasena = 'Las contraseñas no coinciden';
@@ -567,8 +667,9 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
     if (!formData.barrio) errors.barrio = 'Requerido';
     if (!formData.direccion) errors.direccion = 'Requerido';
 
+    setFormErrors(prev => ({ ...prev, ...errors }));
+
     if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
       return;
     }
 
@@ -610,21 +711,21 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
                   <Label htmlFor="emp-correo">Correo electrónico *</Label>
                   {formErrors.correo && <span className="text-red-500 text-xs">{formErrors.correo}</span>}
                 </div>
-                <Input id="emp-correo" type="email" value={formData.correo} onChange={(e) => setFormData(prev => ({ ...prev, correo: e.target.value }))} className={formErrors.correo ? 'border-red-500' : ''} required />
+                <Input id="emp-correo" type="email" value={formData.correo} onChange={(e) => handleChange('correo', e.target.value)} className={formErrors.correo ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="emp-pass">Contraseña *</Label>
+                  <Label htmlFor="emp-pass">Contraseña {employee ? '' : '*'}</Label>
                   {formErrors.contrasena && <span className="text-red-500 text-xs max-w-[60%] text-right leading-tight">{formErrors.contrasena}</span>}
                 </div>
-                <Input id="emp-pass" type="password" value={formData.contrasena} onChange={(e) => setFormData(prev => ({ ...prev, contrasena: e.target.value }))} className={formErrors.contrasena ? 'border-red-500' : ''} required placeholder="********" />
+                <Input id="emp-pass" type="password" value={formData.contrasena} onChange={(e) => handleChange('contrasena', e.target.value)} className={formErrors.contrasena ? 'border-red-500' : ''} required={!employee} placeholder={employee ? "Dejar en blanco para no cambiar" : "********"} />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="emp-confirm-pass">Confirmar *</Label>
+                  <Label htmlFor="emp-confirm-pass">Confirmar {employee ? '' : '*'}</Label>
                   {formErrors.confirmarContrasena && <span className="text-red-500 text-xs">{formErrors.confirmarContrasena}</span>}
                 </div>
-                <Input id="emp-confirm-pass" type="password" value={formData.confirmarContrasena} onChange={(e) => setFormData(prev => ({ ...prev, confirmarContrasena: e.target.value }))} className={formErrors.confirmarContrasena ? 'border-red-500' : ''} required placeholder="********" />
+                <Input id="emp-confirm-pass" type="password" value={formData.confirmarContrasena} onChange={(e) => handleChange('confirmarContrasena', e.target.value)} className={formErrors.confirmarContrasena ? 'border-red-500' : ''} required={!employee} placeholder="********" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="emp-rol">Rol</Label>
@@ -639,7 +740,10 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
                 </select>
               </div>
             </div>
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" type="button" onClick={handleCancel}>
+                Cancelar
+              </Button>
               <Button type="button" onClick={nextStep} className="bg-blue-600 hover:bg-blue-700">
                 Siguiente: Datos Personales
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -658,21 +762,21 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
                   <Label htmlFor="nombre">Nombre *</Label>
                   {formErrors.nombre && <span className="text-red-500 text-xs">{formErrors.nombre}</span>}
                 </div>
-                <Input id="nombre" value={formData.nombre} onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))} className={formErrors.nombre ? 'border-red-500' : ''} required />
+                <Input id="nombre" value={formData.nombre} onChange={(e) => handleChange('nombre', e.target.value)} className={formErrors.nombre ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="apellido">Apellido *</Label>
                   {formErrors.apellido && <span className="text-red-500 text-xs">{formErrors.apellido}</span>}
                 </div>
-                <Input id="apellido" value={formData.apellido} onChange={(e) => setFormData(prev => ({ ...prev, apellido: e.target.value }))} className={formErrors.apellido ? 'border-red-500' : ''} required />
+                <Input id="apellido" value={formData.apellido} onChange={(e) => handleChange('apellido', e.target.value)} className={formErrors.apellido ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tipo_documento">Tipo de Documento</Label>
                 <select
                   id="tipo_documento"
                   value={formData.tipo_documento}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tipo_documento: e.target.value }))}
+                  onChange={(e) => handleChange('tipo_documento', e.target.value)}
                   disabled={!!employee}
                   className={`w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${employee ? "bg-muted opacity-80" : ""}`}
                 >
@@ -684,39 +788,39 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
                   <Label htmlFor="documento">Núm. Documento *</Label>
                   {formErrors.documento && <span className="text-red-500 text-xs">{formErrors.documento}</span>}
                 </div>
-                <Input id="documento" value={formData.documento} onChange={(e) => setFormData(prev => ({ ...prev, documento: e.target.value }))} required disabled={!!employee} className={`${employee ? 'bg-muted ' : ''}${formErrors.documento ? 'border-red-500' : ''}`} />
+                <Input id="documento" value={formData.documento} onChange={(e) => handleChange('documento', e.target.value)} required disabled={!!employee} className={`${employee ? 'bg-muted ' : ''}${formErrors.documento ? 'border-red-500' : ''}`} />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="telefono">Teléfono *</Label>
                   {formErrors.telefono && <span className="text-red-500 text-xs">{formErrors.telefono}</span>}
                 </div>
-                <Input id="telefono" value={formData.telefono} onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))} className={formErrors.telefono ? 'border-red-500' : ''} required />
+                <Input id="telefono" value={formData.telefono} onChange={(e) => handleChange('telefono', e.target.value)} className={formErrors.telefono ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="fecha_nacimiento">Fec. Nacimiento *</Label>
                   {formErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{formErrors.fecha_nacimiento}</span>}
                 </div>
-                <Input id="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={(e) => setFormData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))} className={formErrors.fecha_nacimiento ? 'border-red-500' : ''} required />
+                <Input id="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={(e) => handleChange('fecha_nacimiento', e.target.value)} className={formErrors.fecha_nacimiento ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
-                <Input id="fecha_ingreso" type="date" value={formData.fecha_ingreso} onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))} required />
+                <Input id="fecha_ingreso" type="date" value={formData.fecha_ingreso} onChange={(e) => handleChange('fecha_ingreso', e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="barrio">Barrio *</Label>
                   {formErrors.barrio && <span className="text-red-500 text-xs">{formErrors.barrio}</span>}
                 </div>
-                <Input id="barrio" value={formData.barrio} onChange={(e) => setFormData(prev => ({ ...prev, barrio: e.target.value }))} className={formErrors.barrio ? 'border-red-500' : ''} required />
+                <Input id="barrio" value={formData.barrio} onChange={(e) => handleChange('barrio', e.target.value)} className={formErrors.barrio ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="direccion">Dirección *</Label>
                   {formErrors.direccion && <span className="text-red-500 text-xs">{formErrors.direccion}</span>}
                 </div>
-                <Input id="direccion" value={formData.direccion} onChange={(e) => setFormData(prev => ({ ...prev, direccion: e.target.value }))} className={formErrors.direccion ? 'border-red-500' : ''} required />
+                <Input id="direccion" value={formData.direccion} onChange={(e) => handleChange('direccion', e.target.value)} className={formErrors.direccion ? 'border-red-500' : ''} required />
               </div>
               <div className="col-span-2 space-y-2">
                 <Label>Foto de Perfil</Label>
@@ -750,19 +854,19 @@ function EmployeeDialog({ employee, onSave, isSaving }: any) {
                 </div>
               </div>
             </div>
-            <div className="flex justify-between pt-4">
+            <div className="flex justify-between items-center pt-4">
               {!employee && (
                 <Button type="button" variant="outline" onClick={() => setActiveStep(1)}>
                   Atrás
                 </Button>
               )}
-              <div className="flex gap-2 ml-auto">
-                <Button variant="outline" type="button" onClick={() => (document.querySelector('[data-state="open"]')?.parentElement as any)?.click()}>
+              <div className="flex justify-end gap-2 ml-auto">
+                <Button variant="outline" type="button" onClick={handleCancel}>
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
                   {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {employee ? 'Actualizar' : 'Finalizar Registro'}
+                  {employee ? 'Actualizar Empleado' : 'Finalizar Registro'}
                 </Button>
               </div>
             </div>

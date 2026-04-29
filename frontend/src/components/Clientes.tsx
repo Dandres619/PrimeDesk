@@ -189,7 +189,7 @@ export function Clientes() {
               Nuevo Cliente
             </Button>
           </DialogTrigger>
-          <ClientDialog client={editingClient} onSave={handleSave} isSaving={isSaving} />
+          <ClientDialog client={editingClient} onSave={handleSave} isSaving={isSaving} onOpenChange={setIsDialogOpen} open={isDialogOpen} />
         </Dialog>
       </div>
 
@@ -398,7 +398,7 @@ export function Clientes() {
   );
 }
 
-function ClientDialog({ client, onSave, isSaving }: any) {
+function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
   const [activeStep, setActiveStep] = useState(1);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
@@ -430,6 +430,8 @@ function ClientDialog({ client, onSave, isSaving }: any) {
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
 
   React.useEffect(() => {
+    if (!open) return;
+
     if (client) {
       setFormData({
         crear_usuario: false,
@@ -468,8 +470,105 @@ function ClientDialog({ client, onSave, isSaving }: any) {
       });
       setFotoPreview(null);
       setFormErrors({});
+      setActiveStep(1);
     }
-  }, [client]);
+  }, [client, open]);
+
+  const handleCancel = () => {
+    setFormData({
+      crear_usuario: true,
+      correo: '',
+      contrasena: '',
+      confirmarContrasena: '',
+      nombre: '',
+      apellido: '',
+      telefono: '',
+      direccion: '',
+      barrio: '',
+      fecha_nacimiento: '',
+      foto: '',
+      documento: '',
+      tipo_documento: 'CC',
+      fotoFile: null
+    });
+    setFotoPreview(null);
+    setFormErrors({});
+    setActiveStep(1);
+    onOpenChange(false);
+  };
+
+  const validateField = (name: string, value: string, currentData: any) => {
+    let error = '';
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+    switch (name) {
+      case 'correo':
+        if (!value) error = 'Requerido';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Correo inválido';
+        break;
+      case 'contrasena':
+        if (!client && !value) error = 'Requerido';
+        else if (!client && value && !passwordRegex.test(value)) {
+          error = 'Mín. 8 caracteres, mayúscula, número y especial';
+        }
+        break;
+      case 'confirmarContrasena':
+        if (!client && value !== currentData.contrasena) {
+          error = 'Las contraseñas no coinciden';
+        }
+        break;
+      case 'nombre':
+        if (!value) error = 'Requerido';
+        break;
+      case 'apellido':
+        if (!value) error = 'Requerido';
+        break;
+      case 'documento':
+        if (!value) error = 'Requerido';
+        else if (!/^\d{7,10}$/.test(value) && !client) error = 'Entre 7 y 10 números';
+        break;
+      case 'telefono':
+        if (!value) error = 'Requerido';
+        else if (!/^\d{10}$/.test(value)) error = 'Exactamente 10 números';
+        break;
+      case 'fecha_nacimiento':
+        if (!value) error = 'Requerido';
+        break;
+      case 'barrio':
+        if (!value) error = 'Requerido';
+        break;
+      case 'direccion':
+        if (!value) error = 'Requerido';
+        break;
+    }
+
+    setFormErrors(prev => {
+      const newErrors = { ...prev };
+      if (error) {
+        newErrors[name] = error;
+      } else {
+        delete newErrors[name];
+      }
+
+      // Re-validate confirmarContrasena if contrasena changes
+      if (name === 'contrasena' && !client) {
+        if (currentData.confirmarContrasena && value !== currentData.confirmarContrasena) {
+          newErrors.confirmarContrasena = 'Las contraseñas no coinciden';
+        } else if (currentData.confirmarContrasena) {
+          delete newErrors.confirmarContrasena;
+        }
+      }
+      return newErrors;
+    });
+  };
+
+  const handleChange = (name: string, value: any) => {
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+      validateField(name, value, newData);
+      return newData;
+    });
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFileChange(e.target.files);
@@ -493,6 +592,7 @@ function ClientDialog({ client, onSave, isSaving }: any) {
       let errors: Record<string, string> = {};
 
       if (!formData.correo) errors.correo = 'Requerido';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) errors.correo = 'Correo inválido';
       if (!client && !formData.contrasena) errors.contrasena = 'Requerido';
       if (!client && formData.contrasena !== formData.confirmarContrasena) {
         errors.confirmarContrasena = 'Las contraseñas no coinciden';
@@ -529,8 +629,10 @@ function ClientDialog({ client, onSave, isSaving }: any) {
     if (!formData.barrio) errors.barrio = 'Requerido';
     if (!formData.direccion) errors.direccion = 'Requerido';
 
+    // Highlight all errors that were found
+    setFormErrors(prev => ({ ...prev, ...errors }));
+
     if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
       return;
     }
 
@@ -577,29 +679,29 @@ function ClientDialog({ client, onSave, isSaving }: any) {
                   type="email"
                   placeholder="ejemplo@correo.com"
                   value={formData.correo}
-                  onChange={(e) => setFormData(prev => ({ ...prev, correo: e.target.value }))}
+                  onChange={(e) => handleChange('correo', e.target.value)}
                   className={formErrors.correo ? 'border-red-500' : ''}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="reg-pass">Contraseña *</Label>
+                  <Label htmlFor="reg-pass">Contraseña {client ? '' : '*'}</Label>
                   {formErrors.contrasena && <span className="text-red-500 text-xs max-w-[60%] text-right leading-tight">{formErrors.contrasena}</span>}
                 </div>
                 <Input
                   id="reg-pass"
                   type="password"
-                  placeholder="********"
+                  placeholder={client ? "Dejar en blanco para no cambiar" : "********"}
                   value={formData.contrasena}
-                  onChange={(e) => setFormData(prev => ({ ...prev, contrasena: e.target.value }))}
+                  onChange={(e) => handleChange('contrasena', e.target.value)}
                   className={formErrors.contrasena ? 'border-red-500' : ''}
-                  required
+                  required={!client}
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="reg-confirm-pass">Confirmar *</Label>
+                  <Label htmlFor="reg-confirm-pass">Confirmar {client ? '' : '*'}</Label>
                   {formErrors.confirmarContrasena && <span className="text-red-500 text-xs">{formErrors.confirmarContrasena}</span>}
                 </div>
                 <Input
@@ -607,13 +709,16 @@ function ClientDialog({ client, onSave, isSaving }: any) {
                   type="password"
                   placeholder="Repita la contraseña"
                   value={formData.confirmarContrasena}
-                  onChange={(e) => setFormData(prev => ({ ...prev, confirmarContrasena: e.target.value }))}
+                  onChange={(e) => handleChange('confirmarContrasena', e.target.value)}
                   className={formErrors.confirmarContrasena ? 'border-red-500' : ''}
-                  required
+                  required={!client}
                 />
               </div>
             </div>
-            <div className="flex justify-end pt-4">
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" type="button" onClick={handleCancel}>
+                Cancelar
+              </Button>
               <Button type="button" onClick={nextStep} className="bg-blue-600 hover:bg-blue-700">
                 Siguiente: Datos Personales
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -629,21 +734,21 @@ function ClientDialog({ client, onSave, isSaving }: any) {
                   <Label htmlFor="nombre">Nombre *</Label>
                   {formErrors.nombre && <span className="text-red-500 text-xs">{formErrors.nombre}</span>}
                 </div>
-                <Input id="nombre" value={formData.nombre} onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))} className={formErrors.nombre ? 'border-red-500' : ''} required />
+                <Input id="nombre" value={formData.nombre} onChange={(e) => handleChange('nombre', e.target.value)} className={formErrors.nombre ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="apellido">Apellido *</Label>
                   {formErrors.apellido && <span className="text-red-500 text-xs">{formErrors.apellido}</span>}
                 </div>
-                <Input id="apellido" value={formData.apellido} onChange={(e) => setFormData(prev => ({ ...prev, apellido: e.target.value }))} className={formErrors.apellido ? 'border-red-500' : ''} required />
+                <Input id="apellido" value={formData.apellido} onChange={(e) => handleChange('apellido', e.target.value)} className={formErrors.apellido ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tipo_documento">Tipo de Documento</Label>
                 <select
                   id="tipo_documento"
                   value={formData.tipo_documento}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tipo_documento: e.target.value }))}
+                  onChange={(e) => handleChange('tipo_documento', e.target.value)}
                   disabled={!!client}
                   className={`w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${client ? "bg-muted opacity-80" : ""}`}
                 >
@@ -655,35 +760,35 @@ function ClientDialog({ client, onSave, isSaving }: any) {
                   <Label htmlFor="documento">Núm. Documento *</Label>
                   {formErrors.documento && <span className="text-red-500 text-xs">{formErrors.documento}</span>}
                 </div>
-                <Input id="documento" value={formData.documento} onChange={(e) => setFormData(prev => ({ ...prev, documento: e.target.value }))} required disabled={!!client} className={`${client ? 'bg-muted ' : ''}${formErrors.documento ? 'border-red-500' : ''}`} />
+                <Input id="documento" value={formData.documento} onChange={(e) => handleChange('documento', e.target.value)} required disabled={!!client} className={`${client ? 'bg-muted ' : ''}${formErrors.documento ? 'border-red-500' : ''}`} />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="phone">Teléfono *</Label>
                   {formErrors.telefono && <span className="text-red-500 text-xs">{formErrors.telefono}</span>}
                 </div>
-                <Input id="phone" value={formData.telefono} onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))} className={formErrors.telefono ? 'border-red-500' : ''} required />
+                <Input id="phone" value={formData.telefono} onChange={(e) => handleChange('telefono', e.target.value)} className={formErrors.telefono ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="fecha_nacimiento">Fec. Nacimiento *</Label>
                   {formErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{formErrors.fecha_nacimiento}</span>}
                 </div>
-                <Input id="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={(e) => setFormData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))} className={formErrors.fecha_nacimiento ? 'border-red-500' : ''} required />
+                <Input id="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={(e) => handleChange('fecha_nacimiento', e.target.value)} className={formErrors.fecha_nacimiento ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="barrio">Barrio *</Label>
                   {formErrors.barrio && <span className="text-red-500 text-xs">{formErrors.barrio}</span>}
                 </div>
-                <Input id="barrio" value={formData.barrio} onChange={(e) => setFormData(prev => ({ ...prev, barrio: e.target.value }))} className={formErrors.barrio ? 'border-red-500' : ''} required />
+                <Input id="barrio" value={formData.barrio} onChange={(e) => handleChange('barrio', e.target.value)} className={formErrors.barrio ? 'border-red-500' : ''} required />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="direccion">Dirección *</Label>
                   {formErrors.direccion && <span className="text-red-500 text-xs">{formErrors.direccion}</span>}
                 </div>
-                <Input id="direccion" value={formData.direccion} onChange={(e) => setFormData(prev => ({ ...prev, direccion: e.target.value }))} className={formErrors.direccion ? 'border-red-500' : ''} required />
+                <Input id="direccion" value={formData.direccion} onChange={(e) => handleChange('direccion', e.target.value)} className={formErrors.direccion ? 'border-red-500' : ''} required />
               </div>
               <div className="col-span-2 space-y-2">
                 <Label>Foto de Perfil</Label>
@@ -718,14 +823,21 @@ function ClientDialog({ client, onSave, isSaving }: any) {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" type="button" onClick={() => (document.querySelector('[data-state="open"]')?.parentElement as any)?.click()}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
-                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {client ? 'Actualizar Cliente' : 'Finalizar Registro'}
-              </Button>
+            <div className="flex justify-between items-center pt-4">
+              {!client && (
+                <Button type="button" variant="outline" onClick={() => setActiveStep(1)}>
+                  Atrás
+                </Button>
+              )}
+              <div className="flex justify-end gap-2 ml-auto">
+                <Button variant="outline" type="button" onClick={handleCancel}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                  {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  {client ? 'Actualizar Cliente' : 'Finalizar Registro'}
+                </Button>
+              </div>
             </div>
           </div>
         )}
