@@ -175,8 +175,8 @@ export function Usuarios() {
     u.NombreRol.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const itemsPerPage = 8;
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
@@ -202,14 +202,12 @@ export function Usuarios() {
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nombre, email o rol..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-end">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar por nombre, email o rol..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center p-24">
@@ -285,7 +283,6 @@ export function Usuarios() {
               </TableBody>
             </Table>
 
-            {totalPages > 1 && (
               <div className="mt-6 flex justify-center">
                 <Pagination>
                   <PaginationContent>
@@ -305,7 +302,6 @@ export function Usuarios() {
                   </PaginationContent>
                 </Pagination>
               </div>
-            )}
           </CardContent>
         </Card>
       )}

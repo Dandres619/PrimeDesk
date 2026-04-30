@@ -112,8 +112,9 @@ export function Empleados() {
     (e.Documento || '').includes(searchTerm) ||
     (e.NombreRol || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const totalPages = Math.ceil(filteredEmployees.length / 5);
-  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * 5, currentPage * 5);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / itemsPerPage));
+  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -181,12 +182,7 @@ export function Empleados() {
     }
   };
 
-  const stats = [
-    { icon: UserCog, color: 'text-blue-600', value: employees.length, label: 'Total Empleados' },
-    { icon: UserCog, color: 'text-green-600', value: employees.filter(e => e.EstadoUsuario === true || e.EstadoUsuario === 1).length, label: 'Activos' },
-    { icon: UserCog, color: 'text-red-600', value: employees.filter(e => e.NombreRol?.toLowerCase().includes('admin')).length, label: 'Administradores' },
-    { icon: UserCog, color: 'text-purple-600', value: employees.filter(e => e.NombreRol?.toLowerCase().includes('mecánico')).length, label: 'Mecánicos' }
-  ];
+  // Stats removed
 
   const actions = [
     { icon: Eye, onClick: (e: any) => setViewingEmployee(e), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
@@ -218,7 +214,7 @@ export function Empleados() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingEmployee(null)} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => setEditingEmployee(null)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
               <Plus className="w-4 h-4 mr-2" />
               Nuevo Empleado
             </Button>
@@ -227,14 +223,12 @@ export function Empleados() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nombre, email o rol..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-end">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar por nombre, email o rol..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center p-24">
@@ -242,19 +236,6 @@ export function Empleados() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {stats.map((s, i) => (
-              <Card key={i}>
-                <CardContent className="flex items-center p-6">
-                  <s.icon className={`w-8 h-8 ${s.color} mr-4`} />
-                  <div>
-                    <p className="text-2xl font-bold">{s.value}</p>
-                    <p className="text-muted-foreground">{s.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
 
           <Card>
             <CardHeader>
@@ -331,11 +312,17 @@ export function Empleados() {
               <div className="mt-6 flex justify-center">
                 <Pagination>
                   <PaginationContent>
-                    {totalPages > 1 && <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>}
-                    {Array.from({ length: Math.max(1, totalPages) }, (_, i) => i + 1).map(p => (
-                      <PaginationItem key={p}><PaginationLink onClick={() => totalPages > 1 ? setCurrentPage(p) : undefined} isActive={currentPage === p} className={totalPages > 1 ? "cursor-pointer" : "cursor-default"}>{p}</PaginationLink></PaginationItem>
+                    <PaginationItem>
+                      <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                      <PaginationItem key={p}>
+                        <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">{p}</PaginationLink>
+                      </PaginationItem>
                     ))}
-                    {totalPages > 1 && <PaginationItem><PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>}
+                    <PaginationItem>
+                      <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                    </PaginationItem>
                   </PaginationContent>
                 </Pagination>
               </div>

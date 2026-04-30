@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { PDFPreviewDialog } from './PDFPreviewDialog';
 import { ConfirmDialog } from './ConfirmDialog';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import {
   Plus,
   Search,
@@ -31,6 +32,7 @@ const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000
 
 export function Compras() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [purchases, setPurchases] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
@@ -44,7 +46,6 @@ export function Compras() {
   const [viewingPurchase, setViewingPurchase] = useState<any>(null);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [pdfData, setPdfData] = useState<any>(null);
-  const itemsPerPage = 6;
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -91,7 +92,9 @@ export function Compras() {
     (p.NombreEmpresa || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const paginatedPurchases = filteredPurchases.slice(0, itemsPerPage);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredPurchases.length / itemsPerPage));
+  const paginatedPurchases = filteredPurchases.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleSavePurchase = async (pData: any) => {
     if (!pData) { setShowNewDialog(false); return; }
@@ -211,19 +214,20 @@ export function Compras() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar compras..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+        <div>
+          <h1 className="text-2xl font-semibold">Compras</h1>
+          <p className="text-muted-foreground">Gestión de compras a proveedores</p>
         </div>
-        <Button onClick={() => setShowNewDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => setShowNewDialog(true)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
           <Plus className="w-4 h-4 mr-2" /> Nueva Compra
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card><CardContent className="flex items-center p-6"><ShoppingCart className="w-8 h-8 text-blue-600 mr-4" /><div><p className="text-2xl font-bold">{purchases.length}</p><p className="text-muted-foreground">Total Compras</p></div></CardContent></Card>
-        <Card><CardContent className="flex items-center p-6"><XCircle className="w-8 h-8 text-red-600 mr-4" /><div><p className="text-2xl font-bold">{purchases.filter((p: any) => p.Estado === 'Anulada').length}</p><p className="text-muted-foreground">Anuladas</p></div></CardContent></Card>
-        <Card><CardContent className="flex items-center p-6"><TrendingUp className="w-8 h-8 text-purple-600 mr-4" /><div><p className="text-2xl font-bold">${purchases.filter((p: any) => p.Estado !== 'Anulada').reduce((s: any, p: any) => s + parseFloat(p.Total), 0).toLocaleString()}</p><p className="text-muted-foreground">Total Invertido</p></div></CardContent></Card>
+      <div className="flex justify-end">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar compras..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+        </div>
       </div>
 
       <Card>
@@ -276,6 +280,24 @@ export function Compras() {
               ))}
             </TableBody>
           </Table>
+
+          <div className="mt-6 flex justify-center">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <PaginationItem key={p}>
+                    <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">{p}</PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
         </CardContent>
       </Card>
 

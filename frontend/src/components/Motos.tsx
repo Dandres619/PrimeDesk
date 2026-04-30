@@ -30,7 +30,7 @@ export function Motos() {
   const [editingMoto, setEditingMoto] = useState<any>(null);
   const [viewingMoto, setViewingMoto] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
 
   const token = localStorage.getItem('token');
@@ -162,30 +162,21 @@ export function Motos() {
     `${m.NombreCliente} ${m.ApellidoCliente}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredMotos.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredMotos.length / itemsPerPage));
   const paginatedMotos = filteredMotos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const stats = [
-    { icon: Bike, color: 'text-blue-600', value: motos.length, label: 'Total Motos' },
-    { icon: Bike, color: 'text-green-600', value: motos.filter(m => m.Estado).length, label: 'Activas' },
-    { icon: Wrench, color: 'text-orange-600', value: motos.filter(m => !m.Estado).length, label: 'Inactivas' }
-  ];
+  // Stats removed
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-            <Bike className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold">Motocicletas</h1>
-            <p className="text-muted-foreground">Gestión de vehículos de clientes</p>
-          </div>
+      <div className="flex justify-between items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Motocicletas</h1>
+          <p className="text-muted-foreground">Gestión de vehículos de clientes</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingMoto(null)} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => setEditingMoto(null)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
               <Plus className="w-4 h-4 mr-2" />
               Nueva Moto
             </Button>
@@ -194,14 +185,12 @@ export function Motos() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por placa, marca, modelo o cliente..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-end">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar por placa, marca, modelo o cliente..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center p-24">
@@ -209,19 +198,6 @@ export function Motos() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {stats.map((s, i) => (
-              <Card key={i}>
-                <CardContent className="flex items-center p-6">
-                  <s.icon className={`w-8 h-8 ${s.color} mr-4`} />
-                  <div>
-                    <p className="text-2xl font-bold">{s.value}</p>
-                    <p className="text-muted-foreground">{s.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
 
           <Card>
             <CardHeader>
@@ -291,25 +267,23 @@ export function Motos() {
                 </TableBody>
               </Table>
 
-              {totalPages > 1 && (
-                <div className="mt-6">
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+              <div className="mt-6 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                      <PaginationItem key={p}>
+                        <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">{p}</PaginationLink>
                       </PaginationItem>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                        <PaginationItem key={p}>
-                          <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">{p}</PaginationLink>
-                        </PaginationItem>
-                      ))}
-                      <PaginationItem>
-                        <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              )}
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
             </CardContent>
           </Card>
         </>

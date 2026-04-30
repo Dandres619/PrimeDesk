@@ -214,8 +214,8 @@ export function Roles() {
     r.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const itemsPerPage = 5;
-  const totalPages = Math.ceil(filteredRoles.length / itemsPerPage);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredRoles.length / itemsPerPage));
   const paginatedRoles = filteredRoles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const actions = [
@@ -249,7 +249,7 @@ export function Roles() {
         </div>
         <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingRole(null)} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => setEditingRole(null)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
               <Plus className="w-4 h-4 mr-2" />
               Nuevo Rol
             </Button>
@@ -258,14 +258,12 @@ export function Roles() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar roles por nombre..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-end">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar roles por nombre..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+        </div>
+      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center p-24">
@@ -325,7 +323,6 @@ export function Roles() {
               </TableBody>
             </Table>
 
-            {totalPages > 1 && (
               <div className="mt-6 flex justify-center">
                 <Pagination>
                   <PaginationContent>
@@ -345,7 +342,6 @@ export function Roles() {
                   </PaginationContent>
                 </Pagination>
               </div>
-            )}
           </CardContent>
         </Card>
       )}

@@ -161,8 +161,8 @@ export function Productos() {
     p.brand?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const itemsPerPage = 8;
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   if (isLoading) {
@@ -178,22 +178,27 @@ export function Productos() {
     return c[n] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
   };
 
-  const stats = [
-    { icon: Package, color: 'text-blue-600', label: 'Total Productos', val: products.length },
-    { icon: CheckCircle, color: 'text-green-600', label: 'Activos', val: products.filter(p => p.status === 'Activo').length },
-    { icon: XCircle, color: 'text-red-600', label: 'Inactivos', val: products.filter(p => p.status === 'Inactivo').length }
-  ];
+  // Stats removed
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative flex-1 max-w-md"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar productos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" /></div>
+      <div className="flex justify-between items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Productos</h1>
+          <p className="text-muted-foreground">Gestión de inventario de repuestos y accesorios</p>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild><Button onClick={() => setEditingProduct(null)} className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" /> Nuevo Producto</Button></DialogTrigger>
+          <DialogTrigger asChild><Button onClick={() => setEditingProduct(null)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap"><Plus className="w-4 h-4 mr-2" /> Nuevo Producto</Button></DialogTrigger>
           <ProductDialog product={editingProduct} onSave={handleSave} categories={categories} brands={brands} />
         </Dialog>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{stats.map((s, i) => (<Card key={i}><CardContent className="flex items-center p-6"><s.icon className={`w-8 h-8 ${s.color} mr-4`} /><div><p className="text-2xl font-bold">{s.val}</p><p className="text-muted-foreground">{s.label}</p></div></CardContent></Card>))}</div>
+
+      <div className="flex justify-end">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar productos..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+        </div>
+      </div>
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Package className="w-5 h-5 text-blue-600" /> Lista de Productos ({filtered.length})</CardTitle></CardHeader>
         <CardContent>
@@ -225,11 +230,21 @@ export function Productos() {
             </TableBody>
           </Table>
           <div className="mt-6 flex justify-center">
-            <Pagination><PaginationContent>
-              {totalPages > 1 && <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(p => Math.max(1, p - 1))} className="cursor-pointer" /></PaginationItem>}
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (<PaginationItem key={p}><PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">{p}</PaginationLink></PaginationItem>))}
-              {totalPages > 1 && <PaginationItem><PaginationNext onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} className="cursor-pointer" /></PaginationItem>}
-            </PaginationContent></Pagination>
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <PaginationItem key={p}>
+                    <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">{p}</PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         </CardContent>
       </Card>

@@ -44,7 +44,7 @@ export function Ventas() {
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6; // Cambiado a 6 para un mejor display visual
+  const itemsPerPage = 10;
 
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
@@ -195,7 +195,7 @@ export function Ventas() {
   );
 
   // Paginación
-  const totalPages = Math.ceil(filteredSales.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredSales.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedSales = filteredSales.slice(startIndex, startIndex + itemsPerPage);
 
@@ -297,19 +297,14 @@ export function Ventas() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar ventas..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      <div className="flex justify-between items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Ventas</h1>
+          <p className="text-muted-foreground">Gestión y registro de ventas</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
               <Plus className="w-4 h-4 mr-2" />
               Nueva Venta
             </Button>
@@ -325,37 +320,11 @@ export function Ventas() {
         </Dialog>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <DollarSign className="w-8 h-8 text-blue-600 mr-4" />
-            <div>
-              <p className="text-2xl font-bold">{sales.filter(s => !s.anulada).length}</p>
-              <p className="text-muted-foreground">Total Ventas</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <TrendingUp className="w-8 h-8 text-green-600 mr-4" />
-            <div>
-              <p className="text-2xl font-bold">
-                ${sales.filter(s => !s.anulada).reduce((sum, s) => sum + s.total, 0).toLocaleString()}
-              </p>
-              <p className="text-muted-foreground">Ingresos</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center p-6">
-            <XCircle className="w-8 h-8 text-red-600 mr-4" />
-            <div>
-              <p className="text-2xl font-bold">{sales.filter(s => s.anulada).length}</p>
-              <p className="text-muted-foreground">Anuladas</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex justify-end">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar ventas..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+        </div>
       </div>
 
       {/* Sales Table */}
@@ -458,35 +427,17 @@ export function Ventas() {
           <div className="mt-6 flex justify-center">
             <Pagination>
               <PaginationContent>
-                {totalPages > 1 && (
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                )}
-
-                {Array.from({ length: Math.max(1, totalPages) }, (_, i) => i + 1).map((page) => (
-                  <PaginationItem key={page}>
-                    <PaginationLink
-                      onClick={() => totalPages > 1 ? setCurrentPage(page) : undefined}
-                      isActive={currentPage === page}
-                      className={totalPages > 1 ? "cursor-pointer" : "cursor-default"}
-                    >
-                      {page}
-                    </PaginationLink>
+                <PaginationItem>
+                  <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <PaginationItem key={p}>
+                    <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">{p}</PaginationLink>
                   </PaginationItem>
                 ))}
-
-                {totalPages > 1 && (
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    />
-                  </PaginationItem>
-                )}
+                <PaginationItem>
+                  <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                </PaginationItem>
               </PaginationContent>
             </Pagination>
           </div>
