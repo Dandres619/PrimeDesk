@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
-import { AlertTriangle, Trash2, XCircle } from 'lucide-react';
+import { AlertTriangle, Trash2, XCircle, Loader2 } from 'lucide-react';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -12,6 +12,8 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   variant?: 'delete' | 'cancel' | 'default';
   loading?: boolean;
+  autoClose?: boolean;
+  loadingText?: string;
 }
 
 export function ConfirmDialog({
@@ -23,7 +25,9 @@ export function ConfirmDialog({
   cancelText = 'Cancelar',
   onConfirm,
   variant = 'default',
-  loading = false
+  loading = false,
+  autoClose = true,
+  loadingText = 'Procesando...'
 }: ConfirmDialogProps) {
   const getIcon = () => {
     switch (variant) {
@@ -49,7 +53,9 @@ export function ConfirmDialog({
 
   const handleConfirm = () => {
     onConfirm();
-    onOpenChange(false);
+    if (autoClose) {
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -81,7 +87,12 @@ export function ConfirmDialog({
             disabled={loading}
             className={`flex-1 ${getConfirmButtonClass()}`}
           >
-            {loading ? 'Procesando...' : confirmText}
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {loadingText}
+              </>
+            ) : confirmText}
           </Button>
         </DialogFooter>
       </DialogContent>

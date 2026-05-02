@@ -801,6 +801,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="Juan"
                               value={registerData.nombre}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, nombre: e.target.value }))}
+                              onFocus={() => handleBlur('nombre')}
                               onBlur={() => handleBlur('nombre')}
                               className={`border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${touchedFields.nombre && registerErrors.nombre ? 'border-red-500' : ''}`}
                             />
@@ -815,6 +816,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="Pérez"
                               value={registerData.apellido}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, apellido: e.target.value }))}
+                              onFocus={() => handleBlur('apellido')}
                               onBlur={() => handleBlur('apellido')}
                               className={`border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${touchedFields.apellido && registerErrors.apellido ? 'border-red-500' : ''}`}
                             />
@@ -846,6 +848,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="12345678"
                               value={registerData.documento}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, documento: e.target.value.replace(/\D/g, '') }))}
+                              onFocus={() => handleBlur('documento')}
                               onBlur={() => handleBlur('documento')}
                               className={`border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${touchedFields.documento && registerErrors.documento ? 'border-red-500' : ''}`}
                             />
@@ -857,9 +860,10 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                             <Label htmlFor="reg-nacimiento" className="text-gray-700">Fecha de Nacimiento *</Label>
                             {touchedFields.fecha_nacimiento && registerErrors.fecha_nacimiento && <span className="text-red-500 text-xs font-medium">{registerErrors.fecha_nacimiento}</span>}
                           </div>
-                          <Popover open={isCalendarOpen} onOpenChange={(open) => { setIsCalendarOpen(open); if (!open) handleBlur('fecha_nacimiento'); }}>
+                          <Popover open={isCalendarOpen} onOpenChange={(open) => { setIsCalendarOpen(open); if (open) handleBlur('fecha_nacimiento'); if (!open) handleBlur('fecha_nacimiento'); }}>
                             <PopoverTrigger asChild>
                               <Button
+                                onClick={() => handleBlur('fecha_nacimiento')}
                                 variant="outline"
                                 className={`w-full justify-start text-left font-normal h-12 border-gray-200 ${!registerData.fecha_nacimiento && "text-muted-foreground"} ${touchedFields.fecha_nacimiento && registerErrors.fecha_nacimiento ? 'border-red-500 focus:ring-red-200' : 'focus:border-indigo-500 focus:ring-indigo-200'}`}
                               >
@@ -903,6 +907,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="sofiaplus@zajuna.com"
                               value={registerData.email}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
+                              onFocus={() => handleBlur('email')}
                               onBlur={() => handleBlur('email')}
                               className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.email && registerErrors.email ? 'border-red-500' : ''}`}
                             />
@@ -922,6 +927,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                                 placeholder="3001234567"
                                 value={registerData.telefono}
                                 onChange={(e) => setRegisterData(prev => ({ ...prev, telefono: e.target.value.replace(/\D/g, '') }))}
+                                onFocus={() => handleBlur('telefono')}
                                 onBlur={() => handleBlur('telefono')}
                                 className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.telefono && registerErrors.telefono ? 'border-red-500' : ''}`}
                               />
@@ -939,6 +945,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                                 placeholder="Belén"
                                 value={registerData.barrio}
                                 onChange={(e) => setRegisterData(prev => ({ ...prev, barrio: e.target.value }))}
+                                onFocus={() => handleBlur('barrio')}
                                 onBlur={() => handleBlur('barrio')}
                                 className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.barrio && registerErrors.barrio ? 'border-red-500' : ''}`}
                               />
@@ -958,6 +965,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="Calle 10 #20-30"
                               value={registerData.direccion}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, direccion: e.target.value }))}
+                              onFocus={() => handleBlur('direccion')}
                               onBlur={() => handleBlur('direccion')}
                               className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.direccion && registerErrors.direccion ? 'border-red-500' : ''}`}
                             />
@@ -982,6 +990,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="••••••••"
                               value={registerData.contrasena}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, contrasena: e.target.value }))}
+                              onFocus={() => handleBlur('contrasena')}
                               onBlur={() => handleBlur('contrasena')}
                               className={`pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.contrasena && registerErrors.contrasena ? 'border-red-500' : ''}`}
                             />
@@ -1011,6 +1020,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               placeholder="••••••••"
                               value={registerData.confirmarContrasena}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, confirmarContrasena: e.target.value }))}
+                              onFocus={() => handleBlur('confirmarContrasena')}
                               onBlur={() => handleBlur('confirmarContrasena')}
                               className={`pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.confirmarContrasena && registerErrors.confirmarContrasena ? 'border-red-500' : ''}`}
                             />

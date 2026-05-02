@@ -173,7 +173,6 @@ export function MiPerfil() {
         if (passwordData.confirmar_contrasena) {
             if (passwordData.nueva_contrasena !== passwordData.confirmar_contrasena) errs.confirmar_contrasena = 'No coinciden';
         }
-
         setPasswordErrors(errs);
     }, [passwordData]);
 
@@ -257,6 +256,10 @@ export function MiPerfil() {
 
         if (Object.keys(passwordErrors).length > 0) {
             toast.error('La nueva contraseña no cumple con los requisitos');
+            return;
+        }
+        if (passwordData.nueva_contrasena && passwordData.contrasena_actual && passwordData.nueva_contrasena === passwordData.contrasena_actual) {
+            toast.error('La nueva contraseña no puede ser igual a la actual');
             return;
         }
 

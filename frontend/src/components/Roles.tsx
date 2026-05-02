@@ -24,6 +24,8 @@ export function Roles() {
   const [roles, setRoles] = useState<any[]>([]);
   const [allPermissions, setAllPermissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // @ts-ignore
   const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -87,6 +89,7 @@ export function Roles() {
   }, [fetchRoles, fetchAllPermissions]);
 
   const handleSaveRole = async (formData: any) => {
+    setIsProcessing(true);
     try {
       if (!formData.permissions || formData.permissions.length === 0) {
         throw new Error('Debe seleccionar, por lo menos, un permiso.');
@@ -166,10 +169,13 @@ export function Roles() {
       fetchRoles();
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleDeleteRole = async (id: number) => {
+    setIsDeleting(true);
     try {
       const response = await fetch(`${API_URL}/roles/${id}`, {
         method: 'DELETE',
@@ -180,9 +186,12 @@ export function Roles() {
         throw new Error(data.message || 'Error al eliminar el rol');
       }
       toast.success('Rol eliminado exitosamente');
+      setConfirmDialog(prev => ({ ...prev, open: false }));
       fetchRoles();
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -254,7 +263,7 @@ export function Roles() {
               Nuevo Rol
             </Button>
           </DialogTrigger>
-          <RoleDialog role={editingRole} permissions={allPermissions} onSave={handleSaveRole} />
+          <RoleDialog role={editingRole} permissions={allPermissions} onSave={handleSaveRole} isProcessing={isProcessing} />
         </Dialog>
       </div>
 
@@ -384,18 +393,31 @@ export function Roles() {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))} title={confirmDialog.title} description={confirmDialog.description} confirmText={confirmDialog.confirmText} variant={confirmDialog.variant} onConfirm={confirmDialog.onConfirm} />
+      <ConfirmDialog 
+        open={confirmDialog.open} 
+        onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))} 
+        title={confirmDialog.title} 
+        description={confirmDialog.description} 
+        confirmText={confirmDialog.confirmText} 
+        variant={confirmDialog.variant} 
+        onConfirm={confirmDialog.onConfirm} 
+        loading={isDeleting}
+        autoClose={false}
+        loadingText="Eliminando"
+      />
     </div>
   );
 }
 
-function RoleDialog({ role, permissions, onSave }: any) {
+function RoleDialog({ role, permissions, onSave, isProcessing }: any) {
   const [formData, setFormData] = useState({
     name: role?.name || '',
     description: role?.description || '',
     status: role?.status || 'Activo',
     permissions: role?.permissions ? role.permissions.map((p: any) => p.ID_Permiso) : []
   });
+  const [touched, setTouched] = useState(false);
+  const [nameError, setNameError] = useState('');
 
   useEffect(() => {
     if (role) {
@@ -405,10 +427,26 @@ function RoleDialog({ role, permissions, onSave }: any) {
         status: role.status,
         permissions: role.permissions.map((p: any) => p.ID_Permiso)
       });
+      setTouched(false);
+      setNameError('');
     } else {
       setFormData({ name: '', description: '', status: 'Activo', permissions: [] });
+      setTouched(false);
+      setNameError('');
     }
   }, [role]);
+
+  useEffect(() => {
+    if (touched) {
+      if (!formData.name.trim()) {
+        setNameError('El nombre del rol no puede estar vacío');
+      } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(formData.name)) {
+        setNameError('Solo se permiten letras');
+      } else {
+        setNameError('');
+      }
+    }
+  }, [formData.name, touched]);
 
   const togglePermission = (id: number) => setFormData(prev => ({
     ...prev,
@@ -417,15 +455,32 @@ function RoleDialog({ role, permissions, onSave }: any) {
       : [...prev.permissions, id]
   }));
 
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+    setFormData(prev => ({ ...prev, name: val }));
+    if (!touched) setTouched(true);
+  };
+
   return (
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{role ? 'Editar Rol' : 'Nuevo Rol'}</DialogTitle>
       </DialogHeader>
-      <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="space-y-4">
-        <div>
-          <Label htmlFor="name">Nombre del Rol</Label>
-          <Input id="name" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} placeholder="Ej: Administrador" required />
+      <form onSubmit={(e) => { e.preventDefault(); if (!nameError) onSave(formData); }} className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="name">Nombre del Rol</Label>
+            {nameError && <span className="text-red-500 text-xs font-medium">{nameError}</span>}
+          </div>
+          <Input 
+            id="name" 
+            value={formData.name} 
+            onChange={handleNameChange}
+            onBlur={() => setTouched(true)}
+            placeholder="Ej: Administrador" 
+            required 
+            className={nameError ? 'border-red-500 focus-visible:ring-red-500' : ''}
+          />
         </div>
         <div>
           <Label htmlFor="description">Descripción</Label>
@@ -456,8 +511,19 @@ function RoleDialog({ role, permissions, onSave }: any) {
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto px-8">
-            {role ? 'Actualizar' : 'Crear'} Rol
+          <Button 
+            type="submit" 
+            disabled={isProcessing || (touched && !!nameError)} 
+            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto px-8"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {role ? 'Actualizando...' : 'Creando...'}
+              </>
+            ) : (
+              <>{role ? 'Actualizar' : 'Crear'} Rol</>
+            )}
           </Button>
         </div>
       </form>

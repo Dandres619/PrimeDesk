@@ -1,7 +1,6 @@
 const { getPool } = require('../config/db');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const emailService = require('./email.service');
 const supabase = require('../config/supabase');
 const fs = require('fs');
 const path = require('path');
@@ -88,23 +87,6 @@ const create = async (data, file) => {
             RETURNING id_usuario
           `;
         final_id_usuario = newUser.id_usuario;
-
-        // Enviar correo de verificación de forma asíncrona (sin bloquear la TRX)
-        try {
-          const token = crypto.randomBytes(32).toString('hex');
-          const tokenHash = await bcrypt.hash(token, 10);
-          const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
-
-          await tx`
-                  INSERT INTO email_verifications (id_usuario, token_hash, expires_at, used)
-                  VALUES (${final_id_usuario}, ${tokenHash}, ${expiresAt}, FALSE)
-              `;
-
-          // Note: In real production, email sending should be outside TX or handled by a job
-          emailService.sendVerificationEmail(correo, token, nombre);
-        } catch (e) {
-          console.warn('Error email verificación:', e);
-        }
       }
 
       // 2. Crear Cliente

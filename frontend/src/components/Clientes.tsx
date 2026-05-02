@@ -9,8 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { Switch } from './ui/switch';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Search, Loader2, Eye, User, Edit, Trash2, Users, Lock as LockIcon, ArrowRight, Camera, Plus } from 'lucide-react';
+import { Search, Loader2, Eye, EyeOff, User, Edit, Trash2, Users, Lock as LockIcon, ArrowRight, Camera, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { CustomDatePicker } from './ui/CustomDatePicker';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Calendar as CalendarIcon } from 'lucide-react';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -388,7 +393,11 @@ export function Clientes() {
 
 function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
   const [activeStep, setActiveStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isBirthCalendarOpen, setIsBirthCalendarOpen] = useState(false);
   const [formData, setFormData] = useState({
     crear_usuario: true,
     correo: '',
@@ -439,6 +448,8 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
       });
       setFotoPreview(getPhotoUrl(client.Foto));
       setFormErrors({});
+      setTouchedFields({});
+      setActiveStep(2);
     } else {
       setFormData({
         crear_usuario: true,
@@ -458,6 +469,7 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
       });
       setFotoPreview(null);
       setFormErrors({});
+      setTouchedFields({});
       setActiveStep(1);
     }
   }, [client, open]);
@@ -481,6 +493,7 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
     });
     setFotoPreview(null);
     setFormErrors({});
+    setTouchedFields({});
     setActiveStep(1);
     onOpenChange(false);
   };
@@ -491,42 +504,42 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
 
     switch (name) {
       case 'correo':
-        if (!value) error = 'Requerido';
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Correo inválido';
+        if (!value) error = 'El correo es obligatorio';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Correo electrónico inválido';
         break;
       case 'contrasena':
-        if (!client && !value) error = 'Requerido';
-        else if (!client && value && !passwordRegex.test(value)) {
-          error = 'Mín. 8 caracteres, mayúscula, número y especial';
+        if (!client && !value) error = 'La contraseña es obligatoria';
+        else if (value && !passwordRegex.test(value)) {
+          error = 'Contraseña insegura';
         }
         break;
       case 'confirmarContrasena':
-        if (!client && value !== currentData.contrasena) {
+        if ((!client || currentData.contrasena) && value !== currentData.contrasena) {
           error = 'Las contraseñas no coinciden';
         }
         break;
       case 'nombre':
-        if (!value) error = 'Requerido';
+        if (!value) error = 'El nombre es obligatorio';
         break;
       case 'apellido':
-        if (!value) error = 'Requerido';
+        if (!value) error = 'El apellido es obligatorio';
         break;
       case 'documento':
-        if (!value) error = 'Requerido';
-        else if (!/^\d{7,10}$/.test(value) && !client) error = 'Entre 7 y 10 números';
+        if (!value) error = 'El documento es obligatorio';
+        else if (!/^\d{7,10}$/.test(value)) error = 'Debe tener entre 7 y 10 dígitos';
         break;
       case 'telefono':
-        if (!value) error = 'Requerido';
-        else if (!/^\d{10}$/.test(value)) error = 'Exactamente 10 números';
+        if (!value) error = 'El teléfono es obligatorio';
+        else if (!/^\d{10}$/.test(value)) error = 'Debe tener exactamente 10 dígitos';
         break;
       case 'fecha_nacimiento':
-        if (!value) error = 'Requerido';
+        if (!value) error = 'La fecha de nacimiento es obligatoria';
         break;
       case 'barrio':
-        if (!value) error = 'Requerido';
+        if (!value) error = 'El barrio es obligatorio';
         break;
       case 'direccion':
-        if (!value) error = 'Requerido';
+        if (!value) error = 'La dirección es obligatoria';
         break;
     }
 
@@ -538,8 +551,7 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
         delete newErrors[name];
       }
 
-      // Re-validate confirmarContrasena if contrasena changes
-      if (name === 'contrasena' && !client) {
+      if (name === 'contrasena') {
         if (currentData.confirmarContrasena && value !== currentData.confirmarContrasena) {
           newErrors.confirmarContrasena = 'Las contraseñas no coinciden';
         } else if (currentData.confirmarContrasena) {
@@ -551,11 +563,23 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
   };
 
   const handleChange = (name: string, value: any) => {
+    // Numeric only filters
+    if (name === 'documento' || name === 'telefono') {
+      value = value.replace(/\D/g, '');
+    }
+
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
-      validateField(name, value, newData);
+      if (touchedFields[name] || activeStep === 2) {
+        validateField(name, value, newData);
+      }
       return newData;
     });
+  };
+
+  const markAsTouched = (name: string) => {
+    setTouchedFields(prev => ({ ...prev, [name]: true }));
+    validateField(name, (formData as any)[name], formData);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -579,20 +603,30 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
     if (activeStep === 1) {
       let errors: Record<string, string> = {};
 
-      if (!formData.correo) errors.correo = 'Requerido';
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) errors.correo = 'Correo inválido';
-      if (!client && !formData.contrasena) errors.contrasena = 'Requerido';
-      if (!client && formData.contrasena !== formData.confirmarContrasena) {
-        errors.confirmarContrasena = 'Las contraseñas no coinciden';
-      }
+      if (!formData.correo) errors.correo = 'El correo es obligatorio';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) errors.correo = 'Correo electrónico inválido';
 
       const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
-      if (!client && formData.contrasena && !passwordRegex.test(formData.contrasena)) {
-        errors.contrasena = 'Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial';
+      if (!client) {
+        if (!formData.contrasena) errors.contrasena = 'La contraseña es obligatoria';
+        if (formData.contrasena !== formData.confirmarContrasena) {
+          errors.confirmarContrasena = 'Las contraseñas no coinciden';
+        }
+        if (formData.contrasena && !passwordRegex.test(formData.contrasena)) {
+          errors.contrasena = 'Contraseña insegura';
+        }
+      } else if (formData.contrasena) {
+        if (!passwordRegex.test(formData.contrasena)) {
+          errors.contrasena = 'Contraseña insegura';
+        }
+        if (formData.contrasena !== formData.confirmarContrasena) {
+          errors.confirmarContrasena = 'Las contraseñas no coinciden';
+        }
       }
 
       if (Object.keys(errors).length > 0) {
-        setFormErrors(errors);
+        setFormErrors(prev => ({ ...prev, ...errors }));
+        setTouchedFields(prev => ({ ...prev, correo: true, contrasena: true, confirmarContrasena: true }));
         return;
       }
       setFormErrors({});
@@ -602,29 +636,48 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
 
   const handleFinalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    let errors: Record<string, string> = {};
+    const errors: Record<string, string> = {};
 
-    if (!formData.nombre) errors.nombre = 'Requerido';
-    if (!formData.apellido) errors.apellido = 'Requerido';
+    // Validate Step 1 ONLY FOR NEW CLIENTS
+    if (!client) {
+      if (!formData.correo) errors.correo = 'El correo es obligatorio';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) errors.correo = 'Correo electrónico inválido';
 
-    if (!formData.documento) errors.documento = 'Requerido';
-    else if (!/^\d{7,10}$/.test(formData.documento) && !client) errors.documento = 'Entre 7 y 10 números';
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+      if (!formData.contrasena) errors.contrasena = 'La contraseña es obligatoria';
+      if (formData.contrasena && !passwordRegex.test(formData.contrasena)) errors.contrasena = 'Contraseña insegura';
+      if (formData.contrasena !== formData.confirmarContrasena) errors.confirmarContrasena = 'Las contraseñas no coinciden';
+    }
 
-    if (!formData.telefono) errors.telefono = 'Requerido';
-    else if (!/^\d{10}$/.test(formData.telefono)) errors.telefono = 'Exactamente 10 números';
+    // Validate Step 2 (Always required)
+    if (!formData.nombre) errors.nombre = 'El nombre es obligatorio';
+    if (!formData.apellido) errors.apellido = 'El apellido es obligatorio';
 
-    if (!formData.fecha_nacimiento) errors.fecha_nacimiento = 'Requerido';
-    if (!formData.barrio) errors.barrio = 'Requerido';
-    if (!formData.direccion) errors.direccion = 'Requerido';
+    if (!formData.documento) errors.documento = 'El documento es obligatorio';
+    else if (!/^\d{7,10}$/.test(formData.documento)) errors.documento = 'Debe tener entre 7 y 10 dígitos';
 
-    // Highlight all errors that were found
-    setFormErrors(prev => ({ ...prev, ...errors }));
+    if (!formData.telefono) errors.telefono = 'El teléfono es obligatorio';
+    else if (!/^\d{10}$/.test(formData.telefono)) errors.telefono = 'Debe tener exactamente 10 dígitos';
+
+    if (!formData.fecha_nacimiento) errors.fecha_nacimiento = 'La fecha de nacimiento es obligatoria';
+    if (!formData.barrio) errors.barrio = 'El barrio es obligatorio';
+    if (!formData.direccion) errors.direccion = 'La dirección es obligatoria';
+
+    setFormErrors(errors);
+    setTouchedFields(prev => {
+      const allFields = { ...prev };
+      Object.keys(errors).forEach(key => allFields[key] = true);
+      return allFields;
+    });
 
     if (Object.keys(errors).length > 0) {
+      if (!client && (errors.correo || errors.contrasena || errors.confirmarContrasena)) {
+        setActiveStep(1);
+      }
+      toast.error('Por favor complete todos los campos obligatorios correctamente');
       return;
     }
 
-    setFormErrors({});
     onSave(formData);
   };
 
@@ -636,6 +689,7 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
       </DialogHeader>
 
       {/* Steps Indicator */}
+      {/* Steps Indicator - ONLY FOR NEW CLIENTS */}
       {!client && (
         <div className="flex items-center justify-center gap-4 mb-8">
           {[1, 2].map((step) => (
@@ -660,7 +714,7 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="reg-correo">Correo electrónico *</Label>
-                  {formErrors.correo && <span className="text-red-500 text-xs">{formErrors.correo}</span>}
+                  {touchedFields.correo && formErrors.correo && <span className="text-red-500 text-xs font-medium">{formErrors.correo}</span>}
                 </div>
                 <Input
                   id="reg-correo"
@@ -668,39 +722,55 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
                   placeholder="ejemplo@correo.com"
                   value={formData.correo}
                   onChange={(e) => handleChange('correo', e.target.value)}
-                  className={formErrors.correo ? 'border-red-500' : ''}
+                  onBlur={() => markAsTouched('correo')}
+                  className={touchedFields.correo && formErrors.correo ? 'border-red-500' : ''}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="reg-pass">Contraseña {client ? '' : '*'}</Label>
-                  {formErrors.contrasena && <span className="text-red-500 text-xs max-w-[60%] text-right leading-tight">{formErrors.contrasena}</span>}
+                  <Label htmlFor="reg-pass">Contraseña {client ? '(Opcional)' : '*'}</Label>
+                  {touchedFields.contrasena && formErrors.contrasena && <span className="text-red-500 text-xs font-medium">{formErrors.contrasena}</span>}
                 </div>
-                <Input
-                  id="reg-pass"
-                  type="password"
-                  placeholder={client ? "Dejar en blanco para no cambiar" : "********"}
-                  value={formData.contrasena}
-                  onChange={(e) => handleChange('contrasena', e.target.value)}
-                  className={formErrors.contrasena ? 'border-red-500' : ''}
-                  required={!client}
-                />
+                <div className="relative">
+                  <Input
+                    id="reg-pass"
+                    type={showPassword ? "text" : "password"}
+                    placeholder={client ? "Dejar en blanco para no cambiar" : "********"}
+                    value={formData.contrasena}
+                    onChange={(e) => handleChange('contrasena', e.target.value)}
+                    onBlur={() => markAsTouched('contrasena')}
+                    className={`${touchedFields.contrasena && formErrors.contrasena ? 'border-red-500' : ''} pr-10`}
+                    required={!client}
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground hover:text-gray-700 transition-colors">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  Mínimo 8 caracteres, una mayúscula, un número y un carácter especial.
+                </p>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="reg-confirm-pass">Confirmar {client ? '' : '*'}</Label>
-                  {formErrors.confirmarContrasena && <span className="text-red-500 text-xs">{formErrors.confirmarContrasena}</span>}
+                  {touchedFields.confirmarContrasena && formErrors.confirmarContrasena && <span className="text-red-500 text-xs font-medium">{formErrors.confirmarContrasena}</span>}
                 </div>
-                <Input
-                  id="reg-confirm-pass"
-                  type="password"
-                  placeholder="Repita la contraseña"
-                  value={formData.confirmarContrasena}
-                  onChange={(e) => handleChange('confirmarContrasena', e.target.value)}
-                  className={formErrors.confirmarContrasena ? 'border-red-500' : ''}
-                  required={!client}
-                />
+                <div className="relative">
+                  <Input
+                    id="reg-confirm-pass"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Repita la contraseña"
+                    value={formData.confirmarContrasena}
+                    onChange={(e) => handleChange('confirmarContrasena', e.target.value)}
+                    onBlur={() => markAsTouched('confirmarContrasena')}
+                    className={`${touchedFields.confirmarContrasena && formErrors.confirmarContrasena ? 'border-red-500' : ''} pr-10`}
+                    required={!client}
+                  />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3 text-muted-foreground hover:text-gray-700 transition-colors">
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">
@@ -720,16 +790,30 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="nombre">Nombre *</Label>
-                  {formErrors.nombre && <span className="text-red-500 text-xs">{formErrors.nombre}</span>}
+                  {formErrors.nombre && <span className="text-red-500 text-xs font-medium">{formErrors.nombre}</span>}
                 </div>
-                <Input id="nombre" value={formData.nombre} onChange={(e) => handleChange('nombre', e.target.value)} className={formErrors.nombre ? 'border-red-500' : ''} required />
+                <Input
+                  id="nombre"
+                  value={formData.nombre}
+                  onChange={(e) => handleChange('nombre', e.target.value)}
+                  onBlur={() => markAsTouched('nombre')}
+                  className={touchedFields.nombre && formErrors.nombre ? 'border-red-500' : ''}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="apellido">Apellido *</Label>
-                  {formErrors.apellido && <span className="text-red-500 text-xs">{formErrors.apellido}</span>}
+                  {formErrors.apellido && <span className="text-red-500 text-xs font-medium">{formErrors.apellido}</span>}
                 </div>
-                <Input id="apellido" value={formData.apellido} onChange={(e) => handleChange('apellido', e.target.value)} className={formErrors.apellido ? 'border-red-500' : ''} required />
+                <Input
+                  id="apellido"
+                  value={formData.apellido}
+                  onChange={(e) => handleChange('apellido', e.target.value)}
+                  onBlur={() => markAsTouched('apellido')}
+                  className={touchedFields.apellido && formErrors.apellido ? 'border-red-500' : ''}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tipo_documento">Tipo de Documento</Label>
@@ -746,37 +830,91 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="documento">Núm. Documento *</Label>
-                  {formErrors.documento && <span className="text-red-500 text-xs">{formErrors.documento}</span>}
+                  {formErrors.documento && <span className="text-red-500 text-xs font-medium">{formErrors.documento}</span>}
                 </div>
-                <Input id="documento" value={formData.documento} onChange={(e) => handleChange('documento', e.target.value)} required disabled={!!client} className={`${client ? 'bg-muted ' : ''}${formErrors.documento ? 'border-red-500' : ''}`} />
+                <Input
+                  id="documento"
+                  value={formData.documento}
+                  onChange={(e) => handleChange('documento', e.target.value)}
+                  onBlur={() => markAsTouched('documento')}
+                  required
+                  disabled={!!client}
+                  className={`${client ? 'bg-muted ' : ''}${touchedFields.documento && formErrors.documento ? 'border-red-500' : ''}`}
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="phone">Teléfono *</Label>
-                  {formErrors.telefono && <span className="text-red-500 text-xs">{formErrors.telefono}</span>}
+                  {formErrors.telefono && <span className="text-red-500 text-xs font-medium">{formErrors.telefono}</span>}
                 </div>
-                <Input id="phone" value={formData.telefono} onChange={(e) => handleChange('telefono', e.target.value)} className={formErrors.telefono ? 'border-red-500' : ''} required />
+                <Input
+                  id="phone"
+                  value={formData.telefono}
+                  onChange={(e) => handleChange('telefono', e.target.value)}
+                  onBlur={() => markAsTouched('telefono')}
+                  className={touchedFields.telefono && formErrors.telefono ? 'border-red-500' : ''}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="fecha_nacimiento">Fec. Nacimiento *</Label>
-                  {formErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{formErrors.fecha_nacimiento}</span>}
+                  <Label htmlFor="fecha_nacimiento">Fecha de Nacimiento *</Label>
+                  {formErrors.fecha_nacimiento && <span className="text-red-500 text-xs font-medium">{formErrors.fecha_nacimiento}</span>}
                 </div>
-                <Input id="fecha_nacimiento" type="date" value={formData.fecha_nacimiento} onChange={(e) => handleChange('fecha_nacimiento', e.target.value)} className={formErrors.fecha_nacimiento ? 'border-red-500' : ''} required />
+                <Popover open={isBirthCalendarOpen} onOpenChange={setIsBirthCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`w-full justify-start text-left font-normal border-gray-200 ${!formData.fecha_nacimiento && "text-muted-foreground"} ${touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento ? 'border-red-500 focus:ring-red-200' : 'focus:border-blue-500'}`}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.fecha_nacimiento ? (
+                        format(new Date(formData.fecha_nacimiento + 'T00:00:00'), "PPP", { locale: es })
+                      ) : (
+                        <span>Seleccionar fecha</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CustomDatePicker
+                      value={formData.fecha_nacimiento}
+                      onChange={(v) => {
+                        handleChange('fecha_nacimiento', v);
+                        setIsBirthCalendarOpen(false);
+                      }}
+                      minAgeDate={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())}
+                      onClose={() => setIsBirthCalendarOpen(false)}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="barrio">Barrio *</Label>
-                  {formErrors.barrio && <span className="text-red-500 text-xs">{formErrors.barrio}</span>}
+                  {formErrors.barrio && <span className="text-red-500 text-xs font-medium">{formErrors.barrio}</span>}
                 </div>
-                <Input id="barrio" value={formData.barrio} onChange={(e) => handleChange('barrio', e.target.value)} className={formErrors.barrio ? 'border-red-500' : ''} required />
+                <Input
+                  id="barrio"
+                  value={formData.barrio}
+                  onChange={(e) => handleChange('barrio', e.target.value)}
+                  onBlur={() => markAsTouched('barrio')}
+                  className={touchedFields.barrio && formErrors.barrio ? 'border-red-500' : ''}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="direccion">Dirección *</Label>
-                  {formErrors.direccion && <span className="text-red-500 text-xs">{formErrors.direccion}</span>}
+                  {formErrors.direccion && <span className="text-red-500 text-xs font-medium">{formErrors.direccion}</span>}
                 </div>
-                <Input id="direccion" value={formData.direccion} onChange={(e) => handleChange('direccion', e.target.value)} className={formErrors.direccion ? 'border-red-500' : ''} required />
+                <Input
+                  id="direccion"
+                  value={formData.direccion}
+                  onChange={(e) => handleChange('direccion', e.target.value)}
+                  onBlur={() => markAsTouched('direccion')}
+                  className={touchedFields.direccion && formErrors.direccion ? 'border-red-500' : ''}
+                  required
+                />
               </div>
               <div className="col-span-2 space-y-2">
                 <Label>Foto de Perfil</Label>
