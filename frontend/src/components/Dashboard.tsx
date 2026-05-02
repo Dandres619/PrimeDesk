@@ -1,25 +1,13 @@
-import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import {
   Calendar,
-  Bike,
-  CheckCircle,
   Clock,
-  TrendingUp,
   AlertCircle,
   DollarSign,
-  Package,
-  ShoppingCart,
-  Users,
   Wrench,
-  ArrowUpRight,
-  ArrowDownRight,
-  ChevronRight,
   ClipboardList,
-  Filter,
-  Download,
   CalendarDays,
   Activity
 } from 'lucide-react';
@@ -30,19 +18,15 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   AreaChart,
   Area,
   PieChart,
   Pie,
-  Cell,
-  LineChart,
-  Line
+  Cell
 } from 'recharts';
 
 export function Dashboard() {
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   // Colors for charts
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];

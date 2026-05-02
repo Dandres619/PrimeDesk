@@ -11,7 +11,7 @@ import { Checkbox } from './ui/checkbox';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
 import { PDFPreviewDialog } from './PDFPreviewDialog';
-import { Plus, Search, Eye, Edit2, XCircle, FileText, Wrench, Clock, CheckCircle, Loader2 } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, XCircle, FileText, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -339,7 +339,7 @@ export function PedidosServicios() {
       <div className="flex justify-end">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar reparaciones..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+          <Input placeholder="Buscar reparaciones..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
         </div>
       </div>
 
@@ -362,7 +362,7 @@ export function PedidosServicios() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedServiceOrders.map(o => (
+              {paginatedServiceOrders.length > 0 ? paginatedServiceOrders.map(o => (
                 <TableRow key={o.id}>
                   <TableCell>
                     <div>
@@ -397,7 +397,13 @@ export function PedidosServicios() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    No se encontraron reparaciones.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
 

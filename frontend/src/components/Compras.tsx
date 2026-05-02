@@ -17,8 +17,6 @@ import {
   Search,
   CalendarIcon,
   Trash2,
-  ShoppingCart,
-  TrendingUp,
   Loader2,
   XCircle,
   Eye,
@@ -226,7 +224,7 @@ export function Compras() {
       <div className="flex justify-end">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar compras..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+          <Input placeholder="Buscar compras..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
         </div>
       </div>
 
@@ -236,7 +234,7 @@ export function Compras() {
           <Table>
             <TableHeader><TableRow><TableHead>Compra</TableHead><TableHead>Proveedor</TableHead><TableHead>Fecha</TableHead><TableHead>Total</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
             <TableBody>
-              {paginatedPurchases.map((p: any) => (
+              {paginatedPurchases.length > 0 ? paginatedPurchases.map((p: any) => (
                 <TableRow key={p.ID_Compra}>
                   <TableCell className="font-medium">COMP-{p.ID_Compra}</TableCell>
                   <TableCell>{p.NombreEmpresa}</TableCell>
@@ -277,7 +275,13 @@ export function Compras() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    No se encontraron compras.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
 

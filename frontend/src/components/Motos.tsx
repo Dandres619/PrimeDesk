@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Switch } from './ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, Bike, Wrench, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Bike, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -188,7 +188,7 @@ export function Motos() {
       <div className="flex justify-end">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por placa, marca, modelo o cliente..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+          <Input placeholder="Buscar por placa, marca, modelo o cliente..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
         </div>
       </div>
 
@@ -219,7 +219,7 @@ export function Motos() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedMotos.map(m => (
+                  {paginatedMotos.length > 0 ? paginatedMotos.map(m => (
                     <TableRow key={m.ID_Motocicleta}>
                       <TableCell>
                         <p>{m.Placa}</p>
@@ -263,7 +263,13 @@ export function Motos() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                        No se encontraron motocicletas.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
 

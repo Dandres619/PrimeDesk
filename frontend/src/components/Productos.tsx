@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Switch } from './ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, Package, CheckCircle, XCircle, Tag, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Package, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -173,11 +173,6 @@ export function Productos() {
     );
   }
 
-  const getCatColor = (n: string) => {
-    const c: any = { 'Repuestos de Motor': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', 'Sistema de Frenos': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', 'Transmisión': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', 'Sistema Eléctrico': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', 'Carrocería': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', 'Aceites y Lubricantes': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' };
-    return c[n] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
-  };
-
   // Stats removed
 
   return (
@@ -196,7 +191,7 @@ export function Productos() {
       <div className="flex justify-end">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar productos..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+          <Input placeholder="Buscar productos..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
         </div>
       </div>
       <Card>
@@ -205,7 +200,7 @@ export function Productos() {
           <Table>
             <TableHeader><TableRow><TableHead>Producto</TableHead><TableHead>Marca</TableHead><TableHead>Categoría</TableHead><TableHead>Cantidad</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
             <TableBody>
-              {paginated.map((p) => (
+              {paginated.length > 0 ? paginated.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell><p>{p.name}</p></TableCell>
                   <TableCell><p>{p.brand}</p></TableCell>
@@ -226,7 +221,13 @@ export function Productos() {
                     })} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-4 h-4" /></Button>
                   </div></TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    No se encontraron productos.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
           <div className="mt-6 flex justify-center">

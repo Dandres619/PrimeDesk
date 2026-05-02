@@ -10,7 +10,7 @@ import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, Truck, Users, Phone, Mail, MapPin, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -186,11 +186,11 @@ export function Proveedores() {
           <SupplierDialog supplier={editingSupplier} onSave={handleSave} />
         </Dialog>
       </div>
-      
+
       <div className="flex justify-end">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar proveedores..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+          <Input placeholder="Buscar proveedores..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
         </div>
       </div>
       <Card>
@@ -211,7 +211,7 @@ export function Proveedores() {
             </TableHeader>
 
             <TableBody>
-              {paginated.map((s) => (
+              {paginated.length > 0 ? paginated.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell><p>{s.name}</p></TableCell>
 
@@ -247,7 +247,13 @@ export function Proveedores() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                    No se encontraron proveedores.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
 

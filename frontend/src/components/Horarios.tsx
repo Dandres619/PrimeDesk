@@ -98,13 +98,6 @@ export function Horarios() {
   };
 
   const getEnabledDays = (s: any) => DAYS_OF_WEEK.filter(d => s.daySchedules[d]?.enabled);
-  const formatDays = (s: any) => {
-    const enabled = getEnabledDays(s);
-    if (enabled.length === 0) return 'Sin días configurados';
-    if (enabled.length === 5 && !enabled.includes('Sábado') && !enabled.includes('Domingo')) return 'Lunes a Viernes';
-    if (enabled.length === 7) return 'Todos los días';
-    return enabled.length <= 2 ? enabled.join(', ') : `${enabled.slice(0, 2).join(', ')} +${enabled.length - 2}`;
-  };
 
   const filteredSchedules = schedules.filter(s =>
     s.mechanicName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -249,9 +242,9 @@ export function Horarios() {
             <TableBody>
               {paginatedSchedules.length === 0 ? (
                 <TableRow>
-                  <td colSpan={5} className="text-center py-10 text-muted-foreground">
-                    No hay horarios registrados aún.
-                  </td>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    No se encontraron horarios.
+                  </TableCell>
                 </TableRow>
               ) : paginatedSchedules.map(s => {
                 const enabledDays = getEnabledDays(s);

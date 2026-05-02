@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Calendar } from './ui/calendar';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import {
   Bike,
   Eye,
@@ -12,18 +16,153 @@ import {
   Lock,
   CreditCard,
   MapPin,
-  Calendar,
+  Calendar as CalendarIcon,
   Home,
-  Shield,
   User,
   Phone,
   ChevronRight,
+  ChevronLeft,
   Sparkles,
   ArrowRight,
   CheckCircle,
   Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+function CustomDatePicker({ value, onChange, minAgeDate, onClose }: { value: string, onChange: (v: string) => void, minAgeDate: Date, onClose: () => void }) {
+  const [view, setView] = useState<'days' | 'months' | 'years'>('years');
+  const initialDate = value ? new Date(value + 'T00:00:00') : minAgeDate;
+  const [currentDate, setCurrentDate] = useState<Date>(initialDate);
+  const [yearPage, setYearPage] = useState(
+    initialDate.getFullYear() - (initialDate.getFullYear() % 12)
+  );
+
+  useEffect(() => {
+    if (!value) setView('years');
+    else setView('days');
+  }, [value]);
+
+  const handleYearSelect = (y: number) => {
+    const newDate = new Date(currentDate);
+    newDate.setFullYear(y);
+    setCurrentDate(newDate);
+    setView('months');
+  };
+
+  const handleMonthSelect = (m: number) => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(m);
+    setCurrentDate(newDate);
+    setView('days');
+  };
+
+  const nextMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    setCurrentDate(newDate);
+  };
+
+  const prevMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    setCurrentDate(newDate);
+  };
+
+  if (view === 'years') {
+    const years = Array.from({ length: 12 }, (_, i) => yearPage + i);
+    return (
+      <div className="p-3 w-[320px]">
+        <div className="flex justify-between items-center mb-4">
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setYearPage(y => y - 12)} disabled={yearPage <= 1950}><ChevronLeft className="h-4 w-4" /></Button>
+          <div className="font-bold text-sm">{yearPage} - {yearPage + 11}</div>
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setYearPage(y => y + 12)} disabled={yearPage + 12 > minAgeDate.getFullYear()}><ChevronRight className="h-4 w-4" /></Button>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {years.map(y => {
+            const disabled = y > minAgeDate.getFullYear() || y < 1950;
+            return (
+              <Button type="button" key={y} variant={y === currentDate.getFullYear() ? 'default' : 'ghost'} className="text-sm h-9" disabled={disabled} onClick={() => handleYearSelect(y)}>{y}</Button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'months') {
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return (
+      <div className="p-3 w-[320px]">
+        <div className="flex justify-between items-center mb-4">
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={currentDate.getFullYear() <= 1950} onClick={() => {
+            const newDate = new Date(currentDate);
+            newDate.setFullYear(newDate.getFullYear() - 1);
+            setCurrentDate(newDate);
+          }}><ChevronLeft className="h-4 w-4" /></Button>
+          <div className="font-bold text-sm cursor-pointer hover:bg-slate-100 px-2 py-1 rounded" onClick={() => {
+            setYearPage(currentDate.getFullYear() - (currentDate.getFullYear() % 12));
+            setView('years');
+          }}>{currentDate.getFullYear()}</div>
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={currentDate.getFullYear() >= minAgeDate.getFullYear()} onClick={() => {
+            const newDate = new Date(currentDate);
+            newDate.setFullYear(newDate.getFullYear() + 1);
+            setCurrentDate(newDate);
+          }}><ChevronRight className="h-4 w-4" /></Button>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {months.map((m, i) => {
+            const disabled = (currentDate.getFullYear() === minAgeDate.getFullYear() && i > minAgeDate.getMonth()) || currentDate.getFullYear() < 1950;
+            return (
+              <Button type="button" key={i} variant={i === currentDate.getMonth() ? 'default' : 'ghost'} disabled={disabled} className="text-sm h-9" onClick={() => handleMonthSelect(i)}>{m}</Button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  const isNextMonthDisabled = currentDate.getFullYear() === minAgeDate.getFullYear() && currentDate.getMonth() >= minAgeDate.getMonth();
+
+  const isPrevMonthDisabled = currentDate.getFullYear() < 1950 || (currentDate.getFullYear() === 1950 && currentDate.getMonth() === 0);
+
+  return (
+    <div className="w-auto min-w-[320px]">
+      <div className="flex justify-between items-center p-3 pb-0">
+        <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={isPrevMonthDisabled} onClick={prevMonth}><ChevronLeft className="h-4 w-4" /></Button>
+        <div className="font-bold text-sm cursor-pointer hover:bg-slate-100 px-3 py-1.5 rounded flex items-center capitalize" onClick={() => setView('months')}>
+          {format(currentDate, 'MMMM yyyy', { locale: es })}
+        </div>
+        <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={isNextMonthDisabled} onClick={nextMonth}><ChevronRight className="h-4 w-4" /></Button>
+      </div>
+      <Calendar
+        mode="single"
+        selected={value ? new Date(value + 'T00:00:00') : undefined}
+        onSelect={(d) => {
+          if (d) {
+            onChange(format(d, 'yyyy-MM-dd'));
+            onClose();
+          }
+        }}
+        month={currentDate}
+        onMonthChange={setCurrentDate}
+        disabled={(d) => d > minAgeDate || d < new Date(1950, 0, 1)}
+        locale={es}
+        className="p-3"
+        classNames={{
+          month_caption: "hidden",
+          nav: "hidden",
+          table: "w-full border-collapse mt-2",
+          weekdays: "flex justify-between mb-2",
+          weekday: "text-slate-500 rounded-md w-10 font-medium text-sm text-center uppercase",
+          week: "flex w-full mt-1 justify-between",
+          day: "h-10 w-10 p-0 font-medium text-center text-base relative aria-selected:bg-indigo-600 aria-selected:text-white rounded-lg hover:bg-slate-100 cursor-pointer flex items-center justify-center transition-colors",
+          today: "bg-slate-100 text-slate-900 font-bold",
+          outside: "text-slate-300 opacity-50",
+        }}
+      />
+    </div>
+  );
+}
 
 interface LoginProps {
   onLogin: (userData: any) => void;
@@ -41,6 +180,13 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
   const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  // Helper variables for validation
+  const todayDate = new Date();
+  const globalMinAgeDate = new Date(todayDate.getFullYear() - 18, todayDate.getMonth(), todayDate.getDate());
+
+
 
   // Login form state
   const [loginData, setLoginData] = useState({
@@ -72,6 +218,76 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     newPassword: '',
     confirmPassword: ''
   });
+
+  // Real-time validation
+  useEffect(() => {
+    setRegisterErrors(prev => {
+      const errs = { ...prev };
+
+      if (activeStep === 1) {
+        if (!registerData.nombre) errs.nombre = 'No puede estar vacío';
+        else delete errs.nombre;
+
+        if (!registerData.apellido) errs.apellido = 'No puede estar vacío';
+        else delete errs.apellido;
+
+        if (!registerData.documento) errs.documento = 'No puede estar vacío';
+        else if (!/^\d{7,10}$/.test(registerData.documento)) errs.documento = 'Entre 7 y 10 números';
+        else delete errs.documento;
+
+        if (!registerData.fecha_nacimiento) errs.fecha_nacimiento = 'No puede estar vacío';
+        else {
+          const selectedDate = new Date(registerData.fecha_nacimiento + 'T00:00:00');
+          if (selectedDate > todayDate) {
+            errs.fecha_nacimiento = 'La fecha no puede ser en el futuro';
+          } else if (selectedDate > globalMinAgeDate) {
+            errs.fecha_nacimiento = 'Debe ser mayor de 18 años';
+          } else {
+            delete errs.fecha_nacimiento;
+          }
+        }
+      } else if (activeStep === 2) {
+        if (!registerData.email) errs.email = 'No puede estar vacío';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerData.email)) errs.email = 'Correo inválido';
+        else if (errs.email !== 'Correo ya registrado') delete errs.email;
+
+        if (!registerData.telefono) errs.telefono = 'No puede estar vacío';
+        else if (!/^\d{7,10}$/.test(registerData.telefono)) errs.telefono = 'Entre 7 y 10 números';
+        else delete errs.telefono;
+
+        if (!registerData.barrio) errs.barrio = 'No puede estar vacío';
+        else delete errs.barrio;
+
+        if (!registerData.direccion) errs.direccion = 'No puede estar vacío';
+        else {
+          const addressRegex = /^(calle|carrera|cra|diagonal|diag|transversal|tv|avenida|av|circular|circ|vía|via|manzana|mz|lote)\s+[a-zA-Z0-9\s#-]+$/i;
+          if (!addressRegex.test(registerData.direccion)) {
+            errs.direccion = 'Dirección inválida (Ej: Calle 10 #20-30)';
+          } else {
+            delete errs.direccion;
+          }
+        }
+      } else if (activeStep === 3) {
+        if (!registerData.contrasena) errs.contrasena = 'No puede estar vacío';
+        else {
+          const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+          if (!passwordRegex.test(registerData.contrasena)) errs.contrasena = 'Contraseña insegura';
+          else delete errs.contrasena;
+        }
+
+        if (!registerData.confirmarContrasena) errs.confirmarContrasena = 'No puede estar vacío';
+        else {
+          if (registerData.contrasena !== registerData.confirmarContrasena) errs.confirmarContrasena = 'No coinciden';
+          else delete errs.confirmarContrasena;
+        }
+      }
+
+      if (JSON.stringify(errs) !== JSON.stringify(prev)) {
+        return errs;
+      }
+      return prev;
+    });
+  }, [registerData, activeStep, todayDate, globalMinAgeDate]);
 
   const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -204,11 +420,24 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
     if (activeStep === 1) {
       const errs: Record<string, string> = {};
-      if (!registerData.nombre) errs.nombre = 'Requerido';
-      if (!registerData.apellido) errs.apellido = 'Requerido';
-      if (!registerData.documento) errs.documento = 'Requerido';
+      if (!registerData.nombre) errs.nombre = 'No puede estar vacío';
+      if (!registerData.apellido) errs.apellido = 'No puede estar vacío';
+      if (!registerData.documento) errs.documento = 'No puede estar vacío';
       else if (!/^\d{7,10}$/.test(registerData.documento)) errs.documento = 'Entre 7 y 10 números';
-      if (!registerData.fecha_nacimiento) errs.fecha_nacimiento = 'Requerido';
+
+      if (!registerData.fecha_nacimiento) {
+        errs.fecha_nacimiento = 'No puede estar vacío';
+      } else {
+        const selectedDate = new Date(registerData.fecha_nacimiento + 'T00:00:00');
+        const today = new Date();
+        const minAgeDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+
+        if (selectedDate > today) {
+          errs.fecha_nacimiento = 'La fecha no puede ser en el futuro';
+        } else if (selectedDate > minAgeDate) {
+          errs.fecha_nacimiento = 'Debe ser mayor de 18 años';
+        }
+      }
 
       if (Object.keys(errs).length > 0) {
         setRegisterErrors(errs);
@@ -218,12 +447,16 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       nextStep();
     } else if (activeStep === 2) {
       const errs: Record<string, string> = {};
-      if (!registerData.email) errs.email = 'Requerido';
+      if (!registerData.email) errs.email = 'No puede estar vacío';
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerData.email)) errs.email = 'Correo inválido';
-      if (!registerData.barrio) errs.barrio = 'Requerido';
-      if (!registerData.direccion) errs.direccion = 'Requerido';
-      if (!registerData.telefono) errs.telefono = 'Requerido';
-      else if (!/^\d{10}$/.test(registerData.telefono)) errs.telefono = 'Exactamente 10 números';
+      if (!registerData.barrio) errs.barrio = 'No puede estar vacío';
+      if (!registerData.direccion) errs.direccion = 'No puede estar vacío';
+      else {
+        const addressRegex = /^(calle|carrera|cra|diagonal|diag|transversal|tv|avenida|av|circular|circ|vía|via|manzana|mz|lote)\s+[a-zA-Z0-9\s#-]+$/i;
+        if (!addressRegex.test(registerData.direccion)) errs.direccion = 'Dirección inválida (Ej: Calle 10 #20-30)';
+      }
+      if (!registerData.telefono) errs.telefono = 'No puede estar vacío';
+      else if (!/^\d{7,10}$/.test(registerData.telefono)) errs.telefono = 'Entre 7 y 10 números';
 
       if (Object.keys(errs).length > 0) {
         setRegisterErrors(errs);
@@ -232,19 +465,19 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
       // Verificar si el correo ya existe
       setIsLoading(true);
-      
+
       try {
         const response = await fetch(`${API_URL}/auth/check-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ correo: registerData.email.toLowerCase().trim() })
         });
-        
+
         if (!response.ok) {
-           const errorData = await response.json().catch(() => ({}));
-           throw new Error(errorData.message || `Error del servidor: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `Error del servidor: ${response.status}`);
         }
-        
+
         const data = await response.json();
         if (data.exists) {
           setRegisterErrors({ email: 'Correo ya registrado' });
@@ -263,13 +496,13 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       }
     } else if (activeStep === 3) {
       const errs: Record<string, string> = {};
-      if (!registerData.contrasena) errs.contrasena = 'Requerido';
+      if (!registerData.contrasena) errs.contrasena = 'No puede estar vacío';
       const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
       if (registerData.contrasena && !passwordRegex.test(registerData.contrasena)) {
-        errs.contrasena = 'Formato inseguro';
+        errs.contrasena = 'Contraseña insegura';
         toast.error('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial');
       }
-      if (!registerData.confirmarContrasena) errs.confirmarContrasena = 'Requerido';
+      if (!registerData.confirmarContrasena) errs.confirmarContrasena = 'No puede estar vacío';
       if (registerData.contrasena !== registerData.confirmarContrasena) errs.confirmarContrasena = 'No coinciden';
 
       if (Object.keys(errs).length > 0) {
@@ -731,15 +964,30 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                             <Label htmlFor="reg-nac" className="text-gray-700">Fecha de Nacimiento *</Label>
                             {registerErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{registerErrors.fecha_nacimiento}</span>}
                           </div>
-                          <div className="relative">
-                            <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                          <div className="relative flex items-center">
                             <Input
                               id="reg-nac"
                               type="date"
+                              max={format(globalMinAgeDate, 'yyyy-MM-dd')}
                               value={registerData.fecha_nacimiento}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))}
-                              className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 text-gray-500 ${registerErrors.fecha_nacimiento ? 'border-red-500' : ''}`}
+                              className={`pl-3 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 text-gray-500 [&::-webkit-calendar-picker-indicator]:hidden w-full ${registerErrors.fecha_nacimiento ? 'border-red-500' : ''}`}
                             />
+                            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                              <PopoverTrigger asChild>
+                                <button type="button" onClick={() => setIsCalendarOpen(true)} className="absolute right-3 p-1 text-gray-400 hover:text-indigo-600 transition-colors">
+                                  <CalendarIcon className="h-5 w-5" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-xl overflow-hidden bg-white" align="end">
+                                <CustomDatePicker
+                                  value={registerData.fecha_nacimiento}
+                                  onChange={(v) => setRegisterData(prev => ({ ...prev, fecha_nacimiento: v }))}
+                                  minAgeDate={globalMinAgeDate}
+                                  onClose={() => setIsCalendarOpen(false)}
+                                />
+                              </PopoverContent>
+                            </Popover>
                           </div>
                         </div>
                       </div>
@@ -795,7 +1043,13 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                                 type="tel"
                                 placeholder="+57 300 123 4567"
                                 value={registerData.telefono}
-                                onChange={(e) => setRegisterData(prev => ({ ...prev, telefono: e.target.value }))}
+                                onChange={(e) => {
+                                  const onlyNums = e.target.value.replace(/[^0-9]/g, '');
+                                  if (e.target.value !== onlyNums && e.target.value.length > 0) {
+                                    // Let real-time validation handle format, but we aggressively strip non-numbers
+                                  }
+                                  setRegisterData(prev => ({ ...prev, telefono: onlyNums }));
+                                }}
                                 className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.telefono ? 'border-red-500' : ''}`}
                               />
                             </div>
@@ -848,6 +1102,9 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                               {showRegisterPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                           </div>
+                          <p className="text-xs text-gray-500 mt-1.5 ml-1">
+                            Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.
+                          </p>
                         </div>
 
                         <div className="space-y-2">

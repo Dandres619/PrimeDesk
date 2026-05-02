@@ -17,7 +17,6 @@ import {
   Eye,
   FileText,
   DollarSign,
-  TrendingUp,
   XCircle,
   Loader2
 } from 'lucide-react';
@@ -323,7 +322,7 @@ export function Ventas() {
       <div className="flex justify-end">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar ventas..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+          <Input placeholder="Buscar ventas..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
         </div>
       </div>
 
@@ -349,7 +348,7 @@ export function Ventas() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedSales.map((sale) => (
+              {paginatedSales.length > 0 ? paginatedSales.map((sale) => (
                 <TableRow key={sale.id}>
                   <TableCell>
                     <div>
@@ -419,7 +418,13 @@ export function Ventas() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    No se encontraron ventas.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
 
@@ -625,20 +630,6 @@ function SaleDialog({ clients, motorcycles, purchases, serviceTypes, serviceOrde
       setFormData(prev => ({
         ...prev,
         selectedPurchases: prev.selectedPurchases.filter(id => id !== purchaseId)
-      }));
-    }
-  };
-
-  const handleServiceChange = (service: string, checked: boolean) => {
-    if (checked) {
-      setFormData(prev => ({
-        ...prev,
-        selectedServices: [...prev.selectedServices, service]
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        selectedServices: prev.selectedServices.filter(s => s !== service)
       }));
     }
   };

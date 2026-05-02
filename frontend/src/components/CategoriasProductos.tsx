@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Switch } from './ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, Tag, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -152,7 +152,7 @@ export function CategoriasProductos() {
       <div className="flex justify-between items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Categorías de Productos</h1>
-          <p className="text-muted-foreground">Clasificación del inventario</p>
+          <p className="text-muted-foreground">Gestiona las categorías de los productos</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -167,7 +167,7 @@ export function CategoriasProductos() {
       <div className="flex justify-end">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar categorías..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+          <Input placeholder="Buscar categorías..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
         </div>
       </div>
 
@@ -188,7 +188,7 @@ export function CategoriasProductos() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginated.map((c) => (
+              {paginated.length > 0 ? paginated.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell>
                     <p>{c.name}</p>
@@ -217,7 +217,13 @@ export function CategoriasProductos() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                    No se encontraron categorías.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
           <div className="mt-6 flex justify-center">
