@@ -214,14 +214,14 @@ export function Compras() {
       <div className="flex justify-between items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Compras</h1>
-          <p className="text-muted-foreground">Gestión de compras a proveedores</p>
+          <p className="text-muted-foreground">Gestión de compras para reparaciones</p>
         </div>
         <Button onClick={() => setShowNewDialog(true)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
           <Plus className="w-4 h-4 mr-2" /> Nueva Compra
         </Button>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-start">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar compras..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />

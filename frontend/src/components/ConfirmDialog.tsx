@@ -1,4 +1,3 @@
-import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { AlertTriangle, Trash2, XCircle } from 'lucide-react';
@@ -63,7 +62,7 @@ export function ConfirmDialog({
           </div>
           <DialogDescription className="sr-only">{description}</DialogDescription>
         </DialogHeader>
-        
+
         <div className="py-4">
           <p className="text-muted-foreground">{description}</p>
         </div>

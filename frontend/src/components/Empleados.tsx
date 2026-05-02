@@ -223,10 +223,10 @@ export function Empleados() {
         </Dialog>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-start">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por nombre, email o rol..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+          <Input placeholder="Buscar empleados..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
         </div>
       </div>
 
@@ -283,7 +283,7 @@ export function Empleados() {
                           <p>{e.Documento}</p>
                         </TableCell>
                         <TableCell>
-                          <Badge className={roleBadges[e.NombreRol as keyof typeof roleBadges]}>{e.NombreRol}</Badge>
+                          <p>{e.NombreRol}</p>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">

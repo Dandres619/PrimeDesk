@@ -10,7 +10,7 @@ import { Switch } from './ui/switch';
 import { Checkbox } from './ui/checkbox';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, Clock, Users, CheckCircle, XCircle, CalendarDays, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Clock, CalendarDays, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -103,8 +103,8 @@ export function Horarios() {
     s.mechanicName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     getEnabledDays(s).some(d => d.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-  const totalPages = Math.ceil(filteredSchedules.length / 5);
-  const paginatedSchedules = filteredSchedules.slice((currentPage - 1) * 5, currentPage * 5);
+  const totalPages = Math.ceil(filteredSchedules.length / 10);
+  const paginatedSchedules = filteredSchedules.slice((currentPage - 1) * 10, currentPage * 10);
 
   const handleSave = async (data: any) => {
     const isEditing = !!editingSchedule;
@@ -175,12 +175,7 @@ export function Horarios() {
     }
   };
 
-  const stats = [
-    { icon: Clock, color: 'text-blue-600', value: schedules.length, label: 'Total Horarios' },
-    { icon: CheckCircle, color: 'text-green-600', value: schedules.filter(s => s.status === 'Activo').length, label: 'Activos' },
-    { icon: XCircle, color: 'text-red-600', value: schedules.filter(s => s.status === 'Inactivo').length, label: 'Inactivos' },
-    { icon: Users, color: 'text-purple-600', value: employees.length, label: 'Mecánicos' }
-  ];
+
 
   if (isLoading) {
     return (
@@ -193,9 +188,9 @@ export function Horarios() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar horarios..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Horarios</h2>
+          <p className="text-muted-foreground">Gestiona los horarios de trabajo de los mecánicos</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingSchedule(null); }}>
           <DialogTrigger asChild>
@@ -208,18 +203,19 @@ export function Horarios() {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {stats.map((s, i) => (
-          <Card key={i}>
-            <CardContent className="flex items-center p-6">
-              <s.icon className={`w-8 h-8 ${s.color} mr-4`} />
-              <div>
-                <p className="text-2xl font-bold">{s.value}</p>
-                <p className="text-muted-foreground">{s.label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="flex justify-start">
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar horarios..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="pl-9 h-9"
+          />
+        </div>
       </div>
 
       <Card>
@@ -304,11 +300,31 @@ export function Horarios() {
           <div className="mt-6 flex justify-center">
             <Pagination>
               <PaginationContent>
-                {totalPages > 1 && <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>}
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+
                 {Array.from({ length: Math.max(1, totalPages) }, (_, i) => i + 1).map(p => (
-                  <PaginationItem key={p}><PaginationLink onClick={() => totalPages > 1 ? setCurrentPage(p) : undefined} isActive={currentPage === p} className={totalPages > 1 ? "cursor-pointer" : "cursor-default"}>{p}</PaginationLink></PaginationItem>
+                  <PaginationItem key={p}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(p)}
+                      isActive={currentPage === p}
+                      className="cursor-pointer"
+                    >
+                      {p}
+                    </PaginationLink>
+                  </PaginationItem>
                 ))}
-                {totalPages > 1 && <PaginationItem><PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} /></PaginationItem>}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    className={currentPage === totalPages || totalPages === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
               </PaginationContent>
             </Pagination>
           </div>

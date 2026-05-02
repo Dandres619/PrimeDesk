@@ -319,7 +319,7 @@ export function Ventas() {
         </Dialog>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-start">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar ventas..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />

@@ -5,7 +5,6 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Calendar } from './ui/calendar';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -14,155 +13,20 @@ import {
   EyeOff,
   Mail,
   Lock,
-  CreditCard,
   MapPin,
   Calendar as CalendarIcon,
   Home,
   User,
   Phone,
   ChevronRight,
-  ChevronLeft,
-  Sparkles,
   ArrowRight,
   CheckCircle,
   Loader2
 } from 'lucide-react';
+import { CustomDatePicker } from './ui/CustomDatePicker';
 import { toast } from 'sonner';
 
-function CustomDatePicker({ value, onChange, minAgeDate, onClose }: { value: string, onChange: (v: string) => void, minAgeDate: Date, onClose: () => void }) {
-  const [view, setView] = useState<'days' | 'months' | 'years'>('years');
-  const initialDate = value ? new Date(value + 'T00:00:00') : minAgeDate;
-  const [currentDate, setCurrentDate] = useState<Date>(initialDate);
-  const [yearPage, setYearPage] = useState(
-    initialDate.getFullYear() - (initialDate.getFullYear() % 12)
-  );
 
-  useEffect(() => {
-    if (!value) setView('years');
-    else setView('days');
-  }, [value]);
-
-  const handleYearSelect = (y: number) => {
-    const newDate = new Date(currentDate);
-    newDate.setFullYear(y);
-    setCurrentDate(newDate);
-    setView('months');
-  };
-
-  const handleMonthSelect = (m: number) => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(m);
-    setCurrentDate(newDate);
-    setView('days');
-  };
-
-  const nextMonth = () => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() + 1);
-    setCurrentDate(newDate);
-  };
-
-  const prevMonth = () => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() - 1);
-    setCurrentDate(newDate);
-  };
-
-  if (view === 'years') {
-    const years = Array.from({ length: 12 }, (_, i) => yearPage + i);
-    return (
-      <div className="p-3 w-[320px]">
-        <div className="flex justify-between items-center mb-4">
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setYearPage(y => y - 12)} disabled={yearPage <= 1950}><ChevronLeft className="h-4 w-4" /></Button>
-          <div className="font-bold text-sm">{yearPage} - {yearPage + 11}</div>
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setYearPage(y => y + 12)} disabled={yearPage + 12 > minAgeDate.getFullYear()}><ChevronRight className="h-4 w-4" /></Button>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {years.map(y => {
-            const disabled = y > minAgeDate.getFullYear() || y < 1950;
-            return (
-              <Button type="button" key={y} variant={y === currentDate.getFullYear() ? 'default' : 'ghost'} className="text-sm h-9" disabled={disabled} onClick={() => handleYearSelect(y)}>{y}</Button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  if (view === 'months') {
-    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    return (
-      <div className="p-3 w-[320px]">
-        <div className="flex justify-between items-center mb-4">
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={currentDate.getFullYear() <= 1950} onClick={() => {
-            const newDate = new Date(currentDate);
-            newDate.setFullYear(newDate.getFullYear() - 1);
-            setCurrentDate(newDate);
-          }}><ChevronLeft className="h-4 w-4" /></Button>
-          <div className="font-bold text-sm cursor-pointer hover:bg-slate-100 px-2 py-1 rounded" onClick={() => {
-            setYearPage(currentDate.getFullYear() - (currentDate.getFullYear() % 12));
-            setView('years');
-          }}>{currentDate.getFullYear()}</div>
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={currentDate.getFullYear() >= minAgeDate.getFullYear()} onClick={() => {
-            const newDate = new Date(currentDate);
-            newDate.setFullYear(newDate.getFullYear() + 1);
-            setCurrentDate(newDate);
-          }}><ChevronRight className="h-4 w-4" /></Button>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {months.map((m, i) => {
-            const disabled = (currentDate.getFullYear() === minAgeDate.getFullYear() && i > minAgeDate.getMonth()) || currentDate.getFullYear() < 1950;
-            return (
-              <Button type="button" key={i} variant={i === currentDate.getMonth() ? 'default' : 'ghost'} disabled={disabled} className="text-sm h-9" onClick={() => handleMonthSelect(i)}>{m}</Button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  const isNextMonthDisabled = currentDate.getFullYear() === minAgeDate.getFullYear() && currentDate.getMonth() >= minAgeDate.getMonth();
-
-  const isPrevMonthDisabled = currentDate.getFullYear() < 1950 || (currentDate.getFullYear() === 1950 && currentDate.getMonth() === 0);
-
-  return (
-    <div className="w-auto min-w-[320px]">
-      <div className="flex justify-between items-center p-3 pb-0">
-        <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={isPrevMonthDisabled} onClick={prevMonth}><ChevronLeft className="h-4 w-4" /></Button>
-        <div className="font-bold text-sm cursor-pointer hover:bg-slate-100 px-3 py-1.5 rounded flex items-center capitalize" onClick={() => setView('months')}>
-          {format(currentDate, 'MMMM yyyy', { locale: es })}
-        </div>
-        <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={isNextMonthDisabled} onClick={nextMonth}><ChevronRight className="h-4 w-4" /></Button>
-      </div>
-      <Calendar
-        mode="single"
-        selected={value ? new Date(value + 'T00:00:00') : undefined}
-        onSelect={(d) => {
-          if (d) {
-            onChange(format(d, 'yyyy-MM-dd'));
-            onClose();
-          }
-        }}
-        month={currentDate}
-        onMonthChange={setCurrentDate}
-        disabled={(d) => d > minAgeDate || d < new Date(1950, 0, 1)}
-        locale={es}
-        className="p-3"
-        classNames={{
-          month_caption: "hidden",
-          nav: "hidden",
-          table: "w-full border-collapse mt-2",
-          weekdays: "flex justify-between mb-2",
-          weekday: "text-slate-500 rounded-md w-10 font-medium text-sm text-center uppercase",
-          week: "flex w-full mt-1 justify-between",
-          day: "h-10 w-10 p-0 font-medium text-center text-base relative aria-selected:bg-indigo-600 aria-selected:text-white rounded-lg hover:bg-slate-100 cursor-pointer flex items-center justify-center transition-colors",
-          today: "bg-slate-100 text-slate-900 font-bold",
-          outside: "text-slate-300 opacity-50",
-        }}
-      />
-    </div>
-  );
-}
 
 interface LoginProps {
   onLogin: (userData: any) => void;
@@ -170,24 +34,6 @@ interface LoginProps {
 }
 
 export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
-  const [isLogin, setIsLogin] = useState(initialMode === 'login');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
-  const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
-  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
-  const [showResetPassword, setShowResetPassword] = useState(false);
-  const [showResetNewPassword, setShowResetNewPassword] = useState(false);
-  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
-  const [activeStep, setActiveStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-
-  // Helper variables for validation
-  const todayDate = new Date();
-  const globalMinAgeDate = new Date(todayDate.getFullYear() - 18, todayDate.getMonth(), todayDate.getDate());
-
-
-
   // Login form state
   const [loginData, setLoginData] = useState({
     email: '',
@@ -208,7 +54,41 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     confirmarContrasena: '',
     telefono: ''
   });
+
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetNewPassword, setShowResetNewPassword] = useState(false);
+  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
+  const [activeStep, setActiveStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [dateInput, setDateInput] = useState('');
+
+  const todayDate = new Date();
+  const globalMinAgeDate = new Date(todayDate.getFullYear() - 18, todayDate.getMonth(), todayDate.getDate());
+
+  // Sync dateInput when fecha_nacimiento changes (e.g. from calendar)
+  useEffect(() => {
+    if (registerData.fecha_nacimiento) {
+      const date = new Date(registerData.fecha_nacimiento + 'T00:00:00');
+      const formatted = format(date, 'dd/MM/yyyy');
+      if (dateInput !== formatted && (dateInput.replace(/\//g, '').length === 8 || dateInput === '')) {
+        setDateInput(formatted);
+      }
+    } else {
+      setDateInput('');
+    }
+  }, [registerData.fecha_nacimiento]);
   const [registerErrors, setRegisterErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+  const handleBlur = (field: string) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+  };
 
   // Forgot password state
   const [forgotEmail, setForgotEmail] = useState('');
@@ -418,6 +298,17 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     if (e && e.type === 'keydown' && (e as React.KeyboardEvent).key !== 'Enter') return;
     if (e && e.type === 'click') e.preventDefault();
 
+    // Mark all fields in current step as touched to show errors if any
+    const allFields: Record<string, boolean> = { ...touchedFields };
+    if (activeStep === 1) {
+      ['nombre', 'apellido', 'documento', 'fecha_nacimiento'].forEach(f => allFields[f] = true);
+    } else if (activeStep === 2) {
+      ['email', 'telefono', 'barrio', 'direccion'].forEach(f => allFields[f] = true);
+    } else if (activeStep === 3) {
+      ['contrasena', 'confirmarContrasena'].forEach(f => allFields[f] = true);
+    }
+    setTouchedFields(allFields);
+
     if (activeStep === 1) {
       const errs: Record<string, string> = {};
       if (!registerData.nombre) errs.nombre = 'No puede estar vacío';
@@ -453,7 +344,9 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       if (!registerData.direccion) errs.direccion = 'No puede estar vacío';
       else {
         const addressRegex = /^(calle|carrera|cra|diagonal|diag|transversal|tv|avenida|av|circular|circ|vía|via|manzana|mz|lote)\s+[a-zA-Z0-9\s#-]+$/i;
-        if (!addressRegex.test(registerData.direccion)) errs.direccion = 'Dirección inválida (Ej: Calle 10 #20-30)';
+        if (!addressRegex.test(registerData.direccion)) {
+          errs.direccion = 'Dirección inválida (Ej: Calle 10 #20-30)';
+        }
       }
       if (!registerData.telefono) errs.telefono = 'No puede estar vacío';
       else if (!/^\d{7,10}$/.test(registerData.telefono)) errs.telefono = 'Entre 7 y 10 números';
@@ -893,7 +786,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                     ))}
                   </div>
 
-                  <form className="space-y-4 pt-4" onKeyDown={(e) => e.key === 'Enter' && handleNextStep()}>
+                  <form className="space-y-4 pt-4" onKeyDown={(e) => e.key === 'Enter' && handleNextStep()} noValidate>
                     {/* Step 1: Personal Information */}
                     {activeStep === 1 && (
                       <div className="space-y-6 animate-fadeIn">
@@ -901,27 +794,29 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <Label htmlFor="reg-nombre" className="text-gray-700">Nombre *</Label>
-                              {registerErrors.nombre && <span className="text-red-500 text-xs">{registerErrors.nombre}</span>}
+                              {touchedFields.nombre && registerErrors.nombre && <span className="text-red-500 text-xs">{registerErrors.nombre}</span>}
                             </div>
                             <Input
                               id="reg-nombre"
                               placeholder="Juan"
                               value={registerData.nombre}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, nombre: e.target.value }))}
-                              className={`border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.nombre ? 'border-red-500' : ''}`}
+                              onBlur={() => handleBlur('nombre')}
+                              className={`border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${touchedFields.nombre && registerErrors.nombre ? 'border-red-500' : ''}`}
                             />
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <Label htmlFor="reg-apellido" className="text-gray-700">Apellido *</Label>
-                              {registerErrors.apellido && <span className="text-red-500 text-xs">{registerErrors.apellido}</span>}
+                              {touchedFields.apellido && registerErrors.apellido && <span className="text-red-500 text-xs">{registerErrors.apellido}</span>}
                             </div>
                             <Input
                               id="reg-apellido"
                               placeholder="Pérez"
                               value={registerData.apellido}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, apellido: e.target.value }))}
-                              className={`border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.apellido ? 'border-red-500' : ''}`}
+                              onBlur={() => handleBlur('apellido')}
+                              className={`border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${touchedFields.apellido && registerErrors.apellido ? 'border-red-500' : ''}`}
                             />
                           </div>
                         </div>
@@ -943,52 +838,51 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <Label htmlFor="reg-doc" className="text-gray-700">Número de documento *</Label>
-                              {registerErrors.documento && <span className="text-red-500 text-xs">{registerErrors.documento}</span>}
+                              <Label htmlFor="reg-documento" className="text-gray-700">Número de documento *</Label>
+                              {touchedFields.documento && registerErrors.documento && <span className="text-red-500 text-xs">{registerErrors.documento}</span>}
                             </div>
-                            <div className="relative">
-                              <CreditCard className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                              <Input
-                                id="reg-doc"
-                                placeholder="123456789"
-                                value={registerData.documento}
-                                onChange={(e) => setRegisterData(prev => ({ ...prev, documento: e.target.value }))}
-                                className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.documento ? 'border-red-500' : ''}`}
-                              />
-                            </div>
+                            <Input
+                              id="reg-documento"
+                              placeholder="12345678"
+                              value={registerData.documento}
+                              onChange={(e) => setRegisterData(prev => ({ ...prev, documento: e.target.value.replace(/\D/g, '') }))}
+                              onBlur={() => handleBlur('documento')}
+                              className={`border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${touchedFields.documento && registerErrors.documento ? 'border-red-500' : ''}`}
+                            />
                           </div>
                         </div>
 
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <Label htmlFor="reg-nac" className="text-gray-700">Fecha de Nacimiento *</Label>
-                            {registerErrors.fecha_nacimiento && <span className="text-red-500 text-xs">{registerErrors.fecha_nacimiento}</span>}
+                            <Label htmlFor="reg-nacimiento" className="text-gray-700">Fecha de Nacimiento *</Label>
+                            {touchedFields.fecha_nacimiento && registerErrors.fecha_nacimiento && <span className="text-red-500 text-xs font-medium">{registerErrors.fecha_nacimiento}</span>}
                           </div>
-                          <div className="relative flex items-center">
-                            <Input
-                              id="reg-nac"
-                              type="date"
-                              max={format(globalMinAgeDate, 'yyyy-MM-dd')}
-                              value={registerData.fecha_nacimiento}
-                              onChange={(e) => setRegisterData(prev => ({ ...prev, fecha_nacimiento: e.target.value }))}
-                              className={`pl-3 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 text-gray-500 [&::-webkit-calendar-picker-indicator]:hidden w-full ${registerErrors.fecha_nacimiento ? 'border-red-500' : ''}`}
-                            />
-                            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                              <PopoverTrigger asChild>
-                                <button type="button" onClick={() => setIsCalendarOpen(true)} className="absolute right-3 p-1 text-gray-400 hover:text-indigo-600 transition-colors">
-                                  <CalendarIcon className="h-5 w-5" />
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0 border-none shadow-2xl rounded-xl overflow-hidden bg-white" align="end">
-                                <CustomDatePicker
-                                  value={registerData.fecha_nacimiento}
-                                  onChange={(v) => setRegisterData(prev => ({ ...prev, fecha_nacimiento: v }))}
-                                  minAgeDate={globalMinAgeDate}
-                                  onClose={() => setIsCalendarOpen(false)}
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                          <Popover open={isCalendarOpen} onOpenChange={(open) => { setIsCalendarOpen(open); if (!open) handleBlur('fecha_nacimiento'); }}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={`w-full justify-start text-left font-normal h-12 border-gray-200 ${!registerData.fecha_nacimiento && "text-muted-foreground"} ${touchedFields.fecha_nacimiento && registerErrors.fecha_nacimiento ? 'border-red-500 focus:ring-red-200' : 'focus:border-indigo-500 focus:ring-indigo-200'}`}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {registerData.fecha_nacimiento ? (
+                                  format(new Date(registerData.fecha_nacimiento + 'T00:00:00'), "PPP", { locale: es })
+                                ) : (
+                                  <span>Seleccionar fecha</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <CustomDatePicker
+                                value={registerData.fecha_nacimiento}
+                                onChange={(v) => {
+                                  setRegisterData(prev => ({ ...prev, fecha_nacimiento: v }));
+                                  handleBlur('fecha_nacimiento');
+                                }}
+                                minAgeDate={globalMinAgeDate}
+                                onClose={() => setIsCalendarOpen(false)}
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       </div>
                     )}
@@ -999,17 +893,18 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <Label htmlFor="reg-email" className="text-gray-700">Correo electrónico *</Label>
-                            {registerErrors.email && <span className="text-red-500 text-xs">{registerErrors.email}</span>}
+                            {touchedFields.email && registerErrors.email && <span className="text-red-500 text-xs">{registerErrors.email}</span>}
                           </div>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                          <div className="relative group">
+                            <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
                             <Input
                               id="reg-email"
                               type="email"
-                              placeholder="nombre@ejemplo.com"
+                              placeholder="sofiaplus@zajuna.com"
                               value={registerData.email}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
-                              className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.email ? 'border-red-500' : ''}`}
+                              onBlur={() => handleBlur('email')}
+                              className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.email && registerErrors.email ? 'border-red-500' : ''}`}
                             />
                           </div>
                         </div>
@@ -1017,40 +912,35 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <Label htmlFor="reg-barrio" className="text-gray-700">Barrio *</Label>
-                              {registerErrors.barrio && <span className="text-red-500 text-xs">{registerErrors.barrio}</span>}
+                              <Label htmlFor="reg-telefono" className="text-gray-700">Teléfono *</Label>
+                              {touchedFields.telefono && registerErrors.telefono && <span className="text-red-500 text-xs">{registerErrors.telefono}</span>}
                             </div>
-                            <div className="relative">
-                              <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <div className="relative group">
+                              <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
                               <Input
-                                id="reg-barrio"
-                                placeholder="El Poblado"
-                                value={registerData.barrio}
-                                onChange={(e) => setRegisterData(prev => ({ ...prev, barrio: e.target.value }))}
-                                className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.barrio ? 'border-red-500' : ''}`}
+                                id="reg-telefono"
+                                placeholder="3001234567"
+                                value={registerData.telefono}
+                                onChange={(e) => setRegisterData(prev => ({ ...prev, telefono: e.target.value.replace(/\D/g, '') }))}
+                                onBlur={() => handleBlur('telefono')}
+                                className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.telefono && registerErrors.telefono ? 'border-red-500' : ''}`}
                               />
                             </div>
                           </div>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <Label htmlFor="reg-tel" className="text-gray-700">Teléfono *</Label>
-                              {registerErrors.telefono && <span className="text-red-500 text-xs">{registerErrors.telefono}</span>}
+                              <Label htmlFor="reg-barrio" className="text-gray-700">Barrio *</Label>
+                              {touchedFields.barrio && registerErrors.barrio && <span className="text-red-500 text-xs">{registerErrors.barrio}</span>}
                             </div>
-                            <div className="relative">
-                              <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <div className="relative group">
+                              <Home className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
                               <Input
-                                id="reg-tel"
-                                type="tel"
-                                placeholder="+57 300 123 4567"
-                                value={registerData.telefono}
-                                onChange={(e) => {
-                                  const onlyNums = e.target.value.replace(/[^0-9]/g, '');
-                                  if (e.target.value !== onlyNums && e.target.value.length > 0) {
-                                    // Let real-time validation handle format, but we aggressively strip non-numbers
-                                  }
-                                  setRegisterData(prev => ({ ...prev, telefono: onlyNums }));
-                                }}
-                                className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.telefono ? 'border-red-500' : ''}`}
+                                id="reg-barrio"
+                                placeholder="Belén"
+                                value={registerData.barrio}
+                                onChange={(e) => setRegisterData(prev => ({ ...prev, barrio: e.target.value }))}
+                                onBlur={() => handleBlur('barrio')}
+                                className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.barrio && registerErrors.barrio ? 'border-red-500' : ''}`}
                               />
                             </div>
                           </div>
@@ -1058,17 +948,18 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <Label htmlFor="reg-dir" className="text-gray-700">Dirección *</Label>
-                            {registerErrors.direccion && <span className="text-red-500 text-xs">{registerErrors.direccion}</span>}
+                            <Label htmlFor="reg-direccion" className="text-gray-700">Dirección *</Label>
+                            {touchedFields.direccion && registerErrors.direccion && <span className="text-red-500 text-xs">{registerErrors.direccion}</span>}
                           </div>
-                          <div className="relative">
-                            <Home className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                          <div className="relative group">
+                            <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
                             <Input
-                              id="reg-dir"
-                              placeholder="Calle 10 # 43-20"
+                              id="reg-direccion"
+                              placeholder="Calle 10 #20-30"
                               value={registerData.direccion}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, direccion: e.target.value }))}
-                              className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.direccion ? 'border-red-500' : ''}`}
+                              onBlur={() => handleBlur('direccion')}
+                              className={`pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.direccion && registerErrors.direccion ? 'border-red-500' : ''}`}
                             />
                           </div>
                         </div>
@@ -1080,68 +971,56 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                       <div className="space-y-6 animate-fadeIn">
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <Label htmlFor="reg-password" className="text-gray-700">Contraseña *</Label>
-                            {registerErrors.contrasena && <span className="text-red-500 text-xs max-w-[60%] text-right leading-tight">{registerErrors.contrasena}</span>}
+                            <Label htmlFor="reg-pass" className="text-gray-700">Contraseña *</Label>
+                            {touchedFields.contrasena && registerErrors.contrasena && <span className="text-red-500 text-xs">{registerErrors.contrasena}</span>}
                           </div>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                          <div className="relative group">
+                            <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
                             <Input
-                              id="reg-password"
+                              id="reg-pass"
                               type={showRegisterPassword ? "text" : "password"}
-                              placeholder="********"
+                              placeholder="••••••••"
                               value={registerData.contrasena}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, contrasena: e.target.value }))}
-                              className={`pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.contrasena ? 'border-red-500' : ''}`}
-                              minLength={8}
+                              onBlur={() => handleBlur('contrasena')}
+                              className={`pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.contrasena && registerErrors.contrasena ? 'border-red-500' : ''}`}
                             />
                             <button
                               type="button"
                               onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
                             >
                               {showRegisterPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1.5 ml-1">
-                            Debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.
+                          <p className="text-[10px] text-gray-500 mt-1.5 ml-1 leading-relaxed">
+                            Mínimo 8 caracteres, una mayúscula, un número y un carácter especial.
                           </p>
                         </div>
 
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <Label htmlFor="reg-confirm-password" className="text-gray-700">Confirmar contraseña *</Label>
-                            {registerErrors.confirmarContrasena && <span className="text-red-500 text-xs">{registerErrors.confirmarContrasena}</span>}
+                            <Label htmlFor="reg-confirm-pass" className="text-gray-700">Confirmar Contraseña *</Label>
+                            {touchedFields.confirmarContrasena && registerErrors.confirmarContrasena && <span className="text-red-500 text-xs">{registerErrors.confirmarContrasena}</span>}
                           </div>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                          <div className="relative group">
+                            <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
                             <Input
-                              id="reg-confirm-password"
+                              id="reg-confirm-pass"
                               type={showRegisterConfirmPassword ? "text" : "password"}
-                              placeholder="Repite tu contraseña"
+                              placeholder="••••••••"
                               value={registerData.confirmarContrasena}
                               onChange={(e) => setRegisterData(prev => ({ ...prev, confirmarContrasena: e.target.value }))}
-                              className={`pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 ${registerErrors.confirmarContrasena ? 'border-red-500' : ''}`}
-                              minLength={8}
+                              onBlur={() => handleBlur('confirmarContrasena')}
+                              className={`pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12 ${touchedFields.confirmarContrasena && registerErrors.confirmarContrasena ? 'border-red-500' : ''}`}
                             />
                             <button
                               type="button"
                               onClick={() => setShowRegisterConfirmPassword(!showRegisterConfirmPassword)}
-                              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
                             >
                               {showRegisterConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-indigo-50 p-4 rounded-lg">
-                          <div className="flex items-start gap-3">
-                            <Sparkles className="w-5 h-5 text-indigo-600 mt-0.5" />
-                            <div>
-                              <p className="text-sm font-semibold text-indigo-900 mb-1">¿Por qué registrarte?</p>
-                              <p className="text-sm text-indigo-700">
-                                Accede a historial de servicios, recordatorios de mantenimiento y promociones exclusivas.
-                              </p>
-                            </div>
                           </div>
                         </div>
                       </div>

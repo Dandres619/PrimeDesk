@@ -202,10 +202,10 @@ export function Usuarios() {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-start">
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por nombre, email o rol..." value={searchTerm} onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}} className="pl-10" />
+          <Input placeholder="Buscar usuarios..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
         </div>
       </div>
 
@@ -248,9 +248,7 @@ export function Usuarios() {
                         <p>{u.Apellido || '-'}</p>
                       </TableCell>
                       <TableCell>
-                        <Badge className={tipoBadges[u.NombreRol]?.class || 'bg-gray-100'}>
-                          {u.NombreRol}
-                        </Badge>
+                        <p>{u.NombreRol}</p>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -283,25 +281,25 @@ export function Usuarios() {
               </TableBody>
             </Table>
 
-              <div className="mt-6 flex justify-center">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+            <div className="mt-6 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                    <PaginationItem key={p}>
+                      <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">
+                        {p}
+                      </PaginationLink>
                     </PaginationItem>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                      <PaginationItem key={p}>
-                        <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">
-                          {p}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    <PaginationItem>
-                      <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           </CardContent>
         </Card>
       )}
