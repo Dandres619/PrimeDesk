@@ -1,64 +1,33 @@
-const sgMail = require('@sendgrid/mail');
+const { Resend } = require('resend');
 require('dotenv').config();
 
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const SENDER_EMAIL = process.env.SENDER_EMAIL || process.env.SMTP_FROM || 'no-reply@yourdomain.com';
-
-if (!SENDGRID_API_KEY) {
-    console.warn('⚠️ SENDGRID_API_KEY no está definida. Emails no se enviarán.');
-} else {
-    sgMail.setApiKey(SENDGRID_API_KEY);
-}
-
-require('dotenv').config();
-
+const resend = new Resend(process.env.RESEND_API_KEY);
+const SENDER_EMAIL = process.env.SENDER_EMAIL || 'no-reply@rmmedellin.site';
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
-const sendMail = async ({ to, subject, text, html, templateId, dynamic_template_data, sandbox = false }) => {
-    if (!SENDGRID_API_KEY) {
-        throw new Error('SENDGRID_API_KEY no configurada');
+if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️ RESEND_API_KEY no está definida. Emails no se enviarán.');
+}
+
+const sendMail = async ({ to, subject, text, html }) => {
+    if (!process.env.RESEND_API_KEY) {
+        throw new Error('RESEND_API_KEY no configurada');
     }
 
-    const msg = {
-        to,
+    const { data, error } = await resend.emails.send({
         from: SENDER_EMAIL,
-        replyTo: "primedesksena@gmail.com",
+        reply_to: 'primedesksena@gmail.com',
+        to,
         subject,
         text,
         html,
-        tracking_settings: {
-            click_tracking: { enable: false },
-            open_tracking: { enable: false }
-        }
-    };
+    });
 
-    if (templateId) {
-        msg.templateId = templateId;
-        msg.dynamic_template_data = dynamic_template_data;
-        delete msg.subject;
-        delete msg.html;
-    }
-
-    return sgMail.send(msg);
+    if (error) throw error;
+    return data;
 };
 
 const sendWelcomeEmail = async (to, name, options = {}) => {
-    const templateId = process.env.SENDGRID_WELCOME_TEMPLATE_ID || null;
-
-    // Preferir plantilla dinámica de SendGrid si está configurada
-    if (templateId) {
-        return sendMail({
-            to,
-            templateId,
-            dynamic_template_data: {
-                name: name || '',
-                frontend_url: FRONTEND_URL,
-            },
-            ...options,
-        });
-    }
-
-    // Fallback: HTML inline moderno y responsive (estilo taller de motocicletas)
     const subject = 'Bienvenido a Rafa Motos 🏁';
     const html = `
         <!doctype html>
@@ -101,8 +70,7 @@ const sendWelcomeEmail = async (to, name, options = {}) => {
                 </div>
             </body>
         </html>
-        `;
-
+    `;
     return sendMail({ to, subject, html, ...options });
 };
 
@@ -117,122 +85,20 @@ const sendResetPasswordEmail = async (to, name, resetLink, options = {}) => {
             <title>Restablecer Contraseña - Rafa Motos</title>
             <style>
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-                
-                body {
-                    margin: 0;
-                    padding: 0;
-                    background-color: #020617;
-                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-                    color: #f8fafc;
-                    -webkit-font-smoothing: antialiased;
-                }
-                
-                .wrapper {
-                    width: 100%;
-                    table-layout: fixed;
-                    background-color: #020617;
-                    padding-bottom: 40px;
-                }
-                
-                .container {
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background-color: #0b1426;
-                    border-radius: 16px;
-                    overflow: hidden;
-                    margin-top: 40px;
-                    border: 1px solid rgba(255, 255, 255, 0.05);
-                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-                }
-                
-                .header {
-                    padding: 40px 0;
-                    text-align: center;
-                    background: linear-gradient(135deg, #0b1426, #161e31);
-                }
-                
-                .logo-box {
-                    display: inline-block;
-                    width: 64px;
-                    height: 64px;
-                    background: linear-gradient(135deg, #4f46e5, #9333ea);
-                    border-radius: 14px;
-                    line-height: 64px;
-                    text-align: center;
-                    font-weight: 800;
-                    font-size: 24px;
-                    color: #ffffff;
-                    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
-                    margin-bottom: 16px;
-                }
-                
-                .content {
-                    padding: 40px 32px;
-                    text-align: center;
-                }
-                
-                h1 {
-                    font-size: 28px;
-                    font-weight: 700;
-                    margin: 0 0 16px 0;
-                    color: #ffffff;
-                    letter-spacing: -0.025em;
-                }
-                
-                p {
-                    font-size: 16px;
-                    line-height: 1.6;
-                    color: #94a3b8;
-                    margin: 0 0 24px 0;
-                }
-                
-                .btn-container {
-                    padding: 16px 0;
-                }
-                
-                .btn {
-                    display: inline-block;
-                    padding: 16px 40px;
-                    background: linear-gradient(90deg, #4f46e5, #9333ea);
-                    color: #ffffff !important;
-                    text-decoration: none;
-                    font-weight: 700;
-                    font-size: 16px;
-                    border-radius: 12px;
-                    transition: transform 0.2s;
-                    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
-                }
-                
-                .footer {
-                    padding: 32px;
-                    text-align: center;
-                    background-color: rgba(0, 0, 0, 0.2);
-                    border-top: 1px solid rgba(255, 255, 255, 0.05);
-                }
-                
-                .footer p {
-                    font-size: 13px;
-                    margin: 4px 0;
-                }
-                
-                .accent {
-                    color: #6366f1;
-                    font-weight: 600;
-                }
-                
-                .link-alt {
-                    font-size: 12px;
-                    color: #475569;
-                    word-break: break-all;
-                    margin-top: 24px;
-                }
-                
-                @media screen and (max-width: 600px) {
-                    .container {
-                        margin-top: 20px;
-                        border-radius: 0;
-                    }
-                }
+                body { margin: 0; padding: 0; background-color: #020617; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc; }
+                .wrapper { width: 100%; background-color: #020617; padding-bottom: 40px; }
+                .container { max-width: 600px; margin: 40px auto; background-color: #0b1426; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+                .header { padding: 40px 0; text-align: center; background: linear-gradient(135deg, #0b1426, #161e31); }
+                .logo-box { display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #4f46e5, #9333ea); border-radius: 14px; line-height: 64px; text-align: center; font-weight: 800; font-size: 24px; color: #fff; margin-bottom: 16px; }
+                .content { padding: 40px 32px; text-align: center; }
+                h1 { font-size: 28px; font-weight: 700; margin: 0 0 16px 0; color: #fff; }
+                p { font-size: 16px; line-height: 1.6; color: #94a3b8; margin: 0 0 24px 0; }
+                .btn { display: inline-block; padding: 16px 40px; background: linear-gradient(90deg, #4f46e5, #9333ea); color: #fff !important; text-decoration: none; font-weight: 700; font-size: 16px; border-radius: 12px; }
+                .footer { padding: 32px; text-align: center; background-color: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); }
+                .footer p { font-size: 13px; margin: 4px 0; }
+                .accent { color: #6366f1; font-weight: 600; }
+                .link-alt { font-size: 12px; color: #475569; word-break: break-all; margin-top: 24px; }
+                @media screen and (max-width: 600px) { .container { margin-top: 20px; border-radius: 0; } }
             </style>
         </head>
         <body>
@@ -242,24 +108,17 @@ const sendResetPasswordEmail = async (to, name, resetLink, options = {}) => {
                         <div class="logo-box">RM</div>
                         <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px;">RAFA MOTOS</div>
                     </div>
-                    
                     <div class="content">
                         <h1>Recupera tu cuenta</h1>
                         <p>No te preocupes, nos pasa a todos. Hemos recibido una solicitud para restablecer tu contraseña en <span class="accent">Rafa Motos</span>.</p>
-                        
-                        <div class="btn-container">
-                            <a href="${resetLink}" class="btn">RESTABLECER CONTRASEÑA</a>
-                        </div>
-                        
+                        <a href="${resetLink}" class="btn">RESTABLECER CONTRASEÑA</a>
                         <p style="margin-top: 24px; font-size: 14px;">Este enlace expirará en 1 hora por motivos de seguridad.</p>
                         <p>Si no has solicitado este cambio, por favor ignora este correo.</p>
-                        
                         <div class="link-alt">
                             ¿Problemas con el botón? Copia este enlace:<br>
                             <a href="${resetLink}" style="color: #64748b;">${resetLink}</a>
                         </div>
                     </div>
-                    
                     <div class="footer">
                         <p><strong>Rafa Motos</strong></p>
                         <p>Servicio Técnico Profesional para Motocicletas</p>
@@ -277,25 +136,8 @@ const sendContactEmail = async (to, subject, messageHtml, options = {}) => {
     return sendMail({ to, subject, html: messageHtml, ...options });
 };
 
-
-/**
- * Envío de correo de verificación de cuenta.
- * - Si existe SENDGRID_WELCOME_TEMPLATE_ID (reutilizable), usar plantilla.
- * - Dinámicamente inyecta `verify_link`.
- */
 const sendVerificationEmail = async (to, token, name, options = {}) => {
-    const templateId = process.env.SENDGRID_VERIFICATION_TEMPLATE_ID || null;
     const verifyLink = `${FRONTEND_URL}/verify?token=${token}`;
-
-    if (templateId) {
-        return sendMail({
-            to,
-            templateId,
-            dynamic_template_data: { name: name || '', verify_link: verifyLink },
-            ...options,
-        });
-    }
-
     const subject = 'Verifica tu cuenta | Rafa Motos';
     const html = `
         <!doctype html>
@@ -306,122 +148,20 @@ const sendVerificationEmail = async (to, token, name, options = {}) => {
                 <title>Verificación de Cuenta - Rafa Motos</title>
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-                    
-                    body {
-                        margin: 0;
-                        padding: 0;
-                        background-color: #020617;
-                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-                        color: #f8fafc;
-                        -webkit-font-smoothing: antialiased;
-                    }
-                    
-                    .wrapper {
-                        width: 100%;
-                        table-layout: fixed;
-                        background-color: #020617;
-                        padding-bottom: 40px;
-                    }
-                    
-                    .container {
-                        max-width: 600px;
-                        margin: 0 auto;
-                        background-color: #0b1426;
-                        border-radius: 16px;
-                        overflow: hidden;
-                        margin-top: 40px;
-                        border: 1px solid rgba(255, 255, 255, 0.05);
-                        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-                    }
-                    
-                    .header {
-                        padding: 40px 0;
-                        text-align: center;
-                        background: linear-gradient(135deg, #0b1426, #161e31);
-                    }
-                    
-                    .logo-box {
-                        display: inline-block;
-                        width: 64px;
-                        height: 64px;
-                        background: linear-gradient(135deg, #4f46e5, #9333ea);
-                        border-radius: 14px;
-                        line-height: 64px;
-                        text-align: center;
-                        font-weight: 800;
-                        font-size: 24px;
-                        color: #ffffff;
-                        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
-                        margin-bottom: 16px;
-                    }
-                    
-                    .content {
-                        padding: 40px 32px;
-                        text-align: center;
-                    }
-                    
-                    h1 {
-                        font-size: 28px;
-                        font-weight: 700;
-                        margin: 0 0 16px 0;
-                        color: #ffffff;
-                        letter-spacing: -0.025em;
-                    }
-                    
-                    p {
-                        font-size: 16px;
-                        line-height: 1.6;
-                        color: #94a3b8;
-                        margin: 0 0 24px 0;
-                    }
-                    
-                    .btn-container {
-                        padding: 16px 0;
-                    }
-                    
-                    .btn {
-                        display: inline-block;
-                        padding: 16px 40px;
-                        background: linear-gradient(90deg, #4f46e5, #9333ea);
-                        color: #ffffff !important;
-                        text-decoration: none;
-                        font-weight: 700;
-                        font-size: 16px;
-                        border-radius: 12px;
-                        transition: transform 0.2s;
-                        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
-                    }
-                    
-                    .footer {
-                        padding: 32px;
-                        text-align: center;
-                        background-color: rgba(0, 0, 0, 0.2);
-                        border-top: 1px solid rgba(255, 255, 255, 0.05);
-                    }
-                    
-                    .footer p {
-                        font-size: 13px;
-                        margin: 4px 0;
-                    }
-                    
-                    .accent {
-                        color: #6366f1;
-                        font-weight: 600;
-                    }
-                    
-                    .link-alt {
-                        font-size: 12px;
-                        color: #475569;
-                        word-break: break-all;
-                        margin-top: 24px;
-                    }
-                    
-                    @media screen and (max-width: 600px) {
-                        .container {
-                            margin-top: 20px;
-                            border-radius: 0;
-                        }
-                    }
+                    body { margin: 0; padding: 0; background-color: #020617; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc; }
+                    .wrapper { width: 100%; background-color: #020617; padding-bottom: 40px; }
+                    .container { max-width: 600px; margin: 40px auto; background-color: #0b1426; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+                    .header { padding: 40px 0; text-align: center; background: linear-gradient(135deg, #0b1426, #161e31); }
+                    .logo-box { display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #4f46e5, #9333ea); border-radius: 14px; line-height: 64px; text-align: center; font-weight: 800; font-size: 24px; color: #fff; margin-bottom: 16px; }
+                    .content { padding: 40px 32px; text-align: center; }
+                    h1 { font-size: 28px; font-weight: 700; margin: 0 0 16px 0; color: #fff; }
+                    p { font-size: 16px; line-height: 1.6; color: #94a3b8; margin: 0 0 24px 0; }
+                    .btn { display: inline-block; padding: 16px 40px; background: linear-gradient(90deg, #4f46e5, #9333ea); color: #fff !important; text-decoration: none; font-weight: 700; font-size: 16px; border-radius: 12px; }
+                    .footer { padding: 32px; text-align: center; background-color: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); }
+                    .footer p { font-size: 13px; margin: 4px 0; }
+                    .accent { color: #6366f1; font-weight: 600; }
+                    .link-alt { font-size: 12px; color: #475569; word-break: break-all; margin-top: 24px; }
+                    @media screen and (max-width: 600px) { .container { margin-top: 20px; border-radius: 0; } }
                 </style>
             </head>
             <body>
@@ -431,24 +171,17 @@ const sendVerificationEmail = async (to, token, name, options = {}) => {
                             <div class="logo-box">RM</div>
                             <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px;">RAFA MOTOS</div>
                         </div>
-                        
                         <div class="content">
                             <h1>¡Activa tu motor!</h1>
                             <p>Hola <span class="accent">${name || 'amigo'}</span>,</p>
                             <p>Estamos listos para cuidar de tu máquina. Solo falta un paso para completar tu registro en nuestro taller especializado.</p>
-                            
-                            <div class="btn-container">
-                                <a href="${verifyLink}" class="btn">VERIFICAR CUENTA</a>
-                            </div>
-                            
+                            <a href="${verifyLink}" class="btn">VERIFICAR CUENTA</a>
                             <p style="margin-top: 24px;">Si no has creado esta cuenta, puedes ignorar este mensaje de forma segura.</p>
-                            
                             <div class="link-alt">
                                 ¿Problemas con el botón? Copia este enlace:<br>
                                 <a href="${verifyLink}" style="color: #64748b;">${verifyLink}</a>
                             </div>
                         </div>
-                        
                         <div class="footer">
                             <p><strong>Rafa Motos</strong></p>
                             <p>Servicio Técnico Profesional para Motocicletas</p>
@@ -458,8 +191,7 @@ const sendVerificationEmail = async (to, token, name, options = {}) => {
                 </div>
             </body>
         </html>
-        `;
-
+    `;
     return sendMail({ to, subject, html, ...options });
 };
 
