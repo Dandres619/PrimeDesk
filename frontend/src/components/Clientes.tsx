@@ -261,7 +261,7 @@ export function Clientes() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{(c.MotosCount || 0)} moto(s)</Badge>
+                          <p>{c.MotosCount} moto(s)</p>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
