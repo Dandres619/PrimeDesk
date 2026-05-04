@@ -227,23 +227,6 @@ export function Roles() {
   const totalPages = Math.max(1, Math.ceil(filteredRoles.length / itemsPerPage));
   const paginatedRoles = filteredRoles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const actions = [
-    { icon: Eye, onClick: (r: any) => setViewingRole(r), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-    { icon: Edit, onClick: (r: any) => { setEditingRole(r); setIsRoleDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-    {
-      icon: Trash2, onClick: (r: any) => setConfirmDialog({
-        open: true,
-        title: 'Eliminar Rol',
-        description: '¿Está seguro de que desea eliminar este rol? Esta acción no se puede deshacer.',
-        confirmText: 'Eliminar',
-        variant: 'delete',
-        onConfirm: () => handleDeleteRole(r.id)
-      }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-    }
-  ];
-
-
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -313,11 +296,39 @@ export function Roles() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          {actions.map((a, i) => (
-                            <Button key={i} size="sm" variant="ghost" onClick={() => a.onClick(r)} className={a.color}>
-                              <a.icon className="w-4 h-4" />
-                            </Button>
-                          ))}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setViewingRole(r)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => { setEditingRole(r); setIsRoleDialogOpen(true); }}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            disabled={r.status === 'Inactivo'}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setConfirmDialog({
+                              open: true,
+                              title: 'Eliminar Rol',
+                              description: '¿Está seguro de que desea eliminar este rol? Esta acción no se puede deshacer.',
+                              confirmText: 'Eliminar',
+                              variant: 'delete',
+                              onConfirm: () => handleDeleteRole(r.id)
+                            })}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            disabled={r.status === 'Inactivo'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -393,14 +404,14 @@ export function Roles() {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog 
-        open={confirmDialog.open} 
-        onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))} 
-        title={confirmDialog.title} 
-        description={confirmDialog.description} 
-        confirmText={confirmDialog.confirmText} 
-        variant={confirmDialog.variant} 
-        onConfirm={confirmDialog.onConfirm} 
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText={confirmDialog.confirmText}
+        variant={confirmDialog.variant}
+        onConfirm={confirmDialog.onConfirm}
         loading={isDeleting}
         autoClose={false}
         loadingText="Eliminando"
@@ -472,14 +483,15 @@ function RoleDialog({ role, permissions, onSave, isProcessing }: any) {
             <Label htmlFor="name">Nombre del Rol</Label>
             {nameError && <span className="text-red-500 text-xs font-medium">{nameError}</span>}
           </div>
-          <Input 
-            id="name" 
-            value={formData.name} 
+          <Input
+            id="name"
+            value={formData.name}
             onChange={handleNameChange}
+            onFocus={() => setTouched(true)}
             onBlur={() => setTouched(true)}
-            placeholder="Ej: Administrador" 
-            required 
-            className={nameError ? 'border-red-500 focus-visible:ring-red-500' : ''}
+            placeholder="Ej: Administrador"
+            required
+            className={touched && nameError ? 'border-red-500 focus-visible:ring-red-500' : ''}
           />
         </div>
         <div>
@@ -511,9 +523,9 @@ function RoleDialog({ role, permissions, onSave, isProcessing }: any) {
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-4">
-          <Button 
-            type="submit" 
-            disabled={isProcessing || (touched && !!nameError)} 
+          <Button
+            type="submit"
+            disabled={isProcessing || (touched && !!nameError)}
             className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto px-8"
           >
             {isProcessing ? (
