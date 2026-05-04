@@ -359,6 +359,7 @@ export function MiPerfil() {
                                                 id="nombre"
                                                 value={formData.nombre}
                                                 onChange={e => setFormData({ ...formData, nombre: e.target.value })}
+                                                onFocus={() => handleBlur('nombre')}
                                                 onBlur={() => handleBlur('nombre')}
                                                 className={touchedFields.nombre && formErrors.nombre ? 'border-red-500 focus-visible:ring-red-500' : ''}
                                                 required
@@ -373,6 +374,7 @@ export function MiPerfil() {
                                                 id="apellido"
                                                 value={formData.apellido}
                                                 onChange={e => setFormData({ ...formData, apellido: e.target.value })}
+                                                onFocus={() => handleBlur('apellido')}
                                                 onBlur={() => handleBlur('apellido')}
                                                 className={touchedFields.apellido && formErrors.apellido ? 'border-red-500 focus-visible:ring-red-500' : ''}
                                                 required
@@ -422,6 +424,7 @@ export function MiPerfil() {
                                                 id="telefono"
                                                 value={formData.telefono}
                                                 onChange={e => setFormData({ ...formData, telefono: e.target.value.replace(/\D/g, '') })}
+                                                onFocus={() => handleBlur('telefono')}
                                                 onBlur={() => handleBlur('telefono')}
                                                 className={touchedFields.telefono && formErrors.telefono ? 'border-red-500 focus-visible:ring-red-500' : ''}
                                                 required
@@ -436,6 +439,7 @@ export function MiPerfil() {
                                                 id="barrio"
                                                 value={formData.barrio}
                                                 onChange={e => setFormData({ ...formData, barrio: e.target.value })}
+                                                onFocus={() => handleBlur('barrio')}
                                                 onBlur={() => handleBlur('barrio')}
                                                 className={touchedFields.barrio && formErrors.barrio ? 'border-red-500 focus-visible:ring-red-500' : ''}
                                                 required
@@ -452,6 +456,7 @@ export function MiPerfil() {
                                             id="direccion"
                                             value={formData.direccion}
                                             onChange={e => setFormData({ ...formData, direccion: e.target.value })}
+                                            onFocus={() => handleBlur('direccion')}
                                             onBlur={() => handleBlur('direccion')}
                                             className={touchedFields.direccion && formErrors.direccion ? 'border-red-500 focus-visible:ring-red-500' : ''}
                                             required
@@ -467,10 +472,11 @@ export function MiPerfil() {
                                             </Label>
                                             {touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento && <span className="text-red-500 text-xs font-medium">{formErrors.fecha_nacimiento}</span>}
                                         </div>
-                                        <Popover open={isCalendarOpen} onOpenChange={(open) => { setIsCalendarOpen(open); if (!open) handleBlur('fecha_nacimiento'); }}>
+                                        <Popover open={isCalendarOpen} onOpenChange={(open) => { setIsCalendarOpen(open); if (open) handleBlur('fecha_nacimiento'); if (!open) handleBlur('fecha_nacimiento'); }}>
                                             <PopoverTrigger asChild>
                                                 <Button
                                                     variant="outline"
+                                                    onFocus={() => handleBlur('fecha_nacimiento')}
                                                     className={`w-full justify-start text-left font-normal h-10 ${!formData.fecha_nacimiento && "text-muted-foreground"} ${touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                                 >
                                                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -577,6 +583,7 @@ export function MiPerfil() {
                                                 type={showNewPassword ? "text" : "password"}
                                                 value={passwordData.nueva_contrasena}
                                                 onChange={e => setPasswordData({ ...passwordData, nueva_contrasena: e.target.value })}
+                                                onFocus={() => handleBlur('nueva_contrasena')}
                                                 onBlur={() => handleBlur('nueva_contrasena')}
                                                 required
                                                 placeholder="********"
@@ -602,6 +609,7 @@ export function MiPerfil() {
                                                 type={showConfirmPassword ? "text" : "password"}
                                                 value={passwordData.confirmar_contrasena}
                                                 onChange={e => setPasswordData({ ...passwordData, confirmar_contrasena: e.target.value })}
+                                                onFocus={() => handleBlur('confirmar_contrasena')}
                                                 onBlur={() => handleBlur('confirmar_contrasena')}
                                                 required
                                                 placeholder="********"
