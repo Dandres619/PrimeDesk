@@ -2,7 +2,6 @@ const { Resend } = require('resend');
 require('dotenv').config();
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const SENDER_EMAIL = process.env.SENDER_EMAIL || 'no-reply@rmmedellin.site';
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
 if (!process.env.RESEND_API_KEY) {
@@ -15,8 +14,11 @@ const sendMail = async ({ to, subject, text, html }) => {
     }
 
     const { data, error } = await resend.emails.send({
-        from: SENDER_EMAIL,
-        reply_to: 'primedesksena@gmail.com',
+        from: {
+            name: process.env.SENDER_NAME,
+            email: process.env.SENDER_EMAIL,
+        },
+        reply_to: process.env.SUPPORT_EMAIL,
         to,
         subject,
         text,
