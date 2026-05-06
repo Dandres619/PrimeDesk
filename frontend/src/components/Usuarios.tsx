@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { User, Plus, Search, Edit, Eye, EyeOff, Mail, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 const tipoBadges: Record<string, any> = {
   'Administrador': { class: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800', label: 'Administrador' },
@@ -166,7 +167,7 @@ export function Usuarios() {
     (u.Nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (u.Apellido || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.NombreRol.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).sort((a, b) => a.Correo.localeCompare(b.Correo));
 
   const validateEmail = (email: string) => {
     if (!email) return 'El correo es obligatorio';
@@ -260,7 +261,6 @@ export function Usuarios() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
                   <TableHead>Correo Electrónico</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Apellido</TableHead>
@@ -273,9 +273,6 @@ export function Usuarios() {
                 {paginatedUsers.length > 0 ? (
                   paginatedUsers.map(u => (
                     <TableRow key={u.ID_Usuario}>
-                      <TableCell>
-                        <p>{u.ID_Usuario}</p>
-                      </TableCell>
                       <TableCell>
                         <p>{u.Correo}</p>
                       </TableCell>
@@ -299,12 +296,33 @@ export function Usuarios() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => setViewingUser(u)} className="text-blue-600">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(u)} className="text-blue-600">
-                            <Edit className="w-4 h-4" />
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="sm" onClick={() => setViewingUser(u)} className="text-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Ver detalles</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(u)}
+                                className="text-blue-600 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                disabled={!(u.Estado === true || u.Estado === 1)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Editar usuario</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </TableCell>
                     </TableRow>
