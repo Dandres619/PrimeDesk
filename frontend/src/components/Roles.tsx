@@ -12,6 +12,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { ConfirmDialog } from './ConfirmDialog';
 import { Plus, Search, Edit, Trash2, Shield, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 export function Roles() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -221,7 +222,7 @@ export function Roles() {
   const filteredRoles = roles.filter(r =>
     r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(filteredRoles.length / itemsPerPage));
@@ -296,39 +297,62 @@ export function Roles() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setViewingRole(r)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => { setEditingRole(r); setIsRoleDialogOpen(true); }}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            disabled={r.status === 'Inactivo'}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setConfirmDialog({
-                              open: true,
-                              title: 'Eliminar Rol',
-                              description: '¿Está seguro de que desea eliminar este rol? Esta acción no se puede deshacer.',
-                              confirmText: 'Eliminar',
-                              variant: 'delete',
-                              onConfirm: () => handleDeleteRole(r.id)
-                            })}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            disabled={r.status === 'Inactivo'}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setViewingRole(r)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Ver detalles</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => { setEditingRole(r); setIsRoleDialogOpen(true); }}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                disabled={r.status === 'Inactivo'}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Editar rol</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setConfirmDialog({
+                                  open: true,
+                                  title: 'Eliminar Rol',
+                                  description: '¿Está seguro de que desea eliminar este rol? Esta acción no se puede deshacer.',
+                                  confirmText: 'Eliminar',
+                                  variant: 'delete',
+                                  onConfirm: () => handleDeleteRole(r.id)
+                                })}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                disabled={r.status === 'Inactivo'}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Eliminar rol</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </TableCell>
                     </TableRow>
