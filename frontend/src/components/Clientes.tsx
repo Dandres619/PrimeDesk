@@ -107,13 +107,6 @@ export function Clientes() {
   };
 
   const deleteClient = async (client: any) => {
-    // Verificar si el cliente está activo
-    const isActive = client.ID_Usuario === null || client.EstadoUsuario === true || client.EstadoUsuario === 1;
-    if (isActive) {
-      toast.error('No se puede eliminar un cliente activo. Primero debe inactivarlo.');
-      return;
-    }
-
     setIsDeleting(true);
     try {
       const response = await fetch(`${API_URL}/clientes/${client.ID_Cliente}`, {
@@ -128,6 +121,7 @@ export function Clientes() {
       }
       toast.success('Cliente eliminado exitosamente');
       fetchClients(true);
+      setConfirmDialog(prev => ({ ...prev, open: false }));
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -407,7 +401,18 @@ export function Clientes() {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))} title={confirmDialog.title} description={confirmDialog.description} confirmText={confirmDialog.confirmText} variant={confirmDialog.variant} onConfirm={confirmDialog.onConfirm} loading={isDeleting} />
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText={confirmDialog.confirmText}
+        variant={confirmDialog.variant}
+        onConfirm={confirmDialog.onConfirm}
+        loading={isDeleting}
+        autoClose={false}
+        loadingText="Eliminando..."
+      />
     </div>
   );
 }

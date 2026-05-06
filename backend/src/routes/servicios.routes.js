@@ -12,11 +12,19 @@ const router = Router();
 router.get('/', verifyToken, ctrl.getAll);
 router.get('/:id', verifyToken, ctrl.getById);
 router.post('/', verifyToken, requirePermiso('gestionar_servicios'),
-    [body('nombre').notEmpty().withMessage('Nombre requerido.'), handleValidation],
+    [
+        body('nombre').notEmpty().withMessage('Nombre requerido.'),
+        body('duracion').optional().isNumeric().withMessage('La duración debe ser un número.'),
+        handleValidation
+    ],
     ctrl.create
 );
 router.put('/:id', verifyToken, requirePermiso('gestionar_servicios'),
-    [body('nombre').notEmpty().withMessage('Nombre requerido.'), handleValidation],
+    [
+        body('nombre').notEmpty().withMessage('Nombre requerido.'),
+        body('duracion').optional().isNumeric().withMessage('La duración debe ser un número.'),
+        handleValidation
+    ],
     ctrl.update
 );
 router.delete('/:id', verifyToken, requirePermiso('gestionar_servicios'), ctrl.remove);

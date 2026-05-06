@@ -160,12 +160,8 @@ const remove = async (id) => {
   const sql = await getPool();
 
   // 1. Verificar si el cliente existe y su estado
-  const [cli] = await sql`SELECT id_usuario, estado, nombre, apellido FROM clientes c LEFT JOIN usuarios u ON c.id_usuario = u.id_usuario WHERE id_cliente = ${id}`;
+  const [cli] = await sql`SELECT c.id_usuario, u.estado, c.nombre, c.apellido FROM clientes c LEFT JOIN usuarios u ON c.id_usuario = u.id_usuario WHERE c.id_cliente = ${id}`;
   if (!cli) throw { status: 404, message: 'Cliente no encontrado.' };
-
-  if (cli.estado !== false && cli.estado !== 'Inactivo') {
-    throw { status: 400, message: 'No se puede eliminar un cliente activo. Primero debe inactivarlo desde el módulo de Usuarios.' };
-  }
 
   // 2. Verificar asociaciones (motocicletas)
   const motos = await sql`SELECT COUNT(*) FROM motocicletas WHERE id_cliente = ${id}`;
@@ -174,7 +170,7 @@ const remove = async (id) => {
   }
 
   // 3. Verificar agendamientos
-  const agendamientos = await sql`SELECT COUNT(*) FROM agendamientos WHERE id_cliente = ${id}`;
+  const agendamientos = await sql`SELECT COUNT(*) FROM agendamientos a INNER JOIN motocicletas m ON a.id_motocicleta = m.id_motocicleta WHERE m.id_cliente = ${id}`;
   if (parseInt(agendamientos[0].count) > 0) {
     throw { status: 400, message: `No se puede eliminar al cliente ${cli.nombre} ${cli.apellido} porque tiene agendamientos registrados.` };
   }

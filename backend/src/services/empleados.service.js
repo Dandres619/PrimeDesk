@@ -161,10 +161,6 @@ const remove = async (id) => {
   const [emp] = await sql`SELECT e.id_usuario, u.estado, e.nombre, e.apellido FROM empleados e INNER JOIN usuarios u ON e.id_usuario = u.id_usuario WHERE e.id_empleado = ${id}`;
   if (!emp) throw { status: 404, message: 'Empleado no encontrado.' };
 
-  if (emp.estado !== false && emp.estado !== 'Inactivo') {
-    throw { status: 400, message: `No se puede eliminar un empleado activo. Primero debe inactivar a ${emp.nombre} ${emp.apellido} desde el módulo de Usuarios.` };
-  }
-
   // 2. Verificar agendamientos
   const agendamientos = await sql`SELECT COUNT(*) FROM agendamientos WHERE id_empleado = ${id}`;
   if (parseInt(agendamientos[0].count) > 0) {

@@ -162,13 +162,6 @@ export function Empleados() {
       return;
     }
 
-    // Verificar si el empleado está activo
-    const isActive = employee.EstadoUsuario === true || employee.EstadoUsuario === 1;
-    if (isActive) {
-      toast.error('No se puede eliminar un empleado activo. Primero debe inactivarlo.');
-      return;
-    }
-
     setIsDeleting(true);
     try {
       const response = await fetch(`${API_URL}/empleados/${employee.ID_Empleado}`, {
@@ -183,6 +176,7 @@ export function Empleados() {
       }
       toast.success('Empleado eliminado exitosamente');
       fetchEmployees(true);
+      setConfirmDialog(prev => ({ ...prev, open: false }));
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -209,6 +203,8 @@ export function Empleados() {
         variant={confirmDialog.variant}
         onConfirm={confirmDialog.onConfirm}
         loading={isDeleting}
+        autoClose={false}
+        loadingText="Eliminando..."
       />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-3">

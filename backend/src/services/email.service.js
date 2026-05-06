@@ -14,10 +14,7 @@ const sendMail = async ({ to, subject, text, html }) => {
     }
 
     const { data, error } = await resend.emails.send({
-        from: {
-            name: process.env.SENDER_NAME,
-            email: process.env.SENDER_EMAIL,
-        },
+        from: `${process.env.SENDER_NAME || 'Rafa Motos'} <${process.env.SENDER_EMAIL || 'no-reply@rmmedellin.site'}>`,
         reply_to: process.env.SUPPORT_EMAIL,
         to,
         subject,

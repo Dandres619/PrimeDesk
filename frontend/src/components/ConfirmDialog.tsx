@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { AlertTriangle, Trash2, XCircle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -9,7 +10,7 @@ interface ConfirmDialogProps {
   description: string;
   confirmText: string;
   cancelText?: string;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<any>;
   variant?: 'delete' | 'cancel' | 'default';
   loading?: boolean;
   autoClose?: boolean;
@@ -29,6 +30,9 @@ export function ConfirmDialog({
   autoClose = true,
   loadingText = 'Procesando...'
 }: ConfirmDialogProps) {
+  const [internalLoading, setInternalLoading] = useState(false);
+  const isCurrentlyLoading = loading || internalLoading;
+
   const getIcon = () => {
     switch (variant) {
       case 'delete':
@@ -51,10 +55,15 @@ export function ConfirmDialog({
     }
   };
 
-  const handleConfirm = () => {
-    onConfirm();
-    if (autoClose) {
-      onOpenChange(false);
+  const handleConfirm = async () => {
+    setInternalLoading(true);
+    try {
+      await onConfirm();
+      if (autoClose) {
+        onOpenChange(false);
+      }
+    } finally {
+      setInternalLoading(false);
     }
   };
 
@@ -77,17 +86,17 @@ export function ConfirmDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={loading}
+            disabled={isCurrentlyLoading}
             className="flex-1"
           >
             {cancelText}
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={loading}
+            disabled={isCurrentlyLoading}
             className={`flex-1 ${getConfirmButtonClass()}`}
           >
-            {loading ? (
+            {isCurrentlyLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {loadingText}
