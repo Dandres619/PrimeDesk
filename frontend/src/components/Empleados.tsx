@@ -11,6 +11,7 @@ import { Switch } from './ui/switch';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Plus, Search, Edit, Trash2, Eye, EyeOff, UserCog, Lock as LockIcon, ArrowRight, User, Loader2, Camera } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { CustomDatePicker } from './ui/CustomDatePicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { format } from 'date-fns';
@@ -42,8 +43,8 @@ export function Empleados() {
     fetchEmployees();
   }, []);
 
-  const fetchEmployees = async () => {
-    setIsLoading(true);
+  const fetchEmployees = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/empleados`, {
         headers: {
@@ -56,7 +57,9 @@ export function Empleados() {
     } catch (error) {
       toast.error('No se pudieron cargar los empleados');
     } finally {
-      setTimeout(() => setIsLoading(false), 500);
+      if (!silent) {
+        setTimeout(() => setIsLoading(false), 500);
+      }
     }
   };
 
@@ -96,7 +99,7 @@ export function Empleados() {
       toast.success(`Empleado ${editingEmployee ? 'actualizado' : 'registrado'} exitosamente`);
       setIsDialogOpen(false);
       setEditingEmployee(null);
-      fetchEmployees();
+      fetchEmployees(true);
     } catch (error: any) {
       let errorMsg = error.message || 'Error de conexión';
       if (errorMsg === 'Error de validación.' && error.errors) {
@@ -116,7 +119,7 @@ export function Empleados() {
     (e.Telefono || '').includes(searchTerm) ||
     (e.Documento || '').includes(searchTerm) ||
     (e.NombreRol || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).sort((a, b) => (a.Nombre || '').localeCompare(b.Nombre || ''));
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / itemsPerPage));
   const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -145,7 +148,7 @@ export function Empleados() {
         throw new Error(data.message || 'Error al cambiar el estado');
       }
       toast.success('Estado actualizado correctamente');
-      fetchEmployees();
+      fetchEmployees(true);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -179,7 +182,7 @@ export function Empleados() {
         throw new Error(data.message || 'Error al eliminar');
       }
       toast.success('Empleado eliminado exitosamente');
-      fetchEmployees();
+      fetchEmployees(true);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -190,9 +193,9 @@ export function Empleados() {
   // Stats removed
 
   const actions = [
-    { icon: Eye, onClick: (e: any) => setViewingEmployee(e), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
-    { icon: Edit, onClick: (e: any) => { setEditingEmployee(e); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
-    { icon: Trash2, onClick: (e: any) => setConfirmDialog({ open: true, title: 'Eliminar Empleado', description: '¿Está seguro de que desea eliminar este empleado? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => deleteEmployee(e) }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
+    { label: 'Ver detalles', icon: Eye, onClick: (e: any) => setViewingEmployee(e), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { label: 'Editar empleado', icon: Edit, onClick: (e: any) => { setEditingEmployee(e); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { label: 'Eliminar empleado', icon: Trash2, onClick: (e: any) => setConfirmDialog({ open: true, title: 'Eliminar Empleado', description: '¿Está seguro de que desea eliminar este empleado? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => deleteEmployee(e) }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
   ];
 
   return (
@@ -301,11 +304,29 @@ export function Empleados() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            {actions.map((a, i) => (
-                              <Button key={i} size="sm" variant="ghost" onClick={() => a.onClick(e)} className={a.color}>
-                                <a.icon className="w-4 h-4" />
-                              </Button>
-                            ))}
+                            {actions.map((a, i) => {
+                              const isInactive = !(e.EstadoUsuario === true || e.EstadoUsuario === 1);
+                              const isDisabled = isInactive && (a.label === 'Editar empleado' || a.label === 'Eliminar empleado');
+
+                              return (
+                                <Tooltip key={i}>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => a.onClick(e)}
+                                      className={a.color}
+                                      disabled={isDisabled}
+                                    >
+                                      <a.icon className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{a.label}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              );
+                            })}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -887,7 +908,7 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="documento">Núm. Documento *</Label>
+                  <Label htmlFor="documento">Número de Documento</Label>
                   {formErrors.documento && <span className="text-red-500 text-xs font-medium">{formErrors.documento}</span>}
                 </div>
                 <Input
