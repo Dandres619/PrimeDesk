@@ -9,8 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Switch } from './ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Plus, Search, Edit, Trash2, Eye, Bike, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Bike, Loader2, ChevronsUpDown, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { cn } from '@/lib/utils';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -39,8 +42,8 @@ export function Motos() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [motosRes, clientsRes] = await Promise.all([
         fetch(`${API_URL}/motocicletas`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -57,7 +60,7 @@ export function Motos() {
     } catch (error: any) {
       toast.error(error.message || 'Error de conexión');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -84,7 +87,7 @@ export function Motos() {
       toast.success(`Motocicleta ${editingMoto ? 'actualizada' : 'registrada'} exitosamente`);
       setIsDialogOpen(false);
       setEditingMoto(null);
-      fetchData();
+      fetchData(true);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -95,11 +98,6 @@ export function Motos() {
   };
 
   const deleteMoto = async (moto: any) => {
-    if (moto.Estado) {
-      toast.error('No se puede eliminar una motocicleta activa. Primero debe inactivarla.');
-      return;
-    }
-
     setIsDeleting(true);
     try {
       const response = await fetch(`${API_URL}/motocicletas/${moto.ID_Motocicleta}`, {
@@ -113,7 +111,7 @@ export function Motos() {
       }
 
       toast.success('Motocicleta eliminada');
-      fetchData();
+      fetchData(true);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -149,7 +147,7 @@ export function Motos() {
       }
 
       toast.success('Estado actualizado');
-      fetchData();
+      fetchData(true);
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -160,7 +158,7 @@ export function Motos() {
     m.Marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
     m.Modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     `${m.NombreCliente} ${m.ApellidoCliente}`.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).sort((a, b) => a.Marca.localeCompare(b.Marca));
 
   const totalPages = Math.max(1, Math.ceil(filteredMotos.length / itemsPerPage));
   const paginatedMotos = filteredMotos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -244,22 +242,57 @@ export function Motos() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => setViewingMoto(m)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => { setEditingMoto(m); setIsDialogOpen(true); }} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setConfirmDialog({
-                            open: true,
-                            title: 'Eliminar Motocicleta',
-                            description: `¿Está seguro de que desea eliminar la motocicleta ${m.Placa}? Esta acción no se puede deshacer.`,
-                            confirmText: 'Eliminar',
-                            variant: 'delete',
-                            onConfirm: () => deleteMoto(m)
-                          })} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button size="sm" variant="ghost" onClick={() => setViewingMoto(m)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Ver detalles</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => { setEditingMoto(m); setIsDialogOpen(true); }}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                disabled={!m.Estado}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Editar motocicleta</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setConfirmDialog({
+                                  open: true,
+                                  title: 'Eliminar Motocicleta',
+                                  description: `¿Está seguro de que desea eliminar la motocicleta ${m.Placa}? Esta acción no se puede deshacer.`,
+                                  confirmText: 'Eliminar',
+                                  variant: 'delete',
+                                  onConfirm: () => deleteMoto(m)
+                                })}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                disabled={!m.Estado}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Eliminar motocicleta</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -352,17 +385,7 @@ function DetailItem({ label, value }: { label: string, value: any }) {
 }
 
 function MotoDialog({ moto, clients, onSave, isSaving }: any) {
-  const [formData, setFormData] = useState<{
-    id_cliente: number | '',
-    marca: string,
-    modelo: string,
-    anio: number,
-    placa: string,
-    color: string,
-    motor: number | '',
-    kilometraje: number,
-    estado: boolean
-  }>({
+  const [formData, setFormData] = useState({
     id_cliente: '',
     marca: '',
     modelo: '',
@@ -370,9 +393,57 @@ function MotoDialog({ moto, clients, onSave, isSaving }: any) {
     placa: '',
     color: '',
     motor: '',
-    kilometraje: 0,
+    kilometraje: 1000,
     estado: true
   });
+
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isClientPopoverOpen, setIsClientPopoverOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
+
+  const currentYear = new Date().getFullYear();
+
+  const validateField = (name: string, value: any) => {
+    let error = '';
+    switch (name) {
+      case 'marca':
+        if (!value) error = 'La marca es obligatoria';
+        break;
+      case 'modelo':
+        if (!value) error = 'El modelo es obligatorio';
+        break;
+      case 'anio':
+        if (!value) error = 'El año es obligatorio';
+        else if (value < 1900) error = 'Año no válido';
+        else if (value > currentYear + 1) error = 'El año no puede ser futuro';
+        break;
+      case 'placa':
+        if (!value) error = 'La placa es obligatoria';
+        else if (!/^[a-zA-Z0-9]+$/.test(value)) error = 'Solo letras y números';
+        else if (value.length > 6) error = 'Máximo 6 caracteres';
+        break;
+      case 'color':
+        if (!value) error = 'El color es obligatorio';
+        break;
+      case 'motor':
+        if (value === '') error = 'El cilindraje es obligatorio';
+        else if (isNaN(value)) error = 'Solo números';
+        else if (value < 50) error = 'Mínimo 50cc';
+        else if (value > 2500) error = 'Máximo 2500cc';
+        break;
+      case 'kilometraje':
+        if (value === '') error = 'El kilometraje es obligatorio';
+        else if (isNaN(value)) error = 'Solo números';
+        else if (value <= 0) error = 'El kilometraje no puede ser 0 o menor';
+        break;
+      case 'id_cliente':
+        if (!value) error = 'Debe seleccionar un propietario';
+        break;
+    }
+    setErrors(prev => ({ ...prev, [name]: error }));
+    return error;
+  };
 
   useEffect(() => {
     if (moto) {
@@ -380,97 +451,320 @@ function MotoDialog({ moto, clients, onSave, isSaving }: any) {
         id_cliente: moto.ID_Cliente || '',
         marca: moto.Marca || '',
         modelo: moto.Modelo || '',
-        anio: moto.Anio || new Date().getFullYear(),
+        anio: moto.Anio || currentYear,
         placa: moto.Placa || '',
         color: moto.Color || '',
         motor: moto.Motor || '',
-        kilometraje: moto.Kilometraje || 0,
+        kilometraje: moto.Kilometraje || 1000,
         estado: moto.Estado ?? true
       });
+      setErrors({});
+      setTouched({});
     } else {
       setFormData({
         id_cliente: '',
         marca: '',
         modelo: '',
-        anio: new Date().getFullYear(),
+        anio: currentYear,
         placa: '',
         color: '',
         motor: '',
-        kilometraje: 0,
+        kilometraje: 1000,
         estado: true
       });
+      setErrors({});
+      setTouched({});
     }
-  }, [moto]);
+  }, [moto, currentYear]);
+
+  const blockInvalidChar = (e: React.KeyboardEvent) => {
+    if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+  };
+
+  const handleInputChange = (name: string, value: any) => {
+    let finalValue = value;
+
+    if (name === 'placa') {
+      finalValue = value.toUpperCase().replace(/[^A-DF-Z0-9]/g, '').slice(0, 6);
+    }
+
+    if (name === 'anio' || name === 'motor' || name === 'kilometraje') {
+      if (value === '') {
+        finalValue = '';
+      } else {
+        const strValue = value.toString().replace(/\D/g, '');
+        let num = parseInt(strValue);
+
+        if (name === 'anio') {
+          finalValue = strValue.slice(0, 4);
+          num = parseInt(finalValue);
+          if (num > currentYear + 1) {
+            num = currentYear + 1;
+            finalValue = num;
+          }
+        } else if (name === 'motor') {
+          const clipped = strValue.slice(0, 4);
+          num = parseInt(clipped);
+          if (num > 2500) num = 2500;
+          finalValue = num;
+        } else if (name === 'kilometraje') {
+          finalValue = strValue.slice(0, 7);
+          num = parseInt(finalValue);
+        }
+
+        finalValue = isNaN(num) ? '' : num;
+      }
+    }
+
+    setFormData(prev => ({ ...prev, [name]: finalValue }));
+    if (touched[name]) {
+      validateField(name, finalValue);
+    }
+  };
+
+  const handleFocus = (name: string) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+    validateField(name, (formData as any)[name]);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validaciones manuales
-    if (!formData.marca || !formData.modelo || !formData.placa || !formData.id_cliente || !formData.color || !formData.motor) {
-      toast.error('Por favor, rellene todos los campos obligatorios (*)');
-      return;
-    }
+    const newErrors: Record<string, string> = {};
+    let hasErrors = false;
 
-    if (formData.anio < 1900 || formData.anio > new Date().getFullYear() + 1) {
-      toast.error('Por favor, ingrese un año válido');
+    Object.keys(formData).forEach(key => {
+      const error = validateField(key, (formData as any)[key]);
+      if (error) {
+        newErrors[key] = error;
+        hasErrors = true;
+      }
+    });
+
+    setErrors(newErrors);
+    setTouched(Object.keys(formData).reduce((acc, key) => ({ ...acc, [key]: true }), {}));
+
+    if (hasErrors) {
+      toast.error('Por favor corrija los errores en el formulario');
       return;
     }
 
     onSave(formData);
   };
 
+  const filteredClients = clients.filter((c: any) =>
+    `${c.Nombre} ${c.Apellido}`.toLowerCase().includes(clientSearch.toLowerCase()) ||
+    c.Documento.toString().includes(clientSearch)
+  );
+
+  const selectedClient = clients.find((c: any) => c.ID_Cliente === formData.id_cliente);
+
   return (
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{moto ? 'Editar Motocicleta' : 'Nueva Motocicleta'}</DialogTitle>
       </DialogHeader>
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <div className="grid grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          {/* Marca */}
           <div className="space-y-2">
-            <Label htmlFor="marca">Marca *</Label>
-            <Input id="marca" value={formData.marca} onChange={(e) => setFormData(prev => ({ ...prev, marca: e.target.value }))} placeholder="Ej: Honda" />
+            <div className="flex justify-between items-center">
+              <Label htmlFor="marca">Marca *</Label>
+              {touched.marca && errors.marca && <span className="text-red-500 text-[10px] font-medium">{errors.marca}</span>}
+            </div>
+            <Input
+              id="marca"
+              value={formData.marca}
+              onChange={(e) => handleInputChange('marca', e.target.value)}
+              onFocus={() => handleFocus('marca')}
+              placeholder="Ej: Honda"
+              className={touched.marca && errors.marca ? 'border-red-500' : ''}
+            />
           </div>
+
+          {/* Modelo */}
           <div className="space-y-2">
-            <Label htmlFor="modelo">Modelo *</Label>
-            <Input id="modelo" value={formData.modelo} onChange={(e) => setFormData(prev => ({ ...prev, modelo: e.target.value }))} placeholder="Ej: Hornet CB600" />
+            <div className="flex justify-between items-center">
+              <Label htmlFor="modelo">Modelo *</Label>
+              {touched.modelo && errors.modelo && <span className="text-red-500 text-[10px] font-medium">{errors.modelo}</span>}
+            </div>
+            <Input
+              id="modelo"
+              value={formData.modelo}
+              onChange={(e) => handleInputChange('modelo', e.target.value)}
+              onFocus={() => handleFocus('modelo')}
+              placeholder="Ej: Hornet CB600"
+              className={touched.modelo && errors.modelo ? 'border-red-500' : ''}
+            />
           </div>
+
+          {/* Año */}
           <div className="space-y-2">
-            <Label htmlFor="anio">Año *</Label>
-            <Input id="anio" type="number" value={formData.anio} onChange={(e) => setFormData(prev => ({ ...prev, anio: parseInt(e.target.value) || 0 }))} min={1900} max={new Date().getFullYear() + 1} />
+            <div className="flex justify-between items-center">
+              <Label htmlFor="anio">Año *</Label>
+              {touched.anio && errors.anio && <span className="text-red-500 text-[10px] font-medium">{errors.anio}</span>}
+            </div>
+            <Input
+              id="anio"
+              type="number"
+              value={formData.anio}
+              onChange={(e) => handleInputChange('anio', e.target.value)}
+              onFocus={() => handleFocus('anio')}
+              onKeyDown={blockInvalidChar}
+              className={cn(
+                "no-arrows [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                touched.anio && errors.anio ? 'border-red-500' : ''
+              )}
+            />
           </div>
+
+          {/* Placa */}
           <div className="space-y-2">
-            <Label htmlFor="placa">Placa *</Label>
-            <Input id="placa" value={formData.placa} onChange={(e) => setFormData(prev => ({ ...prev, placa: e.target.value.toUpperCase() }))} placeholder="ABC123" />
+            <div className="flex justify-between items-center">
+              <Label htmlFor="placa">Placa *</Label>
+              {touched.placa && errors.placa && <span className="text-red-500 text-[10px] font-medium">{errors.placa}</span>}
+            </div>
+            <Input
+              id="placa"
+              value={formData.placa}
+              onChange={(e) => handleInputChange('placa', e.target.value)}
+              onFocus={() => handleFocus('placa')}
+              placeholder="ABC123"
+              className={touched.placa && errors.placa ? 'border-red-500' : ''}
+            />
           </div>
+
+          {/* Color */}
           <div className="space-y-2">
-            <Label htmlFor="color">Color *</Label>
-            <Input id="color" value={formData.color} onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))} placeholder="Ej: Rojo" />
+            <div className="flex justify-between items-center">
+              <Label htmlFor="color">Color *</Label>
+              {touched.color && errors.color && <span className="text-red-500 text-[10px] font-medium">{errors.color}</span>}
+            </div>
+            <Input
+              id="color"
+              value={formData.color}
+              onChange={(e) => handleInputChange('color', e.target.value)}
+              onFocus={() => handleFocus('color')}
+              placeholder="Ej: Rojo"
+              className={touched.color && errors.color ? 'border-red-500' : ''}
+            />
           </div>
+
+          {/* Cilindraje */}
           <div className="space-y-2">
-            <Label htmlFor="motor">Cilindraje (cc) *</Label>
-            <Input id="motor" type="number" value={formData.motor} onChange={(e) => setFormData(prev => ({ ...prev, motor: e.target.value === '' ? '' : parseInt(e.target.value) || 0 }))} placeholder="Ej: 600" />
+            <div className="flex justify-between items-center">
+              <Label htmlFor="motor">Cilindraje (cc) *</Label>
+              {touched.motor && errors.motor && <span className="text-red-500 text-[10px] font-medium">{errors.motor}</span>}
+            </div>
+            <Input
+              id="motor"
+              type="number"
+              value={formData.motor}
+              onChange={(e) => handleInputChange('motor', e.target.value)}
+              onFocus={() => handleFocus('motor')}
+              onKeyDown={blockInvalidChar}
+              placeholder="Ej: 600"
+              className={cn(
+                "no-arrows [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                touched.motor && errors.motor ? 'border-red-500' : ''
+              )}
+            />
           </div>
+
+          {/* Kilometraje */}
           <div className="space-y-2">
-            <Label htmlFor="kilometraje">Kilometraje *</Label>
-            <Input id="kilometraje" type="number" value={formData.kilometraje} onChange={(e) => setFormData(prev => ({ ...prev, kilometraje: parseInt(e.target.value) || 0 }))} min={0} />
+            <div className="flex justify-between items-center">
+              <Label htmlFor="kilometraje">Kilometraje *</Label>
+              {touched.kilometraje && errors.kilometraje && <span className="text-red-500 text-[10px] font-medium">{errors.kilometraje}</span>}
+            </div>
+            <Input
+              id="kilometraje"
+              type="number"
+              value={formData.kilometraje}
+              onChange={(e) => handleInputChange('kilometraje', e.target.value)}
+              onFocus={() => handleFocus('kilometraje')}
+              onKeyDown={blockInvalidChar}
+              className={cn(
+                "no-arrows [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                touched.kilometraje && errors.kilometraje ? 'border-red-500' : ''
+              )}
+            />
           </div>
+
+          {/* Propietario (Searchable) */}
           <div className="space-y-2">
-            <Label htmlFor="id_cliente">Propietario *</Label>
-            <select
-              id="id_cliente"
-              value={formData.id_cliente}
-              onChange={(e) => setFormData(prev => ({ ...prev, id_cliente: e.target.value === '' ? '' : parseInt(e.target.value) || '' }))}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">Seleccionar cliente</option>
-              {clients.map((c: any) => (
-                <option key={c.ID_Cliente} value={c.ID_Cliente}>{c.Nombre} {c.Apellido} - {c.Documento}</option>
-              ))}
-            </select>
+            <div className="flex justify-between items-center">
+              <Label>Propietario *</Label>
+              {touched.id_cliente && errors.id_cliente && <span className="text-red-500 text-[10px] font-medium">{errors.id_cliente}</span>}
+            </div>
+            <Popover open={isClientPopoverOpen} onOpenChange={setIsClientPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={isClientPopoverOpen}
+                  className={cn(
+                    "w-full justify-between font-normal",
+                    !formData.id_cliente && "text-muted-foreground",
+                    touched.id_cliente && errors.id_cliente && "border-red-500"
+                  )}
+                  onClick={() => handleFocus('id_cliente')}
+                >
+                  {selectedClient
+                    ? `${selectedClient.Nombre} ${selectedClient.Apellido} - ${selectedClient.Documento}`
+                    : "Seleccionar cliente..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                <div className="p-2 border-b">
+                  <div className="flex items-center px-3 py-2 bg-muted/50 rounded-md">
+                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                    <input
+                      className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="Buscar por nombre o cédula..."
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="max-h-[200px] overflow-y-auto p-1">
+                  {filteredClients.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No se encontraron clientes.</p>
+                  ) : (
+                    filteredClients.map((client: any) => (
+                      <div
+                        key={client.ID_Cliente}
+                        className={cn(
+                          "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                          formData.id_cliente === client.ID_Cliente && "bg-blue-50 text-blue-700 font-medium"
+                        )}
+                        onClick={() => {
+                          handleInputChange('id_cliente', client.ID_Cliente);
+                          setIsClientPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            formData.id_cliente === client.ID_Cliente ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div className="flex flex-col">
+                          <span>{client.Nombre} {client.Apellido}</span>
+                          <span className="text-[10px] text-muted-foreground">CC: {client.Documento}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
+
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+          <Button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 px-8">
             {isSaving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
