@@ -937,6 +937,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
                     onClick={() => setActiveSection(item.id)}
+                    tooltip={item.label}
                     className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${activeSection === item.id
                       ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
                       : 'hover:bg-muted/50'
@@ -955,6 +956,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => setShowLogoutConfirm(true)}
+                  tooltip="Cerrar sesión"
                   className="w-full justify-start gap-3 p-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                 >
                   <LogOut className="w-5 h-5" />

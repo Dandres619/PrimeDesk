@@ -11,6 +11,7 @@ import { Switch } from './ui/switch';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Search, Loader2, Eye, EyeOff, User, Edit, Trash2, Users, Lock as LockIcon, ArrowRight, Camera, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { CustomDatePicker } from './ui/CustomDatePicker';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { format } from 'date-fns';
@@ -37,8 +38,8 @@ export function Clientes() {
     fetchClients();
   }, []);
 
-  const fetchClients = async () => {
-    setIsLoading(true);
+  const fetchClients = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/clientes`, {
         headers: {
@@ -51,7 +52,9 @@ export function Clientes() {
     } catch (error) {
       toast.error('No se pudieron cargar los clientes');
     } finally {
-      setTimeout(() => setIsLoading(false), 500);
+      if (!silent) {
+        setTimeout(() => setIsLoading(false), 500);
+      }
     }
   };
 
@@ -91,7 +94,7 @@ export function Clientes() {
       toast.success(`Cliente ${editingClient ? 'actualizado' : 'registrado'} exitosamente`);
       setIsDialogOpen(false);
       setEditingClient(null);
-      fetchClients();
+      fetchClients(true);
     } catch (error: any) {
       let errorMsg = error.message || 'Error de conexión';
       if (errorMsg === 'Error de validación.' && error.errors) {
@@ -124,7 +127,7 @@ export function Clientes() {
         throw new Error(errorData.message || 'Error al eliminar');
       }
       toast.success('Cliente eliminado exitosamente');
-      fetchClients();
+      fetchClients(true);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -138,7 +141,7 @@ export function Clientes() {
     (c.Correo || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (c.Telefono || '').includes(searchTerm) ||
     (c.Documento || '').includes(searchTerm)
-  );
+  ).sort((a, b) => (a.Nombre || '').localeCompare(b.Nombre || ''));
 
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(filteredClients.length / itemsPerPage));
@@ -158,7 +161,7 @@ export function Clientes() {
       });
       if (!response.ok) throw new Error('Error al cambiar el estado');
       toast.success('Estado actualizado correctamente');
-      fetchClients();
+      fetchClients(true);
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -167,9 +170,9 @@ export function Clientes() {
   // Stats removed
 
   const actions = [
-    { icon: Eye, onClick: (c: any) => setViewingClient(c), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
-    { icon: Edit, onClick: (c: any) => { setEditingClient(c); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
-    { icon: Trash2, onClick: (c: any) => setConfirmDialog({ open: true, title: 'Eliminar Cliente', description: '¿Está seguro de que desea eliminar este cliente? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => deleteClient(c) }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
+    { label: 'Ver detalles', icon: Eye, onClick: (c: any) => setViewingClient(c), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { label: 'Editar cliente', icon: Edit, onClick: (c: any) => { setEditingClient(c); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { label: 'Eliminar cliente', icon: Trash2, onClick: (c: any) => setConfirmDialog({ open: true, title: 'Eliminar Cliente', description: '¿Está seguro de que desea eliminar este cliente? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => deleteClient(c) }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
   ];
 
   return (
@@ -274,11 +277,29 @@ export function Clientes() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            {actions.map((a, i) => (
-                              <Button key={i} size="sm" variant="ghost" onClick={() => a.onClick(c)} className={a.color}>
-                                <a.icon className="w-4 h-4" />
-                              </Button>
-                            ))}
+                            {actions.map((a, i) => {
+                              const isInactive = !(c.ID_Usuario === null || c.EstadoUsuario === true || c.EstadoUsuario === 1);
+                              const isDisabled = isInactive && (a.label === 'Editar cliente' || a.label === 'Eliminar cliente');
+
+                              return (
+                                <Tooltip key={i}>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => a.onClick(c)}
+                                      className={a.color}
+                                      disabled={isDisabled}
+                                    >
+                                      <a.icon className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{a.label}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              );
+                            })}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -829,7 +850,7 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="documento">Núm. Documento *</Label>
+                  <Label htmlFor="documento">Número de Documento</Label>
                   {formErrors.documento && <span className="text-red-500 text-xs font-medium">{formErrors.documento}</span>}
                 </div>
                 <Input
