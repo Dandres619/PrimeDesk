@@ -1,7 +1,8 @@
 "use client"
 
-import React, { createContext, useContext, useState, HTMLAttributes, ReactNode, isValidElement, cloneElement } from 'react'
+import React, { createContext, useContext, useState, HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip'
 
 // 1. Contexto y Hook
 interface SidebarContextType {
@@ -151,11 +152,12 @@ export function SidebarMenuButton({
     className,
     children,
     onClick,
+    tooltip,
     ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { tooltip?: string }) {
     const { close, isOpen } = useSidebar();
 
-    return (
+    const button = (
         <button
             className={cn(
                 "flex w-full items-center rounded-md text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-50",
@@ -195,6 +197,21 @@ export function SidebarMenuButton({
             })}
         </button>
     )
+
+    if (!isOpen && tooltip) {
+        return (
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    {button}
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10}>
+                    {tooltip}
+                </TooltipContent>
+            </Tooltip>
+        )
+    }
+
+    return button
 }
 
 // 6. SidebarTrigger (Botón de menú: visible en todas las pantallas como toggle)
