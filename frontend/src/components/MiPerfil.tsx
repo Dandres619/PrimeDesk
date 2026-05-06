@@ -467,7 +467,6 @@ export function MiPerfil() {
                                     <div className="space-y-2 pt-2">
                                         <div className="flex justify-between items-center">
                                             <Label htmlFor="nacimiento" className="flex items-center gap-2 text-sm">
-                                                <CalendarIcon className="w-4 h-4 text-muted-foreground" />
                                                 Fecha de Nacimiento *
                                             </Label>
                                             {touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento && <span className="text-red-500 text-xs font-medium">{formErrors.fecha_nacimiento}</span>}
