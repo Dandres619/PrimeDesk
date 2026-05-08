@@ -554,7 +554,7 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
         else if (!/^\d{10}$/.test(value)) error = 'Debe tener exactamente 10 dígitos';
         break;
       case 'fecha_nacimiento':
-        if (!value) error = 'La fecha de nacimiento es obligatoria';
+        if (!value) error = 'Por favor complete la fecha';
         else {
           const d = new Date(value + 'T00:00:00');
           const today = new Date();
@@ -689,7 +689,7 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
     if (!formData.telefono) errors.telefono = 'El teléfono es obligatorio';
     else if (!/^\d{10}$/.test(formData.telefono)) errors.telefono = 'Debe tener exactamente 10 dígitos';
 
-    if (!formData.fecha_nacimiento) errors.fecha_nacimiento = 'La fecha de nacimiento es obligatoria';
+    if (!formData.fecha_nacimiento) errors.fecha_nacimiento = 'Por favor complete la fecha';
     if (!formData.barrio) errors.barrio = 'El barrio es obligatorio';
     if (!formData.direccion) errors.direccion = 'La dirección es obligatoria';
 

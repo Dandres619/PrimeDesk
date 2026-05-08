@@ -38,7 +38,7 @@ export function DatePickerInput({ value, onChange, minAgeDate, placeholder = 'DD
     let val = e.target.value.replace(/\D/g, '');
     if (val.length > 8) val = val.slice(0, 8);
     
-    // Enforce max 31 days and 12 months while typing
+    // Still prevent day > 31 and month > 12 for better UX
     if (val.length >= 2) {
       let day = parseInt(val.slice(0, 2));
       if (day > 31) val = '31' + val.slice(2);
@@ -57,43 +57,18 @@ export function DatePickerInput({ value, onChange, minAgeDate, placeholder = 'DD
     setInputValue(formatted);
 
     if (formatted.length === 10) {
-      let parsedDate = parse(formatted, 'dd/MM/yyyy', new Date());
+      const parsedDate = parse(formatted, 'dd/MM/yyyy', new Date());
       
-      // Handle invalid days for months (e.g. 31/02 -> 28/02)
       if (!isValid(parsedDate)) {
-        const d = parseInt(val.slice(0, 2));
-        const m = parseInt(val.slice(2, 4));
-        const y = parseInt(val.slice(4, 8));
-        parsedDate = new Date(y, m - 1, d);
-        if (!isValid(parsedDate)) {
-           // If still invalid, it's usually because day was > last day of month
-           parsedDate = new Date(y, m, 0); // Last day of month
-        }
+        // If it's something like 31/02, send a value that triggers parent's "Fecha inválida"
+        onChange('INVALID');
+        return;
       }
 
-      const today = new Date();
-      const minAgeDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-      const minYearDate = new Date(1950, 0, 1);
-
-      // Auto-correct boundaries
-      let corrected = false;
-      if (parsedDate > minAgeDate) {
-        parsedDate = minAgeDate;
-        corrected = true;
-      } else if (parsedDate < minYearDate) {
-        parsedDate = minYearDate;
-        corrected = true;
-      }
-
-      const finalDateStr = format(parsedDate, 'yyyy-MM-dd');
-      onChange(finalDateStr);
-      
-      // Update the input text if we corrected it
-      if (corrected || formatted !== format(parsedDate, 'dd/MM/yyyy')) {
-        setInputValue(format(parsedDate, 'dd/MM/yyyy'));
-      }
+      // Just send the date, don't snap or correct year/age here
+      // The parent will handle the specific error messages
+      onChange(format(parsedDate, 'yyyy-MM-dd'));
     } else {
-      // Still notify parent that field is being edited/cleared
       onChange('');
     }
   };

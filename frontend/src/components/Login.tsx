@@ -313,7 +313,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       else if (!/^\d{7,10}$/.test(registerData.documento)) errs.documento = 'Entre 7 y 10 números';
 
       if (!registerData.fecha_nacimiento) {
-        errs.fecha_nacimiento = 'No puede estar vacío';
+        errs.fecha_nacimiento = 'Por favor complete la fecha';
       } else {
         const selectedDate = new Date(registerData.fecha_nacimiento + 'T00:00:00');
         const today = new Date();

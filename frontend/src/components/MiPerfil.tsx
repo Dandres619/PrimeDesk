@@ -140,7 +140,7 @@ export function MiPerfil() {
             if (!addressRegex.test(formData.direccion)) errs.direccion = 'Dirección inválida (Ej: Calle 10 #20-30)';
         }
 
-        if (!formData.fecha_nacimiento) errs.fecha_nacimiento = 'No puede estar vacío';
+        if (!formData.fecha_nacimiento) errs.fecha_nacimiento = 'Por favor complete la fecha';
         else {
             const selectedDate = new Date(formData.fecha_nacimiento + 'T00:00:00');
             if (isNaN(selectedDate.getTime())) errs.fecha_nacimiento = 'Fecha inválida';
