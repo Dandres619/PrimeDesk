@@ -222,7 +222,7 @@ const updateProfile = async (id_usuario, data, file) => {
             }
         } catch (uploadErr) {
             console.error('❌ Error crítico en el proceso de subida:', uploadErr.message);
-            throw uploadErr; 
+            throw uploadErr;
         }
     } else if (foto && foto.trim() !== '') {
         finalFoto = foto;
@@ -278,6 +278,11 @@ const changePassword = async (id_usuario, contrasenaActual, nuevaContrasena) => 
     const match = await bcrypt.compare(contrasenaActual, users[0].contrasena);
     if (!match) {
         throw { status: 401, message: 'La contraseña actual es incorrecta.' };
+    }
+
+    const isSamePassword = await bcrypt.compare(nuevaContrasena, users[0].contrasena);
+    if (isSamePassword) {
+        throw { status: 400, message: 'La nueva contraseña no puede ser igual a la actual.' };
     }
 
     const hashed = await bcrypt.hash(nuevaContrasena, 10);
