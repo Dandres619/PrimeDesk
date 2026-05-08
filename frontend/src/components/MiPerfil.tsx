@@ -140,13 +140,12 @@ export function MiPerfil() {
             if (!addressRegex.test(formData.direccion)) errs.direccion = 'Dirección inválida (Ej: Calle 10 #20-30)';
         }
 
-        if (!formData.fecha_nacimiento) errs.fecha_nacimiento = 'Por favor complete la fecha';
-        else {
+        if (formData.fecha_nacimiento) {
             const selectedDate = new Date(formData.fecha_nacimiento + 'T00:00:00');
             if (isNaN(selectedDate.getTime())) errs.fecha_nacimiento = 'Fecha inválida';
-            else if (selectedDate > todayDate) errs.fecha_nacimiento = 'Fecha en el futuro';
+            else if (selectedDate > todayDate) errs.fecha_nacimiento = 'La fecha no puede ser en el futuro';
             else if (selectedDate > globalMinAgeDate) errs.fecha_nacimiento = 'Debe ser mayor de 18 años';
-            else if (selectedDate.getFullYear() < 1950) errs.fecha_nacimiento = 'El año mínimo es 1950';
+            else if (selectedDate.getFullYear() < 1950) errs.fecha_nacimiento = 'La fecha no puede ser tan antigua';
         }
 
         setFormErrors(errs);
@@ -965,13 +964,6 @@ export function MiPerfil() {
 
             <div className="mp-root">
                 <div className="mp-page">
-                    {/* Header */}
-                    <div className="mp-header">
-                        <p className="mp-header-eyebrow">Configuración de cuenta</p>
-                        <h1 className="mp-header-title">Mi perfil</h1>
-                        <p className="mp-header-sub">Gestiona tu información personal y configuración de seguridad</p>
-                    </div>
-
                     {isLoading ? (
                         <div className="mp-loading">
                             <div className="mp-loading-ring" />
@@ -1181,7 +1173,7 @@ export function MiPerfil() {
                                                     <div className="mp-field">
                                                         <label className="mp-label">
                                                             <Calendar style={{ width: 11, height: 11, display: 'inline', marginRight: 4 }} />
-                                                            Fecha de Nacimiento <span className="mp-required">*</span>
+                                                            Fecha de Nacimiento (Opcional)
                                                         </label>
                                                         <DatePickerInput
                                                             value={formData.fecha_nacimiento}

@@ -312,9 +312,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
       if (!registerData.documento) errs.documento = 'No puede estar vacío';
       else if (!/^\d{7,10}$/.test(registerData.documento)) errs.documento = 'Entre 7 y 10 números';
 
-      if (!registerData.fecha_nacimiento) {
-        errs.fecha_nacimiento = 'Por favor complete la fecha';
-      } else {
+      if (registerData.fecha_nacimiento) {
         const selectedDate = new Date(registerData.fecha_nacimiento + 'T00:00:00');
         const today = new Date();
         const minAgeDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
@@ -857,16 +855,14 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <Label htmlFor="reg-nacimiento" className="text-gray-700">Fecha de Nacimiento *</Label>
+                            <Label htmlFor="reg-nacimiento" className="text-gray-700">Fecha de Nacimiento <span className="text-gray-500 text-xs font-medium">(Opcional)</span></Label>
                             {touchedFields.fecha_nacimiento && registerErrors.fecha_nacimiento && <span className="text-red-500 text-xs font-medium">{registerErrors.fecha_nacimiento}</span>}
                           </div>
                           <DatePickerInput
                             value={registerData.fecha_nacimiento}
                             onChange={(v) => {
                               setRegisterData(prev => ({ ...prev, fecha_nacimiento: v }));
-                              handleBlur('fecha_nacimiento');
                             }}
-                            onBlur={() => handleBlur('fecha_nacimiento')}
                             minAgeDate={globalMinAgeDate}
                             placeholder="Seleccionar fecha"
                             className="h-12"
