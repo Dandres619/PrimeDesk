@@ -12,11 +12,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { Plus, Search, Edit, Trash2, Eye, EyeOff, UserCog, Lock as LockIcon, ArrowRight, User, Loader2, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { CustomDatePicker } from './ui/CustomDatePicker';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { DatePickerInput } from './ui/DatePickerInput';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -448,8 +444,6 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [isBirthCalendarOpen, setIsBirthCalendarOpen] = useState(false);
-  const [isJoinCalendarOpen, setIsJoinCalendarOpen] = useState(false);
   const [formData, setFormData] = useState({
     correo: '',
     contrasena: '',
@@ -592,9 +586,23 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
         break;
       case 'fecha_nacimiento':
         if (!value) error = 'La fecha de nacimiento es obligatoria';
+        else {
+          const d = new Date(value + 'T00:00:00');
+          const today = new Date();
+          const minAge = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+          if (isNaN(d.getTime())) error = 'Fecha inválida';
+          else if (d > today) error = 'Fecha en el futuro';
+          else if (d > minAge) error = 'Debe ser mayor de 18 años';
+          else if (d.getFullYear() < 1950) error = 'El año mínimo es 1950';
+        }
         break;
       case 'fecha_ingreso':
         if (!value) error = 'La fecha de ingreso es obligatoria';
+        else {
+          const d = new Date(value + 'T00:00:00');
+          if (isNaN(d.getTime())) error = 'Fecha inválida';
+          else if (d.getFullYear() < 1950) error = 'El año mínimo es 1950';
+        }
         break;
       case 'barrio':
         if (!value) error = 'El barrio es obligatorio';
@@ -936,64 +944,28 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
                   <Label htmlFor="fecha_nacimiento">Fecha de Nacimiento *</Label>
                   {formErrors.fecha_nacimiento && <span className="text-red-500 text-xs font-medium">{formErrors.fecha_nacimiento}</span>}
                 </div>
-                <Popover open={isBirthCalendarOpen} onOpenChange={setIsBirthCalendarOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={`w-full justify-start text-left font-normal border-gray-200 ${!formData.fecha_nacimiento && "text-muted-foreground"} ${touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento ? 'border-red-500 focus:ring-red-200' : 'focus:border-blue-500'}`}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.fecha_nacimiento ? (
-                        format(new Date(formData.fecha_nacimiento + 'T00:00:00'), "PPP", { locale: es })
-                      ) : (
-                        <span>Seleccionar fecha</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CustomDatePicker
-                      value={formData.fecha_nacimiento}
-                      onChange={(v) => {
-                        handleChange('fecha_nacimiento', v);
-                        setIsBirthCalendarOpen(false);
-                      }}
-                      minAgeDate={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())}
-                      onClose={() => setIsBirthCalendarOpen(false)}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DatePickerInput
+                  value={formData.fecha_nacimiento}
+                  onChange={(v) => handleChange('fecha_nacimiento', v)}
+                  onBlur={() => setTouchedFields(prev => ({ ...prev, fecha_nacimiento: true }))}
+                  minAgeDate={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())}
+                  placeholder="Seleccionar fecha"
+                  error={!!(touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento)}
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="fecha_ingreso">Fecha de Ingreso *</Label>
                   {formErrors.fecha_ingreso && <span className="text-red-500 text-xs font-medium">{formErrors.fecha_ingreso}</span>}
                 </div>
-                <Popover open={isJoinCalendarOpen} onOpenChange={setIsJoinCalendarOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={`w-full justify-start text-left font-normal border-gray-200 ${!formData.fecha_ingreso && "text-muted-foreground"} ${touchedFields.fecha_ingreso && formErrors.fecha_ingreso ? 'border-red-500 focus:ring-red-200' : 'focus:border-blue-500'}`}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.fecha_ingreso ? (
-                        format(new Date(formData.fecha_ingreso + 'T00:00:00'), "PPP", { locale: es })
-                      ) : (
-                        <span>Seleccionar fecha</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CustomDatePicker
-                      value={formData.fecha_ingreso}
-                      onChange={(v) => {
-                        handleChange('fecha_ingreso', v);
-                        setIsJoinCalendarOpen(false);
-                      }}
-                      minAgeDate={new Date()} // Can be today
-                      onClose={() => setIsJoinCalendarOpen(false)}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <DatePickerInput
+                  value={formData.fecha_ingreso}
+                  onChange={(v) => handleChange('fecha_ingreso', v)}
+                  onBlur={() => setTouchedFields(prev => ({ ...prev, fecha_ingreso: true }))}
+                  minAgeDate={new Date()}
+                  placeholder="Seleccionar fecha"
+                  error={!!(touchedFields.fecha_ingreso && formErrors.fecha_ingreso)}
+                />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">

@@ -14,6 +14,8 @@ import { Switch } from './ui/switch';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useTheme } from './ThemeProvider';
 import {
+  CircleUserRound,
+  CalendarCheck,
   User,
   Bike,
   Calendar as CalendarIcon,
@@ -32,6 +34,7 @@ import {
   Ban,
   Loader2
 } from 'lucide-react';
+import { PiMotorcycle } from 'react-icons/pi';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, isToday, isBefore, startOfDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -77,9 +80,9 @@ interface Service {
 }
 
 const clientMenuItems = [
-  { id: 'perfil', label: 'Mi Perfil', icon: User },
-  { id: 'motos', label: 'Mis Motos', icon: Bike },
-  { id: 'agendar', label: 'Agendar Servicio', icon: CalendarIcon },
+  { id: 'perfil', label: 'Mi Perfil', icon: CircleUserRound },
+  { id: 'motos', label: 'Mis Motos', icon: PiMotorcycle },
+  { id: 'agendar', label: 'Agendar Servicio', icon: CalendarCheck },
 ];
 
 interface ClientPanelProps {
@@ -915,19 +918,10 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <Sidebar className="border-r border-border">
-          <SidebarHeader className="border-b border-border p-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Bike className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-lg">Rafa Motos</h2>
-                <p className="text-sm text-muted-foreground">Panel Cliente</p>
-              </div>
-            </div>
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Bienvenido</p>
-              <p className="text-xs text-blue-700 dark:text-blue-400">{currentUser.name} {currentUser.last_name}</p>
+          <SidebarHeader className="border-b border-border p-6 flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center gap-1 text-center py-2">
+              <h2 className="font-semibold text-2xl tracking-tight text-blue-900 dark:text-blue-100">Rafa Motos</h2>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Panel Cliente</p>
             </div>
           </SidebarHeader>
 
@@ -981,8 +975,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                 </h1>
               </div>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <User className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <CircleUserRound className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   <span>{currentUser.name} {currentUser.last_name}</span>
                 </div>
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
@@ -998,7 +992,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
             </div>
           </header>
 
-          <div className="flex-1 p-6 bg-muted/30">
+          <div key={activeSection} className="flex-1 p-6 bg-muted/30 animate-fade-slide-in">
             {renderContent()}
           </div>
         </main>
@@ -1403,7 +1397,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
         title="Cancelar Agendamiento"
         description="¿Estás seguro de que deseas cancelar este agendamiento?"
         confirmText="Confirmar Cancelación"
-        onConfirm={() => aptToCancel && handleCancelAgendamiento(aptToCancel)}
+        onConfirm={() => { if (aptToCancel) handleCancelAgendamiento(aptToCancel); }}
         variant="cancel"
         loading={isCancellingApt}
       />

@@ -4,9 +4,8 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { DatePickerInput } from './ui/DatePickerInput';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import {
   Bike,
   Eye,
@@ -14,7 +13,6 @@ import {
   Mail,
   Lock,
   MapPin,
-  Calendar as CalendarIcon,
   Home,
   User,
   Phone,
@@ -23,7 +21,6 @@ import {
   CheckCircle,
   Loader2
 } from 'lucide-react';
-import { CustomDatePicker } from './ui/CustomDatePicker';
 import { toast } from 'sonner';
 
 
@@ -65,7 +62,6 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
   const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [dateInput, setDateInput] = useState('');
 
   const todayDate = new Date();
@@ -323,10 +319,14 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
         const today = new Date();
         const minAgeDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
 
-        if (selectedDate > today) {
+        if (isNaN(selectedDate.getTime())) {
+          errs.fecha_nacimiento = 'Fecha inválida';
+        } else if (selectedDate > today) {
           errs.fecha_nacimiento = 'La fecha no puede ser en el futuro';
         } else if (selectedDate > minAgeDate) {
           errs.fecha_nacimiento = 'Debe ser mayor de 18 años';
+        } else if (selectedDate.getFullYear() < 1950) {
+          errs.fecha_nacimiento = 'El año mínimo es 1950';
         }
       }
 
@@ -860,33 +860,18 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                             <Label htmlFor="reg-nacimiento" className="text-gray-700">Fecha de Nacimiento *</Label>
                             {touchedFields.fecha_nacimiento && registerErrors.fecha_nacimiento && <span className="text-red-500 text-xs font-medium">{registerErrors.fecha_nacimiento}</span>}
                           </div>
-                          <Popover open={isCalendarOpen} onOpenChange={(open) => { setIsCalendarOpen(open); if (open) handleBlur('fecha_nacimiento'); if (!open) handleBlur('fecha_nacimiento'); }}>
-                            <PopoverTrigger asChild>
-                              <Button
-                                onClick={() => handleBlur('fecha_nacimiento')}
-                                variant="outline"
-                                className={`w-full justify-start text-left font-normal h-12 border-gray-200 ${!registerData.fecha_nacimiento && "text-muted-foreground"} ${touchedFields.fecha_nacimiento && registerErrors.fecha_nacimiento ? 'border-red-500 focus:ring-red-200' : 'focus:border-indigo-500 focus:ring-indigo-200'}`}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {registerData.fecha_nacimiento ? (
-                                  format(new Date(registerData.fecha_nacimiento + 'T00:00:00'), "PPP", { locale: es })
-                                ) : (
-                                  <span>Seleccionar fecha</span>
-                                )}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <CustomDatePicker
-                                value={registerData.fecha_nacimiento}
-                                onChange={(v) => {
-                                  setRegisterData(prev => ({ ...prev, fecha_nacimiento: v }));
-                                  handleBlur('fecha_nacimiento');
-                                }}
-                                minAgeDate={globalMinAgeDate}
-                                onClose={() => setIsCalendarOpen(false)}
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <DatePickerInput
+                            value={registerData.fecha_nacimiento}
+                            onChange={(v) => {
+                              setRegisterData(prev => ({ ...prev, fecha_nacimiento: v }));
+                              handleBlur('fecha_nacimiento');
+                            }}
+                            onBlur={() => handleBlur('fecha_nacimiento')}
+                            minAgeDate={globalMinAgeDate}
+                            placeholder="Seleccionar fecha"
+                            className="h-12"
+                            error={!!(touchedFields.fecha_nacimiento && registerErrors.fecha_nacimiento)}
+                          />
                         </div>
                       </div>
                     )}
