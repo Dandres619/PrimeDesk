@@ -45,7 +45,7 @@ export function Sidebar({ className, children, ...props }: HTMLAttributes<HTMLDi
             {/* Overlay/Fondo Oscuro para móviles cuando el menú está abierto */}
             <div
                 className={cn(
-                    'fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 md:hidden',
+                    'fixed inset-0 z-40 bg-black/50 transition-opacity duration-500 ease-in-out md:hidden',
                     isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 )}
                 onClick={close}
@@ -55,7 +55,7 @@ export function Sidebar({ className, children, ...props }: HTMLAttributes<HTMLDi
             <div
                 className={cn(
                     // Base styles
-                    "flex flex-col h-screen bg-background border-r transition-all duration-300 z-50 overflow-hidden",
+                    "flex flex-col h-screen bg-background border-r transition-all duration-500 ease-in-out z-50 overflow-hidden",
 
                     // Mobile: Fixed position, slide in/out
                     'fixed inset-y-0 left-0 w-64',
@@ -83,7 +83,7 @@ export function SidebarHeader({ className, children, ...props }: HTMLAttributes<
     return (
         <div
             className={cn(
-                "flex flex-col shrink-0 py-6 border-b border-border transition-all duration-300",
+                "flex flex-col shrink-0 py-6 border-b border-border transition-all duration-500 ease-in-out",
                 isOpen ? 'px-4' : 'px-2 md:justify-center',
                 className
             )}
@@ -91,7 +91,7 @@ export function SidebarHeader({ className, children, ...props }: HTMLAttributes<
         >
             {/* Envolvemos el contenido con una clase que oculte el texto cuando está colapsado */}
             <div className={cn(
-                'flex flex-col transition-opacity duration-300',
+                'flex flex-col transition-opacity duration-500 ease-in-out',
                 !isOpen && 'md:opacity-0 md:h-0 md:overflow-hidden md:pointer-events-none'
             )}>
                 {children}
@@ -105,7 +105,7 @@ export function SidebarContent({ className, ...props }: HTMLAttributes<HTMLDivEl
     return (
         <div
             className={cn(
-                "flex-1 overflow-y-auto sidebar-scroll transition-all duration-300",
+                "flex-1 overflow-y-auto sidebar-scroll transition-all duration-500 ease-in-out",
                 isOpen ? 'px-4' : 'px-2',
                 className
             )}
@@ -119,7 +119,7 @@ export function SidebarFooter({ className, ...props }: HTMLAttributes<HTMLDivEle
     return (
         <div
             className={cn(
-                "shrink-0 border-t border-border py-4 transition-all duration-300",
+                "shrink-0 border-t border-border py-4 transition-all duration-500 ease-in-out",
                 isOpen ? 'px-4' : 'px-2',
                 className
             )}
@@ -185,7 +185,7 @@ export function SidebarMenuButton({
                     return (
                         <span
                             className={cn(
-                                'transition-opacity duration-300',
+                                'transition-opacity duration-500 ease-in-out',
                                 !isOpen && 'md:hidden'
                             )}
                         >

@@ -24,51 +24,48 @@ import { Empleados } from '@/components/Empleados';
 import { Verify } from '@/components/Verify';
 import {
     LayoutDashboard,
-    Shield,
-    Users,
-    User,
-    UserCheck,
+    ShieldCheck,
+    UsersRound,
+    UserCog,
+    Contact,
     UserCircle,
-    Bike,
-    Calendar,
-    Clock,
+    CalendarClock,
+    AlarmClock,
     Truck,
-    ShoppingCart,
-    DollarSign,
-    Wrench,
-    Package,
-    Tag,
+    ShoppingBag,
+    CircleDollarSign,
+    PackageSearch,
+    Tags,
     LogOut,
     Menu,
     Moon,
     Sun,
-    ClipboardList
+    ClipboardPen
 } from 'lucide-react';
+import { PiMotorcycle, PiWrench } from 'react-icons/pi';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import ResetPassword from '@/components/ResetPassword';
 
-const EmpleadosIcon = UserCheck;
-
 const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'gestionar_dashboard' },
     { id: 'mi-perfil', label: 'Mi Perfil', icon: UserCircle, permission: 'ver_perfil' },
-    { id: 'roles', label: 'Roles', icon: Shield, permission: 'gestionar_roles' },
-    { id: 'usuarios', label: 'Usuarios', icon: User, permission: 'gestionar_usuarios' },
-    { id: 'empleados', label: 'Empleados', icon: EmpleadosIcon, permission: 'gestionar_empleados' },
-    { id: 'clientes', label: 'Clientes', icon: Users, permission: 'gestionar_clientes' },
-    { id: 'motos', label: 'Motos', icon: Bike, permission: 'gestionar_motos' },
-    { id: 'servicios', label: 'Servicios', icon: Wrench, permission: 'gestionar_servicios' },
-    { id: 'reparaciones', label: 'Reparaciones', icon: ClipboardList, permission: 'gestionar_reparaciones' },
-    { id: 'horarios', label: 'Horarios', icon: Clock, permission: 'gestionar_horarios' },
-    { id: 'agendamientos', label: 'Agendamientos', icon: Calendar, permission: 'gestionar_agendamientos' },
-    { id: 'categorias-productos', label: 'Categorías', icon: Tag, permission: 'gestionar_categorias' },
-    { id: 'productos', label: 'Productos', icon: Package, permission: 'gestionar_productos' },
+    { id: 'roles', label: 'Roles', icon: ShieldCheck, permission: 'gestionar_roles' },
+    { id: 'usuarios', label: 'Usuarios', icon: UserCog, permission: 'gestionar_usuarios' },
+    { id: 'empleados', label: 'Empleados', icon: Contact, permission: 'gestionar_empleados' },
+    { id: 'clientes', label: 'Clientes', icon: UsersRound, permission: 'gestionar_clientes' },
+    { id: 'motos', label: 'Motos', icon: PiMotorcycle, permission: 'gestionar_motos' },
+    { id: 'servicios', label: 'Servicios', icon: PiWrench, permission: 'gestionar_servicios' },
+    { id: 'reparaciones', label: 'Reparaciones', icon: ClipboardPen, permission: 'gestionar_reparaciones' },
+    { id: 'horarios', label: 'Horarios', icon: AlarmClock, permission: 'gestionar_horarios' },
+    { id: 'agendamientos', label: 'Agendamientos', icon: CalendarClock, permission: 'gestionar_agendamientos' },
+    { id: 'categorias-productos', label: 'Categorías', icon: Tags, permission: 'gestionar_categorias' },
+    { id: 'productos', label: 'Productos', icon: PackageSearch, permission: 'gestionar_productos' },
     { id: 'proveedores', label: 'Proveedores', icon: Truck, permission: 'gestionar_proveedores' },
-    { id: 'compras', label: 'Compras', icon: ShoppingCart, permission: 'gestionar_compras' },
-    { id: 'ventas', label: 'Ventas', icon: DollarSign, permission: 'gestionar_ventas' },
+    { id: 'compras', label: 'Compras', icon: ShoppingBag, permission: 'gestionar_compras' },
+    { id: 'ventas', label: 'Ventas', icon: CircleDollarSign, permission: 'gestionar_ventas' },
 ];
 
 function AppContent() {
@@ -148,7 +145,7 @@ function AppContent() {
         if (activeItem && currentUser?.permisos && !currentUser.permisos.includes(activeItem.permission)) {
             return (
                 <div className="flex flex-col items-center justify-center p-12 text-center h-full">
-                    <Shield className="w-16 h-16 text-red-500 mb-4" />
+                    <ShieldCheck className="w-16 h-16 text-red-500 mb-4" />
                     <h2 className="text-2xl font-bold mb-2">Acceso Denegado</h2>
                     <p className="text-muted-foreground">No tienes los permisos necesarios para ver este módulo.</p>
                 </div>
@@ -259,23 +256,11 @@ function AppContent() {
         <SidebarProvider>
             <div className="min-h-screen w-full md:flex">
                 <Sidebar className="border-r border-border">
-                    <SidebarHeader className="border-b border-border p-6">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                                <Bike className="w-5 h-5 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="font-semibold text-lg">Rafa Motos</h2>
-                                <p className="text-sm text-muted-foreground">Panel Administrativo</p>
-                            </div>
+                    <SidebarHeader className="border-b border-border p-6 flex flex-col items-center justify-center">
+                        <div className="flex flex-col items-center gap-1 text-center py-2">
+                            <h2 className="font-semibold text-2xl tracking-tight text-blue-900 dark:text-blue-100">Rafa Motos</h2>
+                            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Panel Administrativo</p>
                         </div>
-                        {currentUser && (
-                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800 space-y-1">
-                                <p className="text-base font-bold text-blue-900 dark:text-blue-200">Bienvenido</p>
-                                <p className="text-sm font-medium text-blue-700 dark:text-blue-400">{currentUser.name} {currentUser.last_name}</p>
-                                <p className="text-sm text-blue-600 dark:text-blue-500 capitalize">{currentUser.type}</p>
-                            </div>
-                        )}
                     </SidebarHeader>
 
                     <SidebarContent className="p-4 overflow-y-auto sidebar-scroll">
@@ -331,8 +316,8 @@ function AppContent() {
                             </div>
                             {currentUser && (
                                 <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <User className="w-4 h-4" />
+                                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                        <UserCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                         <span>{currentUser.name} {currentUser.last_name}</span>
                                     </div>
                                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
@@ -349,7 +334,7 @@ function AppContent() {
                         </div>
                     </header>
 
-                    <div className="flex-1 p-6 bg-muted/30">
+                    <div key={activeSection} className="flex-1 p-6 bg-muted/30 animate-fade-slide-in">
                         {renderContent()}
                     </div>
                 </main>
