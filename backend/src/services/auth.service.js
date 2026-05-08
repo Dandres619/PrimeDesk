@@ -103,9 +103,10 @@ const register = async (data) => {
                     throw { status: 400, message: 'Datos de perfil de cliente incompletos.' };
                 }
 
+                const finalNacimiento = (fecha_nacimiento && fecha_nacimiento.trim() !== '') ? fecha_nacimiento : null;
                 await tx`
                     INSERT INTO clientes (id_usuario, nombre, apellido, tipodocumento, documento, telefono, barrio, direccion, fechanacimiento)
-                    VALUES (${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento}, ${telefono}, ${barrio || null}, ${direccion || null}, ${fecha_nacimiento || null})
+                    VALUES (${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento}, ${telefono}, ${barrio || null}, ${direccion || null}, ${finalNacimiento})
                 `;
             }
 
@@ -228,7 +229,10 @@ const updateProfile = async (id_usuario, data, file) => {
         finalFoto = foto;
     }
 
-    const finalNacimiento = fecha_nacimiento || currentNacimiento;
+    // Allow clearing the date if an empty string is passed
+    const finalNacimiento = (fecha_nacimiento !== undefined && fecha_nacimiento !== null)
+        ? (fecha_nacimiento.trim() === '' ? null : fecha_nacimiento)
+        : currentNacimiento;
 
     if (isClient) {
         await sql`

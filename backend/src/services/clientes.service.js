@@ -48,23 +48,23 @@ const create = async (data, file) => {
 
   if (file) {
     try {
-        const fileBuffer = file.buffer;
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        const fileName = `profile-${uniqueSuffix}${ext}`;
+      const fileBuffer = file.buffer;
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      const fileName = `profile-${uniqueSuffix}${ext}`;
 
-        const { data: uploadData, error } = await supabase.storage
-            .from('profiles')
-            .upload(fileName, fileBuffer, { contentType: file.mimetype, upsert: true });
+      const { data: uploadData, error } = await supabase.storage
+        .from('profiles')
+        .upload(fileName, fileBuffer, { contentType: file.mimetype, upsert: true });
 
-        if (error) {
-            console.error('❌ Error al subir a Supabase:', error.message);
-        } else {
-            const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(fileName);
-            foto = publicUrl.publicUrl;
-        }
+      if (error) {
+        console.error('❌ Error al subir a Supabase:', error.message);
+      } else {
+        const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(fileName);
+        foto = publicUrl.publicUrl;
+      }
     } catch (err) {
-        console.error('Error subiendo foto:', err);
+      console.error('Error subiendo foto:', err);
     }
   }
 
@@ -89,12 +89,12 @@ const create = async (data, file) => {
         final_id_usuario = newUser.id_usuario;
       }
 
-      // 2. Crear Cliente
+      const finalNacimiento = (fecha_nacimiento && fecha_nacimiento.trim() !== '') ? fecha_nacimiento : null;
       const [row] = await tx`
           INSERT INTO clientes (id_usuario, nombre, apellido, tipodocumento, documento,
               telefono, barrio, direccion, fechanacimiento, foto)
           VALUES (${final_id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento},
-              ${telefono}, ${barrio}, ${direccion}, ${fecha_nacimiento}, ${foto || null})
+              ${telefono}, ${barrio || null}, ${direccion || null}, ${finalNacimiento}, ${foto || null})
           RETURNING id_cliente AS "ID_Cliente", id_usuario AS "ID_Usuario", nombre AS "Nombre", 
                     apellido AS "Apellido", tipodocumento AS "TipoDocumento", documento AS "Documento",
                     telefono AS "Telefono", barrio AS "Barrio", direccion AS "Direccion", 
@@ -114,38 +114,39 @@ const update = async (id, data, file) => {
 
   if (file) {
     try {
-        const fileBuffer = file.buffer;
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        const fileName = `profile-${uniqueSuffix}${ext}`;
+      const fileBuffer = file.buffer;
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      const fileName = `profile-${uniqueSuffix}${ext}`;
 
-        const { data: uploadData, error } = await supabase.storage
-            .from('profiles')
-            .upload(fileName, fileBuffer, { contentType: file.mimetype, upsert: true });
+      const { data: uploadData, error } = await supabase.storage
+        .from('profiles')
+        .upload(fileName, fileBuffer, { contentType: file.mimetype, upsert: true });
 
-        if (error) {
-            console.error('❌ Error al subir a Supabase:', error.message);
-        } else {
-            const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(fileName);
-            foto = publicUrl.publicUrl;
-        }
+      if (error) {
+        console.error('❌ Error al subir a Supabase:', error.message);
+      } else {
+        const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(fileName);
+        foto = publicUrl.publicUrl;
+      }
     } catch (err) {
-        console.error('Error subiendo foto:', err);
+      console.error('Error subiendo foto:', err);
     }
   } else if (!foto || foto === 'null') {
-      const [current] = await sql`SELECT foto FROM clientes WHERE id_cliente = ${id}`;
-      // Si el frontend envia foto vacia/null y no envia file
-      if (current && (!foto || foto.trim() === '')) {
-          foto = current.foto;
-      }
+    const [current] = await sql`SELECT foto FROM clientes WHERE id_cliente = ${id}`;
+    // Si el frontend envia foto vacia/null y no envia file
+    if (current && (!foto || foto.trim() === '')) {
+      foto = current.foto;
+    }
   }
 
 
+  const finalNacimiento = (fecha_nacimiento && fecha_nacimiento.trim() !== '') ? fecha_nacimiento : null;
   const [row] = await sql`
         UPDATE clientes 
         SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
-            documento = ${documento}, telefono = ${telefono}, barrio = ${barrio}, 
-            direccion = ${direccion}, fechanacimiento = ${fecha_nacimiento}, foto = ${foto || null}
+            documento = ${documento}, telefono = ${telefono}, barrio = ${barrio || null}, 
+            direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento}, foto = ${foto || null}
         WHERE id_cliente = ${id}
         RETURNING id_cliente AS "ID_Cliente", id_usuario AS "ID_Usuario", nombre AS "Nombre", 
                   apellido AS "Apellido", tipodocumento AS "TipoDocumento", documento AS "Documento",
