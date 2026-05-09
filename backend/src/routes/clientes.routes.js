@@ -17,7 +17,7 @@ const validations = [
     body('tipo_documento').notEmpty().withMessage('Tipo de documento requerido.'),
     body('documento').notEmpty().withMessage('Documento requerido.'),
     body('telefono').isLength({ min: 7 }).withMessage('Teléfono demasiado corto.'),
-    body('fecha_nacimiento').isDate().withMessage('Fecha de nacimiento inválida.'),
+    body('fecha_nacimiento').optional({ checkFalsy: true }).isDate().withMessage('Fecha de nacimiento inválida.'),
     handleValidation,
 ];
 
