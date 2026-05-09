@@ -571,8 +571,6 @@ export function Usuarios() {
                           <Badge variant="outline" className={tipoBadges[viewingUser.NombreRol]?.class}>
                             {viewingUser.NombreRol}
                           </Badge>
-                          <span className="text-slate-300 dark:text-slate-700">•</span>
-                          <span className="text-xs font-mono text-slate-500">ID #{viewingUser.ID_Usuario}</span>
                         </div>
                       </div>
                     </div>

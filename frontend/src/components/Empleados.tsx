@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { format, parse, isValid } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -633,21 +634,63 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
         break;
       case 'fecha_nacimiento':
         if (value) {
-          const d = new Date(value + 'T00:00:00');
-          const today = new Date();
-          const minAge = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-          if (isNaN(d.getTime())) error = 'Fecha inválida';
-          else if (d > today) error = 'Fecha en el futuro';
-          else if (d > minAge) error = 'Debe ser mayor de 18 años';
-          else if (d.getFullYear() < 1950) error = 'El año mínimo es 1950';
+          let dateObj: Date | null = null;
+          let yearVal = 0;
+
+          if (value.includes('/')) {
+            // Partial or raw DD/MM/YYYY
+            const parts = value.split('/');
+            if (parts.length === 3 && parts[2]) {
+              yearVal = parseInt(parts[2]);
+              if (parts[2].length === 4) {
+                const d = parse(value, 'dd/MM/yyyy', new Date());
+                if (isValid(d)) dateObj = d;
+              }
+            }
+          } else if (value !== 'INVALID') {
+            // YYYY-MM-DD
+            dateObj = new Date(value + 'T00:00:00');
+            yearVal = parseInt(value.split('-')[0]);
+          }
+
+          if (yearVal > 0 && yearVal < 1950) error = 'El año mínimo es 1950';
+          else if (dateObj) {
+            const today = new Date();
+            const minAge = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+            if (dateObj > today) error = 'No puede ser en el futuro';
+            else if (dateObj > minAge) error = 'Debe ser mayor de 18 años';
+          }
         }
         break;
       case 'fecha_ingreso':
         if (!value) error = 'La fecha de ingreso es obligatoria';
         else {
-          const d = new Date(value + 'T00:00:00');
-          if (isNaN(d.getTime())) error = 'Fecha inválida';
-          else if (d.getFullYear() < 1950) error = 'El año mínimo es 1950';
+          let dateObj: Date | null = null;
+          let yearVal = 0;
+
+          if (value.includes('/')) {
+            const parts = value.split('/');
+            if (parts.length === 3 && parts[2]) {
+              yearVal = parseInt(parts[2]);
+              if (parts[2].length === 4) {
+                const d = parse(value, 'dd/MM/yyyy', new Date());
+                if (isValid(d)) dateObj = d;
+              }
+            }
+          } else if (value !== 'INVALID') {
+            dateObj = new Date(value + 'T00:00:00');
+            yearVal = parseInt(value.split('-')[0]);
+          }
+
+          const today = new Date();
+          const tenYearsAgo = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate());
+          
+          if (yearVal > 0 && yearVal < tenYearsAgo.getFullYear() && (value.includes('/') ? value.split('/')[2].length === 4 : true)) {
+            error = 'Máximo 10 años atrás';
+          } else if (dateObj) {
+            if (dateObj > today) error = 'No puede ser en el futuro';
+            else if (dateObj < tenYearsAgo) error = 'Máximo 10 años atrás';
+          }
         }
         break;
       case 'barrio':
@@ -802,7 +845,23 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
       return;
     }
 
-    onSave(formData);
+    // Helper to ensure dates are in YYYY-MM-DD
+    const normalizeDate = (d: string) => {
+      if (!d) return d;
+      if (d.includes('/')) {
+        const parsed = parse(d, 'dd/MM/yyyy', new Date());
+        return isValid(parsed) ? format(parsed, 'yyyy-MM-dd') : d;
+      }
+      return d;
+    };
+
+    const finalData = {
+      ...formData,
+      fecha_nacimiento: normalizeDate(formData.fecha_nacimiento),
+      fecha_ingreso: normalizeDate(formData.fecha_ingreso)
+    };
+
+    onSave(finalData);
   };
 
 
@@ -815,18 +874,28 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
           </div>
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">{employee ? 'Editar Empleado' : 'Nuevo Empleado'}</DialogTitle>
+            {!employee && (
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full transition-colors duration-300 ${activeStep >= 1 ? 'bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                  <div className={`w-10 h-1 rounded-full transition-colors duration-300 ${activeStep >= 2 ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                  <div className={`w-3 h-3 rounded-full transition-colors duration-300 ${activeStep >= 2 ? 'bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                </div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Paso {activeStep} / 2</span>
+              </div>
+            )}
           </DialogHeader>
         </div>
       </div>
 
       <div className="p-8">
         <form onSubmit={handleFinalSubmit} className="space-y-8" noValidate>
-          {/* Section: Access Data (Only for NEW employees) */}
-          {(!employee || activeStep === 1) && !employee && (
+          {/* Section: Access Data (Only for NEW employees - Step 1) */}
+          {!employee && activeStep === 1 && (
             <div className="space-y-6 animate-fadeIn">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="emp-correo" className="text-sm font-semibold">Correo electrónico *</Label>
+                  <Label htmlFor="emp-correo" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Correo electrónico *</Label>
                   <Input
                     id="emp-correo"
                     type="email"
@@ -834,25 +903,25 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
                     value={formData.correo}
                     onChange={(e) => handleChange('correo', e.target.value)}
                     onBlur={() => markAsTouched('correo')}
-                    className={`h-11 ${touchedFields.correo && formErrors.correo ? 'border-red-500' : ''}`}
+                    className={`h-11 ${touchedFields.correo && formErrors.correo ? 'border-red-500 focus-visible:ring-red-500' : 'focus-visible:ring-blue-600'}`}
                     required
                   />
                   {touchedFields.correo && formErrors.correo && <p className="text-red-500 text-xs font-medium">{formErrors.correo}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="emp-rol" className="text-sm font-semibold">Rol del Sistema *</Label>
+                  <Label htmlFor="emp-rol" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Rol del Sistema *</Label>
                   <select
                     id="emp-rol"
                     value={formData.id_rol}
                     onChange={(e) => setFormData(prev => ({ ...prev, id_rol: parseInt(e.target.value) }))}
-                    className="w-full h-11 px-3 border border-input rounded-md bg-background text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+                    className="w-full h-11 px-3 border border-input rounded-md bg-background text-sm focus:ring-2 focus:ring-blue-600 outline-none transition-all"
                   >
                     <option value={2}>Mecánico</option>
                     <option value={1}>Administrador</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="emp-pass" className="text-sm font-semibold">Contraseña *</Label>
+                  <Label htmlFor="emp-pass" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Contraseña *</Label>
                   <div className="relative">
                     <Input
                       id="emp-pass"
@@ -860,17 +929,34 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
                       value={formData.contrasena}
                       onChange={(e) => handleChange('contrasena', e.target.value)}
                       onBlur={() => markAsTouched('contrasena')}
-                      className={`h-11 pr-10 ${touchedFields.contrasena && formErrors.contrasena ? 'border-red-500' : ''}`}
+                      className={`h-11 pr-10 ${touchedFields.contrasena && formErrors.contrasena ? 'border-red-500 focus-visible:ring-red-500' : 'focus-visible:ring-blue-600'}`}
                       placeholder="********"
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-slate-400">
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 transition-colors">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
+                  </div>
+                  <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-800">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Requisitos mínimos:</p>
+                    <ul className="grid grid-cols-2 gap-x-4 gap-y-1">
+                      <li className={`text-[10px] flex items-center gap-1.5 ${formData.contrasena.length >= 8 ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}>
+                        <div className={`w-1 h-1 rounded-full ${formData.contrasena.length >= 8 ? 'bg-emerald-600' : 'bg-slate-400'}`} /> 8+ caracteres
+                      </li>
+                      <li className={`text-[10px] flex items-center gap-1.5 ${/[A-Z]/.test(formData.contrasena) ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}>
+                        <div className={`w-1 h-1 rounded-full ${/[A-Z]/.test(formData.contrasena) ? 'bg-emerald-600' : 'bg-slate-400'}`} /> 1 mayúscula
+                      </li>
+                      <li className={`text-[10px] flex items-center gap-1.5 ${/\d/.test(formData.contrasena) ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}>
+                        <div className={`w-1 h-1 rounded-full ${/\d/.test(formData.contrasena) ? 'bg-emerald-600' : 'bg-slate-400'}`} /> 1 número
+                      </li>
+                      <li className={`text-[10px] flex items-center gap-1.5 ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.contrasena) ? 'text-emerald-600 font-bold' : 'text-slate-500'}`}>
+                        <div className={`w-1 h-1 rounded-full ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.contrasena) ? 'bg-emerald-600' : 'bg-slate-400'}`} /> 1 símbolo
+                      </li>
+                    </ul>
                   </div>
                   {touchedFields.contrasena && formErrors.contrasena && <p className="text-red-500 text-xs font-medium">{formErrors.contrasena}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="emp-confirm-pass" className="text-sm font-semibold">Confirmar Contraseña *</Label>
+                  <Label htmlFor="emp-confirm-pass" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Confirmar Contraseña *</Label>
                   <div className="relative">
                     <Input
                       id="emp-confirm-pass"
@@ -878,10 +964,10 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
                       value={formData.confirmarContrasena}
                       onChange={(e) => handleChange('confirmarContrasena', e.target.value)}
                       onBlur={() => markAsTouched('confirmarContrasena')}
-                      className={`h-11 pr-10 ${touchedFields.confirmarContrasena && formErrors.confirmarContrasena ? 'border-red-500' : ''}`}
+                      className={`h-11 pr-10 ${touchedFields.confirmarContrasena && formErrors.confirmarContrasena ? 'border-red-500 focus-visible:ring-red-500' : 'focus-visible:ring-blue-600'}`}
                       placeholder="********"
                     />
-                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3.5 text-slate-400">
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-600 transition-colors">
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
@@ -889,8 +975,8 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
                 </div>
               </div>
               <div className="flex justify-end pt-4">
-                <Button type="button" onClick={nextStep} className="bg-blue-600 hover:bg-blue-700 h-11 px-8">
-                  Continuar
+                <Button type="button" onClick={nextStep} className="bg-blue-600 hover:bg-blue-700 h-11 px-8 shadow-lg shadow-blue-200 dark:shadow-none font-semibold transition-all active:scale-95">
+                  Siguiente Paso
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -899,10 +985,92 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
 
           {(employee || activeStep === 2) && (
             <div className="space-y-10 animate-fadeIn">
-              {/* Photo & Header Section */}
-              <div className="flex flex-col md:flex-row items-center gap-8 pb-8 border-b border-slate-100 dark:border-slate-800">
+              {/* Section: Personal Information */}
+              <div className="space-y-6">
+                <div className="pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Información Personal</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="nombre" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nombres *</Label>
+                    <Input id="nombre" value={formData.nombre} onChange={(e) => handleChange('nombre', e.target.value)} onBlur={() => markAsTouched('nombre')} className={`h-11 ${formErrors.nombre ? 'border-red-500' : ''}`} />
+                    {formErrors.nombre && <p className="text-red-500 text-xs font-medium">{formErrors.nombre}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="apellido" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Apellidos *</Label>
+                    <Input id="apellido" value={formData.apellido} onChange={(e) => handleChange('apellido', e.target.value)} onBlur={() => markAsTouched('apellido')} className={`h-11 ${formErrors.apellido ? 'border-red-500' : ''}`} />
+                    {formErrors.apellido && <p className="text-red-500 text-xs font-medium">{formErrors.apellido}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tipo_documento" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tipo de Documento</Label>
+                    <select
+                      id="tipo_documento"
+                      value={formData.tipo_documento}
+                      onChange={(e) => handleChange('tipo_documento', e.target.value)}
+                      disabled={!!employee}
+                      className="w-full h-11 px-3 border border-input rounded-md bg-background text-sm focus:ring-2 focus:ring-blue-600 outline-none disabled:bg-slate-50 dark:disabled:bg-slate-900"
+                    >
+                      {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k}>{v as string}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="documento" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Número de Documento *</Label>
+                    <Input id="documento" value={formData.documento} onChange={(e) => handleChange('documento', e.target.value)} onBlur={() => markAsTouched('documento')} disabled={!!employee} className={`h-11 ${formErrors.documento ? 'border-red-500' : ''} disabled:bg-slate-50 dark:disabled:bg-slate-900`} />
+                    {formErrors.documento && <p className="text-red-500 text-xs font-medium">{formErrors.documento}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fecha_nacimiento" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Fecha de Nacimiento (Opcional)</Label>
+                    <DatePickerInput
+                      value={formData.fecha_nacimiento}
+                      onChange={(v) => handleChange('fecha_nacimiento', v)}
+                      minDate={new Date(1950, 0, 1)}
+                      maxDate={new Date()}
+                      error={!!formErrors.fecha_nacimiento}
+                    />
+                    {formErrors.fecha_nacimiento && <p className="text-red-500 text-xs font-medium">{formErrors.fecha_nacimiento}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fecha_ingreso" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Fecha de Ingreso a la Empresa *</Label>
+                    <DatePickerInput
+                      value={formData.fecha_ingreso}
+                      onChange={(v) => handleChange('fecha_ingreso', v)}
+                      minDate={new Date(new Date().getFullYear() - 10, new Date().getMonth(), new Date().getDate())}
+                      maxDate={new Date()}
+                      error={!!formErrors.fecha_ingreso}
+                    />
+                    {formErrors.fecha_ingreso && <p className="text-red-500 text-xs font-medium">{formErrors.fecha_ingreso}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section: Contact & Location */}
+              <div className="space-y-6">
+                <div className="pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest">Contacto y Ubicación</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="telefono" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Teléfono de Contacto *</Label>
+                    <Input id="telefono" value={formData.telefono} onChange={(e) => handleChange('telefono', e.target.value)} onBlur={() => markAsTouched('telefono')} className={`h-11 ${formErrors.telefono ? 'border-red-500' : ''}`} placeholder="300 000 0000" />
+                    {formErrors.telefono && <p className="text-red-500 text-xs font-medium">{formErrors.telefono}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="barrio" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Barrio *</Label>
+                    <Input id="barrio" value={formData.barrio} onChange={(e) => handleChange('barrio', e.target.value)} onBlur={() => markAsTouched('barrio')} className={`h-11 ${formErrors.barrio ? 'border-red-500' : ''}`} />
+                    {formErrors.barrio && <p className="text-red-500 text-xs font-medium">{formErrors.barrio}</p>}
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="direccion" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Dirección de Residencia *</Label>
+                    <Input id="direccion" value={formData.direccion} onChange={(e) => handleChange('direccion', e.target.value)} onBlur={() => markAsTouched('direccion')} className={`h-11 ${formErrors.direccion ? 'border-red-500' : ''}`} />
+                    {formErrors.direccion && <p className="text-red-500 text-xs font-medium">{formErrors.direccion}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Photo & Identity Section (BOTTOM) */}
+              <div className="flex flex-col md:flex-row items-center gap-8 py-8 px-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                 <div className="relative group shrink-0">
-                  <div className="w-24 h-24 rounded-full border-2 border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                  <div className="w-24 h-24 rounded-full border-2 border-white dark:border-slate-700 shadow-lg overflow-hidden bg-white dark:bg-slate-900 flex items-center justify-center">
                     {fotoPreview ? (
                       <img src={fotoPreview} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
@@ -918,80 +1086,16 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
                   </button>
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                 </div>
-                <div className="text-center md:text-left space-y-1">
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                    {formData.nombre || 'Nombre'} {formData.apellido || 'Apellido'}
+                <div className="text-center md:text-left space-y-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Previsualización de Identidad</p>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 min-h-[32px]">
+                    {formData.nombre} {formData.apellido}
                   </h3>
                 </div>
               </div>
 
-              {/* Main Form Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="nombre" className="text-sm font-semibold">Nombres *</Label>
-                  <Input id="nombre" value={formData.nombre} onChange={(e) => handleChange('nombre', e.target.value)} onBlur={() => markAsTouched('nombre')} className={`h-11 ${formErrors.nombre ? 'border-red-500' : ''}`} />
-                  {formErrors.nombre && <p className="text-red-500 text-xs font-medium">{formErrors.nombre}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="apellido" className="text-sm font-semibold">Apellidos *</Label>
-                  <Input id="apellido" value={formData.apellido} onChange={(e) => handleChange('apellido', e.target.value)} onBlur={() => markAsTouched('apellido')} className={`h-11 ${formErrors.apellido ? 'border-red-500' : ''}`} />
-                  {formErrors.apellido && <p className="text-red-500 text-xs font-medium">{formErrors.apellido}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tipo_documento" className="text-sm font-semibold">Tipo de Documento</Label>
-                  <select
-                    id="tipo_documento"
-                    value={formData.tipo_documento}
-                    onChange={(e) => handleChange('tipo_documento', e.target.value)}
-                    disabled={!!employee}
-                    className="w-full h-11 px-3 border border-input rounded-md bg-background text-sm focus:ring-2 focus:ring-blue-600 outline-none disabled:bg-slate-50 dark:disabled:bg-slate-900"
-                  >
-                    {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k}>{v as string}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="documento" className="text-sm font-semibold">Número de Documento *</Label>
-                  <Input id="documento" value={formData.documento} onChange={(e) => handleChange('documento', e.target.value)} onBlur={() => markAsTouched('documento')} disabled={!!employee} className={`h-11 ${formErrors.documento ? 'border-red-500' : ''} disabled:bg-slate-50 dark:disabled:bg-slate-900`} />
-                  {formErrors.documento && <p className="text-red-500 text-xs font-medium">{formErrors.documento}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="telefono" className="text-sm font-semibold">Teléfono de Contacto *</Label>
-                  <Input id="telefono" value={formData.telefono} onChange={(e) => handleChange('telefono', e.target.value)} onBlur={() => markAsTouched('telefono')} className={`h-11 ${formErrors.telefono ? 'border-red-500' : ''}`} placeholder="300 000 0000" />
-                  {formErrors.telefono && <p className="text-red-500 text-xs font-medium">{formErrors.telefono}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fecha_nacimiento" className="text-sm font-semibold">Fecha de Nacimiento (Opcional)</Label>
-                  <DatePickerInput
-                    value={formData.fecha_nacimiento}
-                    onChange={(v) => handleChange('fecha_nacimiento', v)}
-                    minAgeDate={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())}
-                    error={!!formErrors.fecha_nacimiento}
-                  />
-                  {formErrors.fecha_nacimiento && <p className="text-red-500 text-xs font-medium">{formErrors.fecha_nacimiento}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="barrio" className="text-sm font-semibold">Barrio *</Label>
-                  <Input id="barrio" value={formData.barrio} onChange={(e) => handleChange('barrio', e.target.value)} onBlur={() => markAsTouched('barrio')} className={`h-11 ${formErrors.barrio ? 'border-red-500' : ''}`} />
-                  {formErrors.barrio && <p className="text-red-500 text-xs font-medium">{formErrors.barrio}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="direccion" className="text-sm font-semibold">Dirección de Residencia *</Label>
-                  <Input id="direccion" value={formData.direccion} onChange={(e) => handleChange('direccion', e.target.value)} onBlur={() => markAsTouched('direccion')} className={`h-11 ${formErrors.direccion ? 'border-red-500' : ''}`} />
-                  {formErrors.direccion && <p className="text-red-500 text-xs font-medium">{formErrors.direccion}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fecha_ingreso" className="text-sm font-semibold">Fecha de Ingreso a la Empresa *</Label>
-                  <DatePickerInput
-                    value={formData.fecha_ingreso}
-                    onChange={(v) => handleChange('fecha_ingreso', v)}
-                    error={!!formErrors.fecha_ingreso}
-                  />
-                  {formErrors.fecha_ingreso && <p className="text-red-500 text-xs font-medium">{formErrors.fecha_ingreso}</p>}
-                </div>
-              </div>
-
               {/* Footer Actions */}
-              <div className="flex items-center justify-end gap-4 pt-10 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-4 pt-4">
                 {!employee && (
                   <Button type="button" variant="ghost" onClick={() => setActiveStep(1)} className="text-slate-500 font-medium">
                     Atrás
