@@ -69,7 +69,10 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        className="sm:max-w-md animate-modal"
+      >
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             {getIcon()}
