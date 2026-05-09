@@ -9,12 +9,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { Switch } from './ui/switch';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Search, Loader2, Eye, EyeOff, User, Edit, Trash2, Users, Lock as LockIcon, ArrowRight, Camera, Plus } from 'lucide-react';
+import { Search, Loader2, Eye, EyeOff, User, Edit, Trash2, Users, ArrowRight, Camera, Plus, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { DatePickerInput } from './ui/DatePickerInput';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+const BASE_URL = API_URL.replace('/api', '');
+
+const getPhotoUrl = (photo: string | null) => {
+  if (!photo) return undefined;
+  if (photo.startsWith('http')) return photo;
+  return `${BASE_URL}${photo}`;
+};
 
 const docTypes: any = { CC: 'Cédula de Ciudadanía', CE: 'Cédula de Extranjería', PP: 'Pasaporte' };
 
@@ -24,6 +31,7 @@ export function Clientes() {
   const [editingClient, setEditingClient] = useState<any>(null);
   const [viewingClient, setViewingClient] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'delete' as any, onConfirm: () => { } });
   const [clients, setClients] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -160,48 +168,72 @@ export function Clientes() {
   // Stats removed
 
   const actions = [
-    { label: 'Ver detalles', icon: Eye, onClick: (c: any) => setViewingClient(c), color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
+    { label: 'Ver detalles', icon: Eye, onClick: (c: any) => { setViewingClient(c); setIsViewDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
     { label: 'Editar cliente', icon: Edit, onClick: (c: any) => { setEditingClient(c); setIsDialogOpen(true); }, color: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' },
     { label: 'Eliminar cliente', icon: Trash2, onClick: (c: any) => setConfirmDialog({ open: true, title: 'Eliminar Cliente', description: '¿Está seguro de que desea eliminar este cliente? Esta acción no se puede deshacer.', confirmText: 'Eliminar', variant: 'delete', onConfirm: () => deleteClient(c) }), color: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20' }
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-            <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold">Clientes</h1>
-            <p className="text-muted-foreground">Gestión de la base de datos de clientes</p>
-          </div>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingClient(null)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Cliente
-            </Button>
-          </DialogTrigger>
-          <ClientDialog client={editingClient} onSave={handleSave} isSaving={isSaving} onOpenChange={setIsDialogOpen} open={isDialogOpen} />
-        </Dialog>
-      </div>
-
-      <div className="flex justify-start">
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar clientes..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
-        </div>
-      </div>
+      <style>{`
+        .mp-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 200px);
+            gap: 16px;
+        }
+        .mp-loading-ring {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #cbd5e1;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: mp-spin 0.8s linear infinite;
+        }
+        @keyframes mp-spin { to { transform: rotate(360deg); } }
+        .mp-loading-text {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+      `}</style>
 
       {isLoading ? (
-        <div className="flex items-center justify-center p-24">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+        <div className="mp-loading">
+          <div className="mp-loading-ring" />
+          <p className="mp-loading-text">Cargando información...</p>
         </div>
       ) : (
         <>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold">Clientes</h1>
+                <p className="text-muted-foreground">Gestión de la base de datos de clientes</p>
+              </div>
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setEditingClient(null)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nuevo Cliente
+                </Button>
+              </DialogTrigger>
+              <ClientDialog client={editingClient} onSave={handleSave} isSaving={isSaving} onOpenChange={setIsDialogOpen} open={isDialogOpen} />
+            </Dialog>
+          </div>
 
+          <div className="flex justify-start">
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Buscar clientes..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
+            </div>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -298,6 +330,7 @@ export function Clientes() {
                 </TableBody>
               </Table>
 
+
               <div className="mt-6 flex justify-center">
                 <Pagination>
                   <PaginationContent>
@@ -317,85 +350,86 @@ export function Clientes() {
               </div>
             </CardContent>
           </Card>
-        </>
-      )}
 
-      <Dialog open={!!viewingClient} onOpenChange={() => setViewingClient(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detalles del Cliente</DialogTitle>
-          </DialogHeader>
-          {viewingClient && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg border">
-                <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 border-2 border-blue-100 flex items-center justify-center text-blue-600 font-bold text-2xl">
-                  {viewingClient.Foto ? (
-                    <img src={viewingClient.Foto} alt={`${viewingClient.Nombre} ${viewingClient.Apellido}`} className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{viewingClient.Nombre?.[0]}{viewingClient.Apellido?.[0]}</span>
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold">{viewingClient.Nombre} {viewingClient.Apellido}</h3>
-                  <p className="text-muted-foreground">{viewingClient.Correo || 'Sin cuenta de acceso'}</p>
-                  <div className="flex gap-2 mt-2">
-                    <Badge className={viewingClient.ID_Usuario === null || viewingClient.EstadoUsuario ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                      {viewingClient.ID_Usuario === null || viewingClient.EstadoUsuario ? 'Activo' : 'Inactivo'}
-                    </Badge>
-                    <Badge variant="outline">{(viewingClient.MotosCount || 0)} motos</Badge>
+          <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto animate-modal p-0">
+              {viewingClient && (
+                <>
+                  {/* Hero header */}
+                  <div className="px-8 pt-8 pb-8 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                      <div className="relative">
+                        {getPhotoUrl(viewingClient.Foto) ? (
+                          <img src={getPhotoUrl(viewingClient.Foto)!} alt="Perfil" className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-xl" />
+                        ) : (
+                          <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center shadow-xl border-4 border-white dark:border-slate-800">
+                            <span className="text-white text-2xl font-bold">{viewingClient.Nombre?.[0]}{viewingClient.Apellido?.[0]}</span>
+                          </div>
+                        )}
+                        <Badge className={`absolute -bottom-2 -right-2 border-2 border-white dark:border-slate-800 shadow-sm ${viewingClient.ID_Usuario === null || viewingClient.EstadoUsuario ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'}`}>
+                          {viewingClient.ID_Usuario === null || viewingClient.EstadoUsuario ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </div>
+                      <div className="text-center sm:text-left space-y-2">
+                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                          {viewingClient.Nombre} {viewingClient.Apellido}
+                        </h3>
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+                          <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800">
+                            Cliente
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              {[
-                {
-                  title: 'Información Personal',
-                  fields: [
-                    ['Nombre', viewingClient.Nombre],
-                    ['Apellido', viewingClient.Apellido],
-                    ['Fecha de nacimiento', viewingClient.FechaNacimiento ? new Date(viewingClient.FechaNacimiento).toLocaleDateString('es-ES') : 'No especificada'],
-                    ['Edad', viewingClient.FechaNacimiento ? `${new Date().getFullYear() - new Date(viewingClient.FechaNacimiento).getFullYear()} años` : '---']
-                  ]
-                },
-                {
-                  title: 'Información de Contacto',
-                  fields: [
-                    ['Correo electrónico', viewingClient.Correo || 'No tiene cuenta'],
-                    ['Teléfono', viewingClient.Telefono],
-                    ['Dirección', viewingClient.Direccion || 'Sin dirección'],
-                    ['Barrio', viewingClient.Barrio || 'Sin barrio']
-                  ]
-                },
-                {
-                  title: 'Información de Identificación',
-                  fields: [
-                    ['Tipo de documento', docTypes[viewingClient.TipoDocumento] || viewingClient.TipoDocumento],
-                    ['Número de documento', viewingClient.Documento]
-                  ]
-                },
-                {
-                  title: 'Información del Sistema',
-                  fields: [
-                    ['ID del cliente', `#${viewingClient.ID_Cliente}`],
-                    ['Motocicletas registradas', `${viewingClient.MotosCount || 0} motocicletas`]
-                  ]
-                }
-              ].map((section, i) => (
-                <div key={i}>
-                  <h4 className="font-semibold mb-3 pb-1 border-b text-blue-700">{section.title}</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    {section.fields.map(([label, value], j) => (
-                      <div key={j}>
-                        <Label className="text-xs text-muted-foreground uppercase">{label}</Label>
-                        {typeof value === 'string' ? <p className="font-medium">{value}</p> : <div className="mt-1">{value}</div>}
+
+                  <div className="px-8 py-8 space-y-8">
+                    {[
+                      {
+                        title: 'Información Personal',
+                        icon: <User className="w-4 h-4" />,
+                        fields: [
+                          ['Nombres', `${viewingClient.Nombre}`],
+                          ['Apellidos', `${viewingClient.Apellido}`],
+                          ['Tipo de documento', `${viewingClient.TipoDocumento}`],
+                          ['Documento', `${viewingClient.Documento}`],
+                          ['Fecha de nacimiento', viewingClient.FechaNacimiento ? new Date(viewingClient.FechaNacimiento).toLocaleDateString('es-ES') : 'No especificada'],
+                          ['Edad', viewingClient.FechaNacimiento ? `${new Date().getFullYear() - new Date(viewingClient.FechaNacimiento).getFullYear()} años` : '---']
+                        ]
+                      },
+                      {
+                        title: 'Contacto y Ubicación',
+                        icon: <Mail className="w-4 h-4" />,
+                        fields: [
+                          ['Correo electrónico', viewingClient.Correo || 'Sin cuenta de acceso'],
+                          ['Teléfono de contacto', viewingClient.Telefono],
+                          ['Dirección de residencia', viewingClient.Direccion || 'Sin dirección'],
+                          ['Barrio', viewingClient.Barrio || 'Sin barrio']
+                        ]
+                      }
+                    ].map((section, i) => (
+                      <div key={i} className="space-y-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                          <div className="text-blue-600">{section.icon}</div>
+                          <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400">{section.title}</h4>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                          {section.fields.map(([label, value], j) => (
+                            <div key={j} className="space-y-1">
+                              <Label className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{label}</Label>
+                              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">{value}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
 
       <ConfirmDialog
         open={confirmDialog.open}
@@ -495,6 +529,20 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
     }
   }, [client, open]);
 
+  const hasChanges = () => {
+    if (!client) return true;
+    return (
+      formData.nombre !== (client.Nombre || '') ||
+      formData.apellido !== (client.Apellido || '') ||
+      formData.telefono !== (client.Telefono || '') ||
+      formData.direccion !== (client.Direccion || '') ||
+      formData.barrio !== (client.Barrio || '') ||
+      formData.fecha_nacimiento !== (client.FechaNacimiento ? client.FechaNacimiento.split('T')[0] : '') ||
+      formData.fotoFile !== null ||
+      (formData.contrasena !== '' && formData.contrasena === formData.confirmarContrasena)
+    );
+  };
+
   const handleCancel = () => {
     setFormData({
       crear_usuario: true,
@@ -551,7 +599,7 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
         break;
       case 'telefono':
         if (!value) error = 'El teléfono es obligatorio';
-        else if (!/^\d{10}$/.test(value)) error = 'Debe tener exactamente 10 dígitos';
+        else if (!/^\d{7,10}$/.test(value)) error = 'Debe tener entre 7 y 10 dígitos';
         break;
       case 'fecha_nacimiento':
         if (value) {
@@ -720,273 +768,187 @@ function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: any) {
 
 
   return (
-    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>{client ? 'Editar Cliente' : 'Nuevo Cliente'}</DialogTitle>
-      </DialogHeader>
-
-      {/* Steps Indicator */}
-      {/* Steps Indicator - ONLY FOR NEW CLIENTS */}
-      {!client && (
-        <div className="flex items-center justify-center gap-4 mb-8">
-          {[1, 2].map((step) => (
-            <div key={step} className="flex items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border-2 transition-all ${activeStep >= step ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-200 text-gray-400'}`}>
-                {step}
-              </div>
-              {step === 1 && <div className={`w-12 h-0.5 mx-1 ${activeStep > 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <form onSubmit={handleFinalSubmit} className="space-y-6" noValidate>
-        {activeStep === 1 && !client ? (
-          <div className="space-y-4 animate-fadeIn">
-            <h4 className="font-semibold text-lg flex items-center gap-2">
-              <LockIcon className="w-5 h-5 text-blue-600" />
-              Datos de Acceso
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="reg-correo">Correo electrónico *</Label>
-                  {touchedFields.correo && formErrors.correo && <span className="text-red-500 text-xs font-medium">{formErrors.correo}</span>}
-                </div>
-                <Input
-                  id="reg-correo"
-                  type="email"
-                  placeholder="ejemplo@correo.com"
-                  value={formData.correo}
-                  onChange={(e) => handleChange('correo', e.target.value)}
-                  onBlur={() => markAsTouched('correo')}
-                  className={touchedFields.correo && formErrors.correo ? 'border-red-500' : ''}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="reg-pass">Contraseña {client ? '(Opcional)' : '*'}</Label>
-                  {touchedFields.contrasena && formErrors.contrasena && <span className="text-red-500 text-xs font-medium">{formErrors.contrasena}</span>}
-                </div>
-                <div className="relative">
-                  <Input
-                    id="reg-pass"
-                    type={showPassword ? "text" : "password"}
-                    placeholder={client ? "Dejar en blanco para no cambiar" : "********"}
-                    value={formData.contrasena}
-                    onChange={(e) => handleChange('contrasena', e.target.value)}
-                    onBlur={() => markAsTouched('contrasena')}
-                    className={`${touchedFields.contrasena && formErrors.contrasena ? 'border-red-500' : ''} pr-10`}
-                    required={!client}
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground hover:text-gray-700 transition-colors">
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                <p className="text-[10px] text-muted-foreground leading-tight">
-                  Mínimo 8 caracteres, una mayúscula, un número y un carácter especial.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="reg-confirm-pass">Confirmar {client ? '' : '*'}</Label>
-                  {touchedFields.confirmarContrasena && formErrors.confirmarContrasena && <span className="text-red-500 text-xs font-medium">{formErrors.confirmarContrasena}</span>}
-                </div>
-                <div className="relative">
-                  <Input
-                    id="reg-confirm-pass"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Repita la contraseña"
-                    value={formData.confirmarContrasena}
-                    onChange={(e) => handleChange('confirmarContrasena', e.target.value)}
-                    onBlur={() => markAsTouched('confirmarContrasena')}
-                    className={`${touchedFields.confirmarContrasena && formErrors.confirmarContrasena ? 'border-red-500' : ''} pr-10`}
-                    required={!client}
-                  />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3 text-muted-foreground hover:text-gray-700 transition-colors">
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" type="button" onClick={handleCancel}>
-                Cancelar
-              </Button>
-              <Button type="button" onClick={nextStep} className="bg-blue-600 hover:bg-blue-700">
-                Siguiente: Datos Personales
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
+    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-modal p-0">
+      <div className="px-8 pt-8 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0 text-blue-600">
+            <Edit className="w-5 h-5" />
           </div>
-        ) : (
-          <div className="space-y-6 animate-fadeIn">
-            <h4 className="font-semibold text-lg">Datos Personales</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="nombre">Nombre *</Label>
-                  {formErrors.nombre && <span className="text-red-500 text-xs font-medium">{formErrors.nombre}</span>}
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">{client ? 'Editar Cliente' : 'Nuevo Cliente'}</DialogTitle>
+          </DialogHeader>
+        </div>
+      </div>
+
+      <div className="p-8">
+        <form onSubmit={handleFinalSubmit} className="space-y-8" noValidate>
+          {/* Section: Access Data (Only for NEW clients) */}
+          {(!client || activeStep === 1) && !client && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="reg-correo" className="text-sm font-semibold">Correo electrónico *</Label>
+                  <Input
+                    id="reg-correo"
+                    type="email"
+                    placeholder="ejemplo@correo.com"
+                    value={formData.correo}
+                    onChange={(e) => handleChange('correo', e.target.value)}
+                    onBlur={() => markAsTouched('correo')}
+                    className={`h-11 ${touchedFields.correo && formErrors.correo ? 'border-red-500' : ''}`}
+                    required
+                  />
+                  {touchedFields.correo && formErrors.correo && <p className="text-red-500 text-xs font-medium">{formErrors.correo}</p>}
                 </div>
-                <Input
-                  id="nombre"
-                  value={formData.nombre}
-                  onChange={(e) => handleChange('nombre', e.target.value)}
-                  onBlur={() => markAsTouched('nombre')}
-                  className={touchedFields.nombre && formErrors.nombre ? 'border-red-500' : ''}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="apellido">Apellido *</Label>
-                  {formErrors.apellido && <span className="text-red-500 text-xs font-medium">{formErrors.apellido}</span>}
+                <div className="space-y-2">
+                  <Label htmlFor="reg-pass" className="text-sm font-semibold">Contraseña *</Label>
+                  <div className="relative">
+                    <Input
+                      id="reg-pass"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.contrasena}
+                      onChange={(e) => handleChange('contrasena', e.target.value)}
+                      onBlur={() => markAsTouched('contrasena')}
+                      className={`h-11 pr-10 ${touchedFields.contrasena && formErrors.contrasena ? 'border-red-500' : ''}`}
+                      placeholder="********"
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3.5 text-slate-400">
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {touchedFields.contrasena && formErrors.contrasena && <p className="text-red-500 text-xs font-medium">{formErrors.contrasena}</p>}
                 </div>
-                <Input
-                  id="apellido"
-                  value={formData.apellido}
-                  onChange={(e) => handleChange('apellido', e.target.value)}
-                  onBlur={() => markAsTouched('apellido')}
-                  className={touchedFields.apellido && formErrors.apellido ? 'border-red-500' : ''}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tipo_documento">Tipo de Documento</Label>
-                <select
-                  id="tipo_documento"
-                  value={formData.tipo_documento}
-                  onChange={(e) => handleChange('tipo_documento', e.target.value)}
-                  disabled={!!client}
-                  className={`w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring ${client ? "bg-muted opacity-80" : ""}`}
-                >
-                  {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k}>{v as string}</option>)}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="documento">Número de Documento</Label>
-                  {formErrors.documento && <span className="text-red-500 text-xs font-medium">{formErrors.documento}</span>}
+                <div className="space-y-2">
+                  <Label htmlFor="reg-confirm-pass" className="text-sm font-semibold">Confirmar Contraseña *</Label>
+                  <div className="relative">
+                    <Input
+                      id="reg-confirm-pass"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={formData.confirmarContrasena}
+                      onChange={(e) => handleChange('confirmarContrasena', e.target.value)}
+                      onBlur={() => markAsTouched('confirmarContrasena')}
+                      className={`h-11 pr-10 ${touchedFields.confirmarContrasena && formErrors.confirmarContrasena ? 'border-red-500' : ''}`}
+                      placeholder="********"
+                    />
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3.5 text-slate-400">
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {touchedFields.confirmarContrasena && formErrors.confirmarContrasena && <p className="text-red-500 text-xs font-medium">{formErrors.confirmarContrasena}</p>}
                 </div>
-                <Input
-                  id="documento"
-                  value={formData.documento}
-                  onChange={(e) => handleChange('documento', e.target.value)}
-                  onBlur={() => markAsTouched('documento')}
-                  required
-                  disabled={!!client}
-                  className={`${client ? 'bg-muted ' : ''}${touchedFields.documento && formErrors.documento ? 'border-red-500' : ''}`}
-                />
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="phone">Teléfono *</Label>
-                  {formErrors.telefono && <span className="text-red-500 text-xs font-medium">{formErrors.telefono}</span>}
-                </div>
-                <Input
-                  id="phone"
-                  value={formData.telefono}
-                  onChange={(e) => handleChange('telefono', e.target.value)}
-                  onBlur={() => markAsTouched('telefono')}
-                  className={touchedFields.telefono && formErrors.telefono ? 'border-red-500' : ''}
-                  required
-                />
+              <div className="flex justify-end pt-4">
+                <Button type="button" onClick={nextStep} className="bg-blue-600 hover:bg-blue-700 h-11 px-8">
+                  Continuar
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="fecha_nacimiento">Fecha de Nacimiento *</Label>
-                  {formErrors.fecha_nacimiento && <span className="text-red-500 text-xs font-medium">{formErrors.fecha_nacimiento}</span>}
-                </div>
-                <DatePickerInput
-                  value={formData.fecha_nacimiento}
-                  onChange={(v) => handleChange('fecha_nacimiento', v)}
-                  onBlur={() => markAsTouched('fecha_nacimiento')}
-                  minAgeDate={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())}
-                  placeholder="Seleccionar fecha"
-                  error={!!(touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento)}
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="barrio">Barrio *</Label>
-                  {formErrors.barrio && <span className="text-red-500 text-xs font-medium">{formErrors.barrio}</span>}
-                </div>
-                <Input
-                  id="barrio"
-                  value={formData.barrio}
-                  onChange={(e) => handleChange('barrio', e.target.value)}
-                  onBlur={() => markAsTouched('barrio')}
-                  className={touchedFields.barrio && formErrors.barrio ? 'border-red-500' : ''}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="direccion">Dirección *</Label>
-                  {formErrors.direccion && <span className="text-red-500 text-xs font-medium">{formErrors.direccion}</span>}
-                </div>
-                <Input
-                  id="direccion"
-                  value={formData.direccion}
-                  onChange={(e) => handleChange('direccion', e.target.value)}
-                  onBlur={() => markAsTouched('direccion')}
-                  className={touchedFields.direccion && formErrors.direccion ? 'border-red-500' : ''}
-                  required
-                />
-              </div>
-              <div className="col-span-2 space-y-2">
-                <Label>Foto de Perfil</Label>
-                <div className="flex items-center gap-6 mt-4">
-                  <div className="relative group overflow-hidden w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 shadow-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0">
+            </div>
+          )}
+
+          {(client || activeStep === 2) && (
+            <div className="space-y-10 animate-fadeIn">
+              {/* Photo & Header Section */}
+              <div className="flex flex-col md:flex-row items-center gap-8 pb-8 border-b border-slate-100 dark:border-slate-800">
+                <div className="relative group shrink-0">
+                  <div className="w-24 h-24 rounded-full border-2 border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
                     {fotoPreview ? (
                       <img src={fotoPreview} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
-                      <User className="w-12 h-12 text-gray-400" />
+                      <User className="w-10 h-10 text-slate-300" />
                     )}
                   </div>
-
-                  <div className="flex-1 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="foto" className="flex items-center gap-2 cursor-pointer">
-                        <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                          <Camera className="w-4 h-4 mr-2" />
-                          Subir desde PC
-                        </Button>
-                      </Label>
-                      <Input
-                        id="foto"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                      />
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-all border-2 border-white dark:border-slate-800"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                  </button>
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                </div>
+                <div className="text-center md:text-left space-y-1">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                    {formData.nombre || 'Nombre'} {formData.apellido || 'Apellido'}
+                  </h3>
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-between items-center pt-4">
-              {!client && (
-                <Button type="button" variant="outline" onClick={() => setActiveStep(1)}>
-                  Atrás
-                </Button>
-              )}
-              <div className="flex justify-end gap-2 ml-auto">
-                <Button variant="outline" type="button" onClick={handleCancel}>
+              {/* Main Form Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="nombre" className="text-sm font-semibold">Nombres *</Label>
+                  <Input id="nombre" value={formData.nombre} onChange={(e) => handleChange('nombre', e.target.value)} onBlur={() => markAsTouched('nombre')} className={`h-11 ${formErrors.nombre ? 'border-red-500' : ''}`} />
+                  {formErrors.nombre && <p className="text-red-500 text-xs font-medium">{formErrors.nombre}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="apellido" className="text-sm font-semibold">Apellidos *</Label>
+                  <Input id="apellido" value={formData.apellido} onChange={(e) => handleChange('apellido', e.target.value)} onBlur={() => markAsTouched('apellido')} className={`h-11 ${formErrors.apellido ? 'border-red-500' : ''}`} />
+                  {formErrors.apellido && <p className="text-red-500 text-xs font-medium">{formErrors.apellido}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tipo_documento" className="text-sm font-semibold">Tipo de Documento</Label>
+                  <select
+                    id="tipo_documento"
+                    value={formData.tipo_documento}
+                    onChange={(e) => handleChange('tipo_documento', e.target.value)}
+                    disabled={!!client}
+                    className="w-full h-11 px-3 border border-input rounded-md bg-background text-sm focus:ring-2 focus:ring-blue-600 outline-none disabled:bg-slate-50 dark:disabled:bg-slate-900"
+                  >
+                    {Object.entries(docTypes).map(([k, v]) => <option key={k} value={k}>{v as string}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="documento" className="text-sm font-semibold">Número de Documento *</Label>
+                  <Input id="documento" value={formData.documento} onChange={(e) => handleChange('documento', e.target.value)} onBlur={() => markAsTouched('documento')} disabled={!!client} className={`h-11 ${formErrors.documento ? 'border-red-500' : ''} disabled:bg-slate-50 dark:disabled:bg-slate-900`} />
+                  {formErrors.documento && <p className="text-red-500 text-xs font-medium">{formErrors.documento}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-semibold">Teléfono de Contacto *</Label>
+                  <Input id="phone" value={formData.telefono} onChange={(e) => handleChange('telefono', e.target.value)} onBlur={() => markAsTouched('telefono')} className={`h-11 ${formErrors.telefono ? 'border-red-500' : ''}`} placeholder="300 000 0000" />
+                  {formErrors.telefono && <p className="text-red-500 text-xs font-medium">{formErrors.telefono}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fecha_nacimiento" className="text-sm font-semibold">Fecha de Nacimiento (Opcional)</Label>
+                  <DatePickerInput
+                    value={formData.fecha_nacimiento}
+                    onChange={(v) => handleChange('fecha_nacimiento', v)}
+                    minAgeDate={new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate())}
+                    error={!!formErrors.fecha_nacimiento}
+                  />
+                  {formErrors.fecha_nacimiento && <p className="text-red-500 text-xs font-medium">{formErrors.fecha_nacimiento}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="barrio" className="text-sm font-semibold">Barrio *</Label>
+                  <Input id="barrio" value={formData.barrio} onChange={(e) => handleChange('barrio', e.target.value)} onBlur={() => markAsTouched('barrio')} className={`h-11 ${formErrors.barrio ? 'border-red-500' : ''}`} />
+                  {formErrors.barrio && <p className="text-red-500 text-xs font-medium">{formErrors.barrio}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="direccion" className="text-sm font-semibold">Dirección de Residencia *</Label>
+                  <Input id="direccion" value={formData.direccion} onChange={(e) => handleChange('direccion', e.target.value)} onBlur={() => markAsTouched('direccion')} className={`h-11 ${formErrors.direccion ? 'border-red-500' : ''}`} />
+                  {formErrors.direccion && <p className="text-red-500 text-xs font-medium">{formErrors.direccion}</p>}
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex items-center justify-end gap-4 pt-10 border-t border-slate-100 dark:border-slate-800">
+                {!client && (
+                  <Button type="button" variant="ghost" onClick={() => setActiveStep(1)} className="text-slate-500 font-medium">
+                    Atrás
+                  </Button>
+                )}
+                <Button variant="outline" type="button" onClick={handleCancel} className="h-11 px-6 font-medium">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
-                  {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {client ? 'Actualizar Cliente' : 'Finalizar Registro'}
+                <Button type="submit" disabled={isSaving || (!!client && !hasChanges())} className="bg-blue-600 hover:bg-blue-700 h-11 px-10 shadow-lg shadow-blue-100 dark:shadow-none font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed">
+                  {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                  {client ? 'Actualizar Información' : 'Registrar Cliente'}
                 </Button>
               </div>
             </div>
-          </div>
-        )}
-      </form>
+          )}
+        </form>
+      </div>
     </DialogContent>
   );
 }
