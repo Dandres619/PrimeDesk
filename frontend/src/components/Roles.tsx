@@ -19,6 +19,7 @@ export function Roles() {
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<any>(null);
   const [viewingRole, setViewingRole] = useState<any>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', confirmText: '', variant: 'default' as any, onConfirm: () => { } });
 
@@ -230,39 +231,66 @@ export function Roles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-            <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold">Roles</h1>
-            <p className="text-muted-foreground">Gestión de permisos y acceso</p>
-          </div>
-        </div>
-        <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingRole(null)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
-              <Plus className="w-4 h-4 mr-2" />
-              Nuevo Rol
-            </Button>
-          </DialogTrigger>
-          <RoleDialog role={editingRole} permissions={allPermissions} onSave={handleSaveRole} isProcessing={isProcessing} />
-        </Dialog>
-      </div>
-
-      <div className="flex justify-start">
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar roles..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
-        </div>
-      </div>
+      <style>{`
+        .mp-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 200px);
+            gap: 16px;
+        }
+        .mp-loading-ring {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #cbd5e1;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: mp-spin 0.8s linear infinite;
+        }
+        @keyframes mp-spin { to { transform: rotate(360deg); } }
+        .mp-loading-text {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+      `}</style>
 
       {isLoading ? (
-        <div className="flex items-center justify-center p-24">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+        <div className="mp-loading">
+          <div className="mp-loading-ring" />
+          <p className="mp-loading-text">Cargando información...</p>
         </div>
       ) : (
+        <>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold">Roles</h1>
+                <p className="text-muted-foreground">Gestión de permisos y acceso</p>
+              </div>
+            </div>
+            <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setEditingRole(null)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nuevo Rol
+                </Button>
+              </DialogTrigger>
+              <RoleDialog role={editingRole} permissions={allPermissions} onSave={handleSaveRole} isProcessing={isProcessing} />
+            </Dialog>
+          </div>
+
+          <div className="flex justify-start">
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Buscar roles..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="pl-10" />
+            </div>
+          </div>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -302,7 +330,7 @@ export function Roles() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => setViewingRole(r)}
+                                onClick={() => { setViewingRole(r); setIsViewDialogOpen(true); }}
                                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                               >
                                 <Eye className="w-4 h-4" />
@@ -388,42 +416,59 @@ export function Roles() {
             </div>
           </CardContent>
         </Card>
-      )}
 
-      <Dialog open={!!viewingRole} onOpenChange={() => setViewingRole(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detalles del Rol</DialogTitle>
-          </DialogHeader>
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-w-lg max-h-[90vh] overflow-y-auto animate-modal p-0"
+        >
           {viewingRole && (
-            <div className="space-y-4">
-              <div>
-                <Label>Nombre del Rol</Label>
-                <p className="font-medium">{viewingRole.name}</p>
+            <>
+              {/* Hero header */}
+              <div className="px-6 pt-6 pb-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                      <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2.5">
+                        <DialogHeader><DialogTitle className="text-lg font-semibold">{viewingRole.name}</DialogTitle></DialogHeader>
+                        <Badge className={`text-[11px] px-2 py-0.5 ${viewingRole.status === 'Activo' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800' : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'}`}>
+                          {viewingRole.status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">{viewingRole.description || 'Sin descripción'}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label>Descripción</Label>
-                <p>{viewingRole.description || 'Sin descripción'}</p>
-              </div>
-              <div>
-                <Label>Estado</Label>
-                <Badge className={viewingRole.status === 'Activo' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}>
-                  {viewingRole.status}
-                </Badge>
-              </div>
-              <div>
-                <Label>Permisos Asignados</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
+
+              {/* Divider */}
+              <div className="border-t border-slate-100 dark:border-slate-800" />
+
+              {/* Permissions section */}
+              <div className="px-6 pb-6 pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Permisos asignados</span>
+                  <span className="text-xs text-muted-foreground bg-slate-100 dark:bg-slate-800 rounded-full px-2 py-0.5">
+                    {viewingRole.permissions?.length || 0}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   {viewingRole.permissions && viewingRole.permissions.length > 0 ? (
                     viewingRole.permissions.map((p: any) => (
-                      <Badge key={p.ID_Permiso} variant="secondary">{p.Nombre}</Badge>
+                      <span key={p.ID_Permiso} className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800/40 transition-colors">
+                        <Shield className="w-3 h-3" />
+                        {p.Nombre}
+                      </span>
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground">No tiene permisos asignados.</p>
                   )}
                 </div>
               </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
@@ -440,6 +485,8 @@ export function Roles() {
         autoClose={false}
         loadingText="Eliminando"
       />
+        </>
+      )}
     </div>
   );
 }
@@ -497,14 +544,25 @@ function RoleDialog({ role, permissions, onSave, isProcessing }: any) {
   };
 
   return (
-    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>{role ? 'Editar Rol' : 'Nuevo Rol'}</DialogTitle>
-      </DialogHeader>
-      <form onSubmit={(e) => { e.preventDefault(); if (!nameError) onSave(formData); }} className="space-y-4">
-        <div className="space-y-2">
+    <DialogContent
+      onOpenAutoFocus={(e) => e.preventDefault()}
+      className="max-w-2xl max-h-[90vh] overflow-y-auto animate-modal p-0"
+    >
+      {/* Header */}
+      <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+            <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <DialogHeader><DialogTitle className="text-lg font-semibold">{role ? 'Editar Rol' : 'Nuevo Rol'}</DialogTitle></DialogHeader>
+        </div>
+      </div>
+
+      <form onSubmit={(e) => { e.preventDefault(); if (!nameError) onSave(formData); }} className="px-6 py-5 space-y-5">
+        {/* Name field */}
+        <div className="space-y-1.5">
           <div className="flex justify-between items-center">
-            <Label htmlFor="name">Nombre del Rol</Label>
+            <Label htmlFor="name" className="text-sm font-medium text-slate-700 dark:text-slate-300">Nombre del Rol *</Label>
             {nameError && <span className="text-red-500 text-xs font-medium">{nameError}</span>}
           </div>
           <Input
@@ -515,42 +573,63 @@ function RoleDialog({ role, permissions, onSave, isProcessing }: any) {
             onBlur={() => setTouched(true)}
             placeholder="Ej: Administrador"
             required
-            className={touched && nameError ? 'border-red-500 focus-visible:ring-red-500' : ''}
+            className={`h-10 ${touched && nameError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
           />
         </div>
-        <div>
-          <Label htmlFor="description">Descripción</Label>
-          <Input id="description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Descripción del rol" />
+
+        {/* Description field */}
+        <div className="space-y-1.5">
+          <Label htmlFor="description" className="text-sm font-medium text-slate-700 dark:text-slate-300">Descripción</Label>
+          <Input id="description" value={formData.description} onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))} placeholder="Descripción del rol" className="h-10" />
         </div>
-        <div>
-          <Label>Permisos</Label>
-          <div className="grid grid-cols-2 gap-2 mt-2 max-h-60 overflow-y-auto p-2 border rounded-md bg-muted/20">
+
+        {/* Permissions */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">Permisos</Label>
+            <span className="text-xs text-muted-foreground">
+              {formData.permissions.length} seleccionado{formData.permissions.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto p-3 border rounded-lg bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800">
             {permissions.length > 0 ? (
-              permissions.map((p: any) => (
-                <div key={p.id} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded transition-colors">
-                  <Checkbox
-                    id={`perm-${p.id}`}
-                    checked={formData.permissions.includes(p.id)}
-                    onCheckedChange={() => togglePermission(p.id)}
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <Label htmlFor={`perm-${p.id}`} className="text-sm font-medium leading-none cursor-pointer">
-                      {p.name}
-                    </Label>
-                    <p className="text-[10px] text-muted-foreground">{p.description}</p>
-                  </div>
-                </div>
-              ))
+              permissions.map((p: any) => {
+                const isSelected = formData.permissions.includes(p.id);
+                return (
+                  <label
+                    key={p.id}
+                    htmlFor={`perm-${p.id}`}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-md border cursor-pointer select-none transition-all duration-150
+                      ${isSelected
+                        ? 'bg-blue-50 border-blue-200 dark:bg-blue-950/40 dark:border-blue-800'
+                        : 'bg-white border-slate-100 hover:border-slate-200 dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700'
+                      }`}
+                  >
+                    <Checkbox
+                      id={`perm-${p.id}`}
+                      checked={isSelected}
+                      onCheckedChange={() => togglePermission(p.id)}
+                      className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium block truncate">{p.name}</span>
+                      {p.description && <span className="text-[11px] text-muted-foreground block truncate">{p.description}</span>}
+                    </div>
+                  </label>
+                );
+              })
             ) : (
-              <p className="text-sm text-muted-foreground col-span-2 text-center py-4">No hay permisos disponibles definidos en el sistema.</p>
+              <p className="text-sm text-muted-foreground col-span-2 text-center py-6">No hay permisos disponibles.</p>
             )}
           </div>
         </div>
-        <div className="flex justify-end gap-2 pt-4">
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <Button
             type="submit"
             disabled={isProcessing || (touched && !!nameError)}
-            className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto px-8"
+            className="bg-blue-600 hover:bg-blue-700 px-6"
           >
             {isProcessing ? (
               <>
