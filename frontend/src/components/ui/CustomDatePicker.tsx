@@ -8,13 +8,14 @@ import { ChevronRight, ChevronLeft } from 'lucide-react';
 interface CustomDatePickerProps {
   value: string;
   onChange: (v: string) => void;
-  minAgeDate: Date;
+  minDate: Date;
+  maxDate: Date;
   onClose: () => void;
 }
 
-export function CustomDatePicker({ value, onChange, minAgeDate, onClose }: CustomDatePickerProps) {
+export function CustomDatePicker({ value, onChange, minDate, maxDate, onClose }: CustomDatePickerProps) {
   const [view, setView] = useState<'days' | 'months' | 'years'>('years');
-  const initialDate = value ? new Date(value + 'T00:00:00') : minAgeDate;
+  const initialDate = value ? new Date(value + 'T00:00:00') : maxDate;
   const [currentDate, setCurrentDate] = useState<Date>(initialDate);
   const [yearPage, setYearPage] = useState(
     initialDate.getFullYear() - (initialDate.getFullYear() % 12)
@@ -56,13 +57,13 @@ export function CustomDatePicker({ value, onChange, minAgeDate, onClose }: Custo
     return (
       <div className="p-3 w-[320px]">
         <div className="flex justify-between items-center mb-4">
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setYearPage(y => y - 12)} disabled={yearPage <= 1950}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setYearPage(y => y - 12)} disabled={yearPage <= minDate.getFullYear()}><ChevronLeft className="h-4 w-4" /></Button>
           <div className="font-bold text-sm">{yearPage} - {yearPage + 11}</div>
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setYearPage(y => y + 12)} disabled={yearPage + 12 > minAgeDate.getFullYear()}><ChevronRight className="h-4 w-4" /></Button>
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setYearPage(y => y + 12)} disabled={yearPage + 12 > maxDate.getFullYear()}><ChevronRight className="h-4 w-4" /></Button>
         </div>
         <div className="grid grid-cols-3 gap-2">
           {years.map(y => {
-            const disabled = y > minAgeDate.getFullYear() || y < 1950;
+            const disabled = y > maxDate.getFullYear() || y < minDate.getFullYear();
             return (
               <Button type="button" key={y} variant={y === currentDate.getFullYear() ? 'default' : 'ghost'} className="text-sm h-9" disabled={disabled} onClick={() => handleYearSelect(y)}>{y}</Button>
             );
@@ -77,7 +78,7 @@ export function CustomDatePicker({ value, onChange, minAgeDate, onClose }: Custo
     return (
       <div className="p-3 w-[320px]">
         <div className="flex justify-between items-center mb-4">
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={currentDate.getFullYear() <= 1950} onClick={() => {
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={currentDate.getFullYear() <= minDate.getFullYear()} onClick={() => {
             const newDate = new Date(currentDate);
             newDate.setFullYear(newDate.getFullYear() - 1);
             setCurrentDate(newDate);
@@ -86,7 +87,7 @@ export function CustomDatePicker({ value, onChange, minAgeDate, onClose }: Custo
             setYearPage(currentDate.getFullYear() - (currentDate.getFullYear() % 12));
             setView('years');
           }}>{currentDate.getFullYear()}</div>
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={currentDate.getFullYear() >= minAgeDate.getFullYear()} onClick={() => {
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={currentDate.getFullYear() >= maxDate.getFullYear()} onClick={() => {
             const newDate = new Date(currentDate);
             newDate.setFullYear(newDate.getFullYear() + 1);
             setCurrentDate(newDate);
@@ -94,7 +95,10 @@ export function CustomDatePicker({ value, onChange, minAgeDate, onClose }: Custo
         </div>
         <div className="grid grid-cols-3 gap-2">
           {months.map((m, i) => {
-            const disabled = (currentDate.getFullYear() === minAgeDate.getFullYear() && i > minAgeDate.getMonth()) || currentDate.getFullYear() < 1950;
+            const disabled = (currentDate.getFullYear() === maxDate.getFullYear() && i > maxDate.getMonth()) || 
+                             (currentDate.getFullYear() === minDate.getFullYear() && i < minDate.getMonth()) ||
+                             currentDate.getFullYear() < minDate.getFullYear() ||
+                             currentDate.getFullYear() > maxDate.getFullYear();
             return (
               <Button type="button" key={i} variant={i === currentDate.getMonth() ? 'default' : 'ghost'} disabled={disabled} className="text-sm h-9" onClick={() => handleMonthSelect(i)}>{m}</Button>
             );
@@ -104,8 +108,8 @@ export function CustomDatePicker({ value, onChange, minAgeDate, onClose }: Custo
     );
   }
 
-  const isNextMonthDisabled = currentDate.getFullYear() === minAgeDate.getFullYear() && currentDate.getMonth() >= minAgeDate.getMonth();
-  const isPrevMonthDisabled = currentDate.getFullYear() < 1950 || (currentDate.getFullYear() === 1950 && currentDate.getMonth() === 0);
+  const isNextMonthDisabled = currentDate.getFullYear() === maxDate.getFullYear() && currentDate.getMonth() >= maxDate.getMonth();
+  const isPrevMonthDisabled = currentDate.getFullYear() === minDate.getFullYear() && currentDate.getMonth() <= minDate.getMonth();
 
   return (
     <div className="w-auto min-w-[320px]">
@@ -127,7 +131,7 @@ export function CustomDatePicker({ value, onChange, minAgeDate, onClose }: Custo
         }}
         month={currentDate}
         onMonthChange={setCurrentDate}
-        disabled={(d) => d > minAgeDate || d < new Date(1950, 0, 1)}
+        disabled={(d) => d > maxDate || d < minDate}
         locale={es}
         className="p-3"
         classNames={{

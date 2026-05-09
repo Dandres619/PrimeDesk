@@ -2,19 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 import { CustomDatePicker } from './CustomDatePicker';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import { format, parse, isValid } from 'date-fns';
+import { format, isValid } from 'date-fns';
 
 interface DatePickerInputProps {
   value: string;
   onChange: (v: string) => void;
-  minAgeDate?: Date;
+  minDate?: Date;
+  maxDate?: Date;
   placeholder?: string;
   className?: string;
   error?: boolean;
   onBlur?: () => void;
 }
 
-export function DatePickerInput({ value, onChange, minAgeDate, placeholder = 'DD/MM/YYYY', className = '', error, onBlur }: DatePickerInputProps) {
+export function DatePickerInput({ value, onChange, minDate, maxDate, placeholder = 'DD/MM/YYYY', className = '', error, onBlur }: DatePickerInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
@@ -28,7 +29,7 @@ export function DatePickerInput({ value, onChange, minAgeDate, placeholder = 'DD
             setInputValue(newFormatted);
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     } else if (!inputValue || inputValue.length === 10) {
       setInputValue('');
     }
@@ -37,7 +38,7 @@ export function DatePickerInput({ value, onChange, minAgeDate, placeholder = 'DD
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, '');
     if (val.length > 8) val = val.slice(0, 8);
-    
+
     // Still prevent day > 31 and month > 12 for better UX
     if (val.length >= 2) {
       let day = parseInt(val.slice(0, 2));
@@ -49,28 +50,13 @@ export function DatePickerInput({ value, onChange, minAgeDate, placeholder = 'DD
       if (month > 12) val = val.slice(0, 2) + '12' + val.slice(4);
       else if (month === 0 && val.length === 4) val = val.slice(0, 2) + '01' + val.slice(4);
     }
-    
+
     let formatted = val;
     if (val.length > 2) formatted = val.slice(0, 2) + '/' + val.slice(2);
     if (val.length > 4) formatted = formatted.slice(0, 5) + '/' + val.slice(4);
-    
+
     setInputValue(formatted);
-
-    if (formatted.length === 10) {
-      const parsedDate = parse(formatted, 'dd/MM/yyyy', new Date());
-      
-      if (!isValid(parsedDate)) {
-        // If it's something like 31/02, send a value that triggers parent's "Fecha inválida"
-        onChange('INVALID');
-        return;
-      }
-
-      // Just send the date, don't snap or correct year/age here
-      // The parent will handle the specific error messages
-      onChange(format(parsedDate, 'yyyy-MM-dd'));
-    } else {
-      onChange('');
-    }
+    onChange(formatted);
   };
 
   const handleInputBlur = () => {
@@ -104,7 +90,8 @@ export function DatePickerInput({ value, onChange, minAgeDate, placeholder = 'DD
         <CustomDatePicker
           value={value}
           onChange={(v) => { onChange(v); setIsOpen(false); }}
-          minAgeDate={minAgeDate || new Date()}
+          minDate={minDate || new Date(1900, 0, 1)}
+          maxDate={maxDate || new Date(2100, 0, 1)}
           onClose={() => setIsOpen(false)}
         />
       </PopoverContent>
