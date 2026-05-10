@@ -637,28 +637,34 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
           let dateObj: Date | null = null;
           let yearVal = 0;
 
-          if (value.includes('/')) {
-            // Partial or raw DD/MM/YYYY
+          if (value === 'INVALID') {
+            error = 'Fecha inválida';
+          } else if (value.includes('/')) {
             const parts = value.split('/');
             if (parts.length === 3 && parts[2]) {
               yearVal = parseInt(parts[2]);
-              if (parts[2].length === 4) {
-                const d = parse(value, 'dd/MM/yyyy', new Date());
-                if (isValid(d)) dateObj = d;
-              }
             }
-          } else if (value !== 'INVALID') {
-            // YYYY-MM-DD
+            if (parts.length < 3 || !parts[2] || parts[2].length < 4) {
+              if (yearVal > 0 && yearVal < 1950) error = 'El año mínimo es 1950';
+              else error = 'Fecha incompleta';
+            } else {
+              const d = parse(value, 'dd/MM/yyyy', new Date());
+              if (isValid(d)) dateObj = d;
+              else error = 'Fecha inválida';
+            }
+          } else {
             dateObj = new Date(value + 'T00:00:00');
             yearVal = parseInt(value.split('-')[0]);
           }
 
-          if (yearVal > 0 && yearVal < 1950) error = 'El año mínimo es 1950';
-          else if (dateObj) {
-            const today = new Date();
-            const minAge = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-            if (dateObj > today) error = 'No puede ser en el futuro';
-            else if (dateObj > minAge) error = 'Debe ser mayor de 18 años';
+          if (!error) {
+            if (yearVal > 0 && yearVal < 1950) error = 'El año mínimo es 1950';
+            else if (dateObj) {
+              const today = new Date();
+              const minAge = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+              if (dateObj > today) error = 'No puede ser en el futuro';
+              else if (dateObj > minAge) error = 'Debe ser mayor de 18 años';
+            }
           }
         }
         break;
@@ -668,28 +674,37 @@ function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open }: any)
           let dateObj: Date | null = null;
           let yearVal = 0;
 
-          if (value.includes('/')) {
+          if (value === 'INVALID') {
+            error = 'Fecha inválida';
+          } else if (value.includes('/')) {
             const parts = value.split('/');
             if (parts.length === 3 && parts[2]) {
               yearVal = parseInt(parts[2]);
-              if (parts[2].length === 4) {
-                const d = parse(value, 'dd/MM/yyyy', new Date());
-                if (isValid(d)) dateObj = d;
-              }
             }
-          } else if (value !== 'INVALID') {
+            if (parts.length < 3 || !parts[2] || parts[2].length < 4) {
+              const tenYearsAgoYear = new Date().getFullYear() - 10;
+              if (yearVal > 0 && yearVal < tenYearsAgoYear) error = 'Máximo 10 años atrás';
+              else error = 'Fecha incompleta';
+            } else {
+              const d = parse(value, 'dd/MM/yyyy', new Date());
+              if (isValid(d)) dateObj = d;
+              else error = 'Fecha inválida';
+            }
+          } else {
             dateObj = new Date(value + 'T00:00:00');
             yearVal = parseInt(value.split('-')[0]);
           }
 
-          const today = new Date();
-          const tenYearsAgo = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate());
-          
-          if (yearVal > 0 && yearVal < tenYearsAgo.getFullYear() && (value.includes('/') ? value.split('/')[2].length === 4 : true)) {
-            error = 'Máximo 10 años atrás';
-          } else if (dateObj) {
-            if (dateObj > today) error = 'No puede ser en el futuro';
-            else if (dateObj < tenYearsAgo) error = 'Máximo 10 años atrás';
+          if (!error) {
+            const today = new Date();
+            const tenYearsAgo = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate());
+            
+            if (yearVal > 0 && yearVal < tenYearsAgo.getFullYear()) {
+              error = 'Máximo 10 años atrás';
+            } else if (dateObj) {
+              if (dateObj > today) error = 'No puede ser en el futuro';
+              else if (dateObj < tenYearsAgo) error = 'Máximo 10 años atrás';
+            }
           }
         }
         break;
