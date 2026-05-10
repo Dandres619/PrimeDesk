@@ -26,7 +26,19 @@ import {
   Cell
 } from 'recharts';
 
+import { useEffect, useState } from 'react';
+
 export function Dashboard() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    // Aumentamos el delay para asegurar que el layout de Flexbox se haya estabilizado completamente
+    const timer = setTimeout(() => setIsMounted(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!isMounted) return <div className="p-6 h-[80vh] w-full flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+
 
   // Colors for charts
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -191,7 +203,7 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="h-[350px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={50} minHeight={0}>
               <AreaChart data={financialData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
@@ -251,7 +263,7 @@ export function Dashboard() {
             <CardDescription>Carga operativa actual por fase</CardDescription>
           </CardHeader>
           <CardContent className="h-[350px] flex flex-col justify-between">
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={200} debounce={50} minHeight={0}>
               <PieChart>
                 <Pie
                   data={repairStatusData}
@@ -262,7 +274,7 @@ export function Dashboard() {
                   paddingAngle={8}
                   dataKey="value"
                 >
-                  {repairStatusData.map((entry, index) => (
+                  {repairStatusData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -306,7 +318,7 @@ export function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[250px] pt-4">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={50} minHeight={0}>
               <BarChart data={topServicesData} layout="vertical" margin={{ left: 40, right: 20 }}>
                 <XAxis type="number" hide />
                 <YAxis
@@ -325,7 +337,7 @@ export function Dashboard() {
                   barSize={18}
                   background={{ fill: 'hsl(var(--muted))', radius: 8 }}
                 >
-                  {topServicesData.map((entry, index) => (
+                  {topServicesData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={index === 0 ? '#3b82f6' : '#3b82f690'} />
                   ))}
                 </Bar>
@@ -343,7 +355,7 @@ export function Dashboard() {
             <CardDescription>Ocupación por jornada horaria</CardDescription>
           </CardHeader>
           <CardContent className="h-[250px] pt-2">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" debounce={50} minHeight={0}>
               <AreaChart data={appointmentCapacityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorOcupacion" x1="0" y1="0" x2="0" y2="1">

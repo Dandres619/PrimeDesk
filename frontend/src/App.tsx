@@ -37,7 +37,6 @@ import {
     PackageSearch,
     Tags,
     LogOut,
-    Menu,
     Moon,
     Sun,
     ClipboardPen
@@ -289,7 +288,10 @@ function AppContent() {
                         <SidebarMenu>
                             <SidebarMenuItem>
                                 <SidebarMenuButton
-                                    onClick={handleLogout}
+                                    onClick={(e) => {
+                                        (e.currentTarget as HTMLButtonElement).blur();
+                                        handleLogout();
+                                    }}
                                     tooltip="Cerrar sesión"
                                     className="w-full justify-start gap-3 p-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                                 >
@@ -305,11 +307,7 @@ function AppContent() {
                     <header className="border-b border-border p-4 bg-card">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                <SidebarTrigger>
-                                    <Button variant="ghost" size="sm">
-                                        <Menu className="w-5 h-5" />
-                                    </Button>
-                                </SidebarTrigger>
+                                <SidebarTrigger className="-ml-1" />
                                 <h1 className="text-xl font-semibold capitalize">
                                     {menuItems.find(item => item.id === activeSection)?.label || 'Dashboard'}
                                 </h1>
