@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Lock, Mail, Camera, Image as ImageIcon, Eye, EyeOff, Save, Shield, Phone, MapPin, Home, Calendar, UserCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 import { DatePickerInput } from './ui/DatePickerInput';
 import { toast } from 'sonner';
 
@@ -35,7 +35,6 @@ export function MiPerfil() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
     const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
-    const [dateInput, setDateInput] = useState('');
     const [initialFormData, setInitialFormData] = useState<any>(null);
     const [activeSection, setActiveSection] = useState<'perfil' | 'seguridad'>('perfil');
 
@@ -56,17 +55,7 @@ export function MiPerfil() {
     const todayDate = new Date();
     const globalMinAgeDate = new Date(todayDate.getFullYear() - 18, todayDate.getMonth(), todayDate.getDate());
 
-    useEffect(() => {
-        if (formData.fecha_nacimiento) {
-            const date = new Date(formData.fecha_nacimiento + 'T00:00:00');
-            const formatted = format(date, 'dd/MM/yyyy');
-            if (dateInput !== formatted && (dateInput.replace(/\//g, '').length === 8 || dateInput === '')) {
-                setDateInput(formatted);
-            }
-        } else {
-            setDateInput('');
-        }
-    }, [formData.fecha_nacimiento]);
+
 
     // @ts-ignore
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -141,11 +130,37 @@ export function MiPerfil() {
         }
 
         if (formData.fecha_nacimiento) {
-            const selectedDate = new Date(formData.fecha_nacimiento + 'T00:00:00');
-            if (isNaN(selectedDate.getTime())) errs.fecha_nacimiento = 'Fecha inválida';
-            else if (selectedDate > todayDate) errs.fecha_nacimiento = 'La fecha no puede ser en el futuro';
-            else if (selectedDate > globalMinAgeDate) errs.fecha_nacimiento = 'Debe ser mayor de 18 años';
-            else if (selectedDate.getFullYear() < 1950) errs.fecha_nacimiento = 'La fecha no puede ser tan antigua';
+            let dateObj: Date | null = null;
+            let yearVal = 0;
+            const value = formData.fecha_nacimiento;
+
+            if (value === 'INVALID') {
+                errs.fecha_nacimiento = 'Fecha inválida';
+            } else if (value.includes('/')) {
+                const parts = value.split('/');
+                if (parts.length === 3 && parts[2]) {
+                    yearVal = parseInt(parts[2]);
+                }
+                if (parts.length < 3 || !parts[2] || parts[2].length < 4) {
+                    if (yearVal > 0 && yearVal < 1950) errs.fecha_nacimiento = 'El año mínimo es 1950';
+                    else errs.fecha_nacimiento = 'Fecha incompleta';
+                } else {
+                    const d = parse(value, 'dd/MM/yyyy', new Date());
+                    if (isValid(d)) dateObj = d;
+                    else errs.fecha_nacimiento = 'Fecha inválida';
+                }
+            } else {
+                dateObj = new Date(value + 'T00:00:00');
+                yearVal = parseInt(value.split('-')[0]);
+            }
+
+            if (!errs.fecha_nacimiento) {
+                if (yearVal > 0 && yearVal < 1950) errs.fecha_nacimiento = 'El año mínimo es 1950';
+                else if (dateObj) {
+                    if (dateObj > todayDate) errs.fecha_nacimiento = 'La fecha no puede ser en el futuro';
+                    else if (dateObj > globalMinAgeDate) errs.fecha_nacimiento = 'Debe ser mayor de 18 años';
+                }
+            }
         }
 
         setFormErrors(errs);
@@ -184,7 +199,23 @@ export function MiPerfil() {
         setIsProcessing(true);
         try {
             const formDataToSend = new FormData();
-            Object.entries(formData).forEach(([key, value]) => {
+            
+            // Helper to normalize date
+            const normalizeDate = (d: string) => {
+                if (!d) return d;
+                if (d.includes('/')) {
+                    const parsed = parse(d, 'dd/MM/yyyy', new Date());
+                    return isValid(parsed) ? format(parsed, 'yyyy-MM-dd') : d;
+                }
+                return d;
+            };
+
+            const normalizedFormData = {
+                ...formData,
+                fecha_nacimiento: normalizeDate(formData.fecha_nacimiento)
+            };
+
+            Object.entries(normalizedFormData).forEach(([key, value]) => {
                 if (value !== null && value !== undefined) {
                     formDataToSend.append(key, value as string);
                 }
@@ -1180,8 +1211,10 @@ export function MiPerfil() {
                                                             onChange={(v) => {
                                                                 setFormData(prev => ({ ...prev, fecha_nacimiento: v }));
                                                             }}
+                                                            onFocus={() => handleBlur('fecha_nacimiento')}
                                                             onBlur={() => handleBlur('fecha_nacimiento')}
-                                                            minAgeDate={globalMinAgeDate}
+                                                            minDate={new Date(1950, 0, 1)}
+                                                            maxDate={globalMinAgeDate}
                                                             placeholder="Seleccionar fecha (DD/MM/AAAA)"
                                                             error={!!(touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento)}
                                                         />

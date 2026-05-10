@@ -13,9 +13,10 @@ interface DatePickerInputProps {
   className?: string;
   error?: boolean;
   onBlur?: () => void;
+  onFocus?: () => void;
 }
 
-export function DatePickerInput({ value, onChange, minDate, maxDate, placeholder = 'DD/MM/YYYY', className = '', error, onBlur }: DatePickerInputProps) {
+export function DatePickerInput({ value, onChange, minDate, maxDate, placeholder = 'DD/MM/YYYY', className = '', error, onBlur, onFocus }: DatePickerInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
@@ -66,6 +67,7 @@ export function DatePickerInput({ value, onChange, minDate, maxDate, placeholder
   return (
     <Popover open={isOpen} onOpenChange={(open) => {
       setIsOpen(open);
+      if (open && onFocus) onFocus();
       if (!open && onBlur) onBlur();
     }}>
       <div className="relative w-full">
@@ -80,6 +82,7 @@ export function DatePickerInput({ value, onChange, minDate, maxDate, placeholder
             value={inputValue}
             onChange={handleInputChange}
             onBlur={handleInputBlur}
+            onFocus={onFocus}
             placeholder={placeholder}
             className="flex-1 h-full px-3 text-sm outline-none bg-transparent"
             maxLength={10}
