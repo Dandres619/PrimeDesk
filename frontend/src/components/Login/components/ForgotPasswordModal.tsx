@@ -114,9 +114,9 @@ export function ForgotPasswordModal({
           }
 
           .fp-input-wrapper:focus-within {
-            border-color: #818cf8;
+            border-color: #4f46e5;
             background: white;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 1px #4f46e5;
           }
 
           .fp-input-icon {
@@ -138,10 +138,17 @@ export function ForgotPasswordModal({
 
           .fp-input {
             padding-left: 42px !important;
+            padding-right: 12px !important;
             height: 44px !important;
             border: none !important;
             background: transparent !important;
             box-shadow: none !important;
+            outline: none !important;
+          }
+
+          .fp-input:focus {
+            box-shadow: none !important;
+            outline: none !important;
           }
 
           .fp-cancel-btn {

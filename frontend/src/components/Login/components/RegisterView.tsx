@@ -16,6 +16,7 @@ interface RegisterViewProps {
   handleNextStep: () => void;
   prevStep: () => void;
   setIsLogin: (isLogin: boolean) => void;
+  setTouchedFields: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 }
 
 const stepInfo = [
@@ -33,11 +34,16 @@ export function RegisterView({
   isLoading,
   handleNextStep,
   prevStep,
-  setIsLogin
+  setIsLogin,
+  setTouchedFields
 }: RegisterViewProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  const today = new Date();
+  const minDate = new Date(1950, 0, 1);
+  const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
 
   const renderFieldError = (field: string) => {
     if (touchedFields[field] && registerErrors[field]) {
@@ -113,9 +119,12 @@ export function RegisterView({
                     placeholder="Juan"
                     value={registerData.nombre}
                     onChange={(e) => setRegisterData({ ...registerData, nombre: e.target.value })}
-                    onFocus={() => setFocusedField('nombre')}
+                    onFocus={() => {
+                      setFocusedField('nombre');
+                      setTouchedFields(prev => ({ ...prev, nombre: true }));
+                    }}
                     onBlur={() => setFocusedField(null)}
-                    className="rv-input"
+                    className="rv-input focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
               </div>
@@ -130,9 +139,12 @@ export function RegisterView({
                     placeholder="Pérez"
                     value={registerData.apellido}
                     onChange={(e) => setRegisterData({ ...registerData, apellido: e.target.value })}
-                    onFocus={() => setFocusedField('apellido')}
+                    onFocus={() => {
+                      setFocusedField('apellido');
+                      setTouchedFields(prev => ({ ...prev, apellido: true }));
+                    }}
                     onBlur={() => setFocusedField(null)}
-                    className="rv-input"
+                    className="rv-input focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
               </div>
@@ -166,9 +178,12 @@ export function RegisterView({
                     placeholder="12345678"
                     value={registerData.documento}
                     onChange={(e) => setRegisterData({ ...registerData, documento: e.target.value.replace(/\D/g, '') })}
-                    onFocus={() => setFocusedField('documento')}
+                    onFocus={() => {
+                      setFocusedField('documento');
+                      setTouchedFields(prev => ({ ...prev, documento: true }));
+                    }}
                     onBlur={() => setFocusedField(null)}
-                    className="rv-input"
+                    className="rv-input focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
               </div>
@@ -176,16 +191,22 @@ export function RegisterView({
 
             <div className="rv-field">
               <div className="rv-field-header">
-                <Label className="rv-label">Fecha de Nacimiento *</Label>
+                <Label className="rv-label">Fecha de Nacimiento (Opcional)</Label>
                 {renderFieldError('fecha_nacimiento')}
               </div>
               <DatePickerInput
                 value={registerData.fecha_nacimiento}
                 onChange={(v) => setRegisterData({ ...registerData, fecha_nacimiento: v })}
-                maxDate={new Date()}
+                minDate={minDate}
+                maxDate={maxDate}
                 placeholder="Seleccionar fecha"
                 className="h-12 rv-date-input"
                 error={!!(touchedFields.fecha_nacimiento && registerErrors.fecha_nacimiento)}
+                onFocus={() => {
+                  setFocusedField('fecha_nacimiento');
+                  setTouchedFields(prev => ({ ...prev, fecha_nacimiento: true }));
+                }}
+                onBlur={() => setFocusedField(null)}
               />
             </div>
           </div>
@@ -207,9 +228,12 @@ export function RegisterView({
                     placeholder="ejemplo@correo.com"
                     value={registerData.email}
                     onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                    onFocus={() => setFocusedField('email')}
+                    onFocus={() => {
+                      setFocusedField('email');
+                      setTouchedFields(prev => ({ ...prev, email: true }));
+                    }}
                     onBlur={() => setFocusedField(null)}
-                    className="rv-input"
+                    className="rv-input focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
               </div>
@@ -224,9 +248,12 @@ export function RegisterView({
                     placeholder="3001234567"
                     value={registerData.telefono}
                     onChange={(e) => setRegisterData({ ...registerData, telefono: e.target.value.replace(/\D/g, '') })}
-                    onFocus={() => setFocusedField('telefono')}
+                    onFocus={() => {
+                      setFocusedField('telefono');
+                      setTouchedFields(prev => ({ ...prev, telefono: true }));
+                    }}
                     onBlur={() => setFocusedField(null)}
-                    className="rv-input"
+                    className="rv-input focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
               </div>
@@ -244,9 +271,12 @@ export function RegisterView({
                     placeholder="Poblado"
                     value={registerData.barrio}
                     onChange={(e) => setRegisterData({ ...registerData, barrio: e.target.value })}
-                    onFocus={() => setFocusedField('barrio')}
+                    onFocus={() => {
+                      setFocusedField('barrio');
+                      setTouchedFields(prev => ({ ...prev, barrio: true }));
+                    }}
                     onBlur={() => setFocusedField(null)}
-                    className="rv-input"
+                    className="rv-input focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
               </div>
@@ -261,9 +291,12 @@ export function RegisterView({
                     placeholder="Calle 10 #20-30"
                     value={registerData.direccion}
                     onChange={(e) => setRegisterData({ ...registerData, direccion: e.target.value })}
-                    onFocus={() => setFocusedField('direccion')}
+                    onFocus={() => {
+                      setFocusedField('direccion');
+                      setTouchedFields(prev => ({ ...prev, direccion: true }));
+                    }}
                     onBlur={() => setFocusedField(null)}
-                    className="rv-input"
+                    className="rv-input focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                 </div>
               </div>
@@ -286,9 +319,12 @@ export function RegisterView({
                   placeholder="••••••••"
                   value={registerData.contrasena}
                   onChange={(e) => setRegisterData({ ...registerData, contrasena: e.target.value })}
-                  onFocus={() => setFocusedField('contrasena')}
+                  onFocus={() => {
+                    setFocusedField('contrasena');
+                    setTouchedFields(prev => ({ ...prev, contrasena: true }));
+                  }}
                   onBlur={() => setFocusedField(null)}
-                  className="rv-input rv-input-password"
+                  className="rv-input rv-input-password focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="rv-toggle-pw">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -311,9 +347,12 @@ export function RegisterView({
                   placeholder="••••••••"
                   value={registerData.confirmarContrasena}
                   onChange={(e) => setRegisterData({ ...registerData, confirmarContrasena: e.target.value })}
-                  onFocus={() => setFocusedField('confirmarContrasena')}
+                  onFocus={() => {
+                    setFocusedField('confirmarContrasena');
+                    setTouchedFields(prev => ({ ...prev, confirmarContrasena: true }));
+                  }}
                   onBlur={() => setFocusedField(null)}
-                  className="rv-input rv-input-password"
+                  className="rv-input rv-input-password focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
                 <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="rv-toggle-pw">
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -599,13 +638,18 @@ export function RegisterView({
           background: #f8fafc;
           border: 2px solid #e2e8f0;
           transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          overflow: hidden;
         }
 
         .rv-input-focused {
-          border-color: #818cf8;
-          background: white;
-          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), 0 4px 12px rgba(99, 102, 241, 0.08);
+          border-color: #4f46e5 !important;
+          background: white !important;
+          box-shadow: none !important;
+          outline: none !important;
+        }
+
+        .rv-input-focused .rv-input {
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .rv-input-error {
@@ -636,6 +680,7 @@ export function RegisterView({
 
         .rv-input {
           padding-left: 38px !important;
+          padding-right: 12px !important;
           height: 44px !important;
           border: none !important;
           background: transparent !important;
@@ -646,18 +691,20 @@ export function RegisterView({
 
         .rv-input:focus {
           box-shadow: none !important;
+          outline: none !important;
         }
 
         .rv-input-password {
-          padding-right: 40px !important;
+          padding-right: 44px !important;
         }
 
         .rv-toggle-pw {
           position: absolute;
-          right: 12px;
+          right: 12px !important;
+          left: auto !important;
           top: 50%;
           transform: translateY(-50%);
-          z-index: 1;
+          z-index: 10;
           color: #9ca3af;
           background: none;
           border: none;

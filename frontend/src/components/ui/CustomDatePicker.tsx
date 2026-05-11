@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from './button';
 import { Calendar } from './calendar';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 
@@ -15,7 +15,13 @@ interface CustomDatePickerProps {
 
 export function CustomDatePicker({ value, onChange, minDate, maxDate, onClose }: CustomDatePickerProps) {
   const [view, setView] = useState<'days' | 'months' | 'years'>('years');
-  const initialDate = value ? new Date(value + 'T00:00:00') : maxDate;
+  const safeParse = (val: string) => {
+    if (!val) return maxDate;
+    const d = new Date(val.includes('T') ? val : val + 'T00:00:00');
+    return isValid(d) ? d : maxDate;
+  };
+
+  const initialDate = safeParse(value);
   const [currentDate, setCurrentDate] = useState<Date>(initialDate);
   const [yearPage, setYearPage] = useState(
     initialDate.getFullYear() - (initialDate.getFullYear() % 12)
@@ -116,13 +122,13 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, onClose }:
       <div className="flex justify-between items-center p-3 pb-0">
         <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={isPrevMonthDisabled} onClick={prevMonth}><ChevronLeft className="h-4 w-4" /></Button>
         <div className="font-bold text-sm cursor-pointer hover:bg-slate-100 px-3 py-1.5 rounded flex items-center capitalize" onClick={() => setView('months')}>
-          {format(currentDate, 'MMMM yyyy', { locale: es })}
+          {isValid(currentDate) ? format(currentDate, 'MMMM yyyy', { locale: es }) : 'Seleccionar fecha'}
         </div>
         <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={isNextMonthDisabled} onClick={nextMonth}><ChevronRight className="h-4 w-4" /></Button>
       </div>
       <Calendar
         mode="single"
-        selected={value ? new Date(value + 'T00:00:00') : undefined}
+        selected={value && isValid(new Date(value.includes('T') ? value : value + 'T00:00:00')) ? new Date(value.includes('T') ? value : value + 'T00:00:00') : undefined}
         onSelect={(d) => {
           if (d) {
             onChange(format(d, 'yyyy-MM-dd'));

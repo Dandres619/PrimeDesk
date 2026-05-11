@@ -46,6 +46,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     isLoading: isLoadingRegister,
     handleNextStep,
     prevStep,
+    setTouchedFields,
   } = useRegister(() => handleModeSwitch(true));
 
   const {
@@ -183,6 +184,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                   handleNextStep={handleNextStep}
                   prevStep={prevStep}
                   setIsLogin={(v: boolean) => handleModeSwitch(v)}
+                  setTouchedFields={setTouchedFields}
                 />
               )}
             </div>

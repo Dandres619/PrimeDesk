@@ -54,7 +54,7 @@ export function LoginView({
               onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
               onFocus={() => setFocusedField('email')}
               onBlur={() => setFocusedField(null)}
-              className="lv-input"
+              className="lv-input focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
         </div>
@@ -81,7 +81,7 @@ export function LoginView({
               onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
               onFocus={() => setFocusedField('password')}
               onBlur={() => setFocusedField(null)}
-              className="lv-input lv-input-password"
+              className="lv-input lv-input-password focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <button
               type="button"
@@ -237,30 +237,19 @@ export function LoginView({
         }
 
         .lv-input-wrapper::before {
-          content: '';
-          position: absolute;
-          inset: -2px;
-          border-radius: 14px;
-          background: linear-gradient(135deg, #6366f1, #a855f7);
-          opacity: 0;
-          z-index: 0;
-          transition: opacity 0.3s ease;
+          display: none; /* Eliminar el brillo que causaba expansion */
         }
 
         .lv-input-focused {
-          border-color: transparent;
-          background: white;
-          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), 0 4px 12px rgba(99, 102, 241, 0.08);
+          border-color: #4f46e5 !important;
+          background: white !important;
+          box-shadow: none !important;
+          outline: none !important;
         }
 
-        .lv-input-focused::before {
-          opacity: 1;
-        }
-
-        .lv-input-focused .lv-input,
-        .lv-input-focused .lv-toggle-password {
-          position: relative;
-          z-index: 1;
+        .lv-input-focused .lv-input {
+          box-shadow: none !important;
+          outline: none !important;
         }
 
         .lv-input-icon {
@@ -284,30 +273,31 @@ export function LoginView({
           position: relative;
           z-index: 1;
           padding-left: 42px !important;
+          padding-right: 12px !important;
           height: 48px !important;
           border: none !important;
           background: transparent !important;
           font-size: 0.9rem;
           box-shadow: none !important;
           outline: none !important;
-          ring: none !important;
         }
 
         .lv-input:focus {
           box-shadow: none !important;
-          ring: none !important;
+          outline: none !important;
         }
 
         .lv-input-password {
-          padding-right: 42px !important;
+          padding-right: 48px !important;
         }
 
         .lv-toggle-password {
           position: absolute;
-          right: 14px;
+          right: 12px !important;
+          left: auto !important;
           top: 50%;
           transform: translateY(-50%);
-          z-index: 1;
+          z-index: 10;
           color: #9ca3af;
           background: none;
           border: none;

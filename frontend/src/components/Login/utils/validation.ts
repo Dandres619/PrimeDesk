@@ -1,3 +1,5 @@
+import { isValid } from 'date-fns';
+
 export const validateField = (name: string, value: string, currentData: any, activeStep: number) => {
   const todayDate = new Date();
   const globalMinAgeDate = new Date(todayDate.getFullYear() - 18, todayDate.getMonth(), todayDate.getDate());
@@ -16,15 +18,29 @@ export const validateField = (name: string, value: string, currentData: any, act
         else if (!/^\d{7,10}$/.test(value)) error = 'Entre 7 y 10 números';
         break;
       case 'fecha_nacimiento':
-        if (!value) error = 'No puede estar vacío';
-        else {
-          const selectedDate = new Date(value + 'T00:00:00');
-          if (selectedDate > todayDate) {
-            error = 'La fecha no puede ser en el futuro';
-          } else if (selectedDate > globalMinAgeDate) {
-            error = 'Debe ser mayor de 18 años';
+        if (!value) {
+          error = ''; // Es opcional
+        } else if (value.length > 0 && value.length < 10) {
+          error = 'Formato incompleto (DD/MM/YYYY)';
+        } else {
+          const isStandard = value.includes('-');
+          let selectedDate: Date;
+          
+          if (isStandard) {
+            selectedDate = new Date(value + 'T00:00:00');
+          } else {
+            const [d, m, y] = value.split('/').map(Number);
+            selectedDate = new Date(y, m - 1, d);
+          }
+
+          if (!isValid(selectedDate)) {
+            error = 'Fecha inválida';
+          } else if (selectedDate > todayDate) {
+            error = 'Fecha futura';
           } else if (selectedDate.getFullYear() < 1950) {
-            error = 'El año mínimo es 1950';
+            error = 'Mínimo año 1950';
+          } else if (selectedDate > globalMinAgeDate) {
+            error = 'Debes ser mayor de 18 años';
           }
         }
         break;

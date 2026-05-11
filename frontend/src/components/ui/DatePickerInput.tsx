@@ -20,11 +20,22 @@ export function DatePickerInput({ value, onChange, minDate, maxDate, placeholder
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
+  const parseDate = (val: string) => {
+    if (!val || val.length < 10) return null;
+    if (val.includes('-')) {
+      const d = new Date(val + 'T00:00:00');
+      return isValid(d) ? d : null;
+    }
+    const [d, m, y] = val.split('/').map(Number);
+    const date = new Date(y, m - 1, d);
+    return isValid(date) && y >= 1000 ? date : null;
+  };
+
   useEffect(() => {
     if (value) {
       try {
-        const d = new Date(value + 'T00:00:00');
-        if (isValid(d)) {
+        const d = parseDate(value);
+        if (d && isValid(d)) {
           const newFormatted = format(d, 'dd/MM/yyyy');
           if (inputValue !== newFormatted) {
             setInputValue(newFormatted);
@@ -40,7 +51,6 @@ export function DatePickerInput({ value, onChange, minDate, maxDate, placeholder
     let val = e.target.value.replace(/\D/g, '');
     if (val.length > 8) val = val.slice(0, 8);
 
-    // Still prevent day > 31 and month > 12 for better UX
     if (val.length >= 2) {
       let day = parseInt(val.slice(0, 2));
       if (day > 31) val = '31' + val.slice(2);
@@ -57,7 +67,17 @@ export function DatePickerInput({ value, onChange, minDate, maxDate, placeholder
     if (val.length > 4) formatted = formatted.slice(0, 5) + '/' + val.slice(4);
 
     setInputValue(formatted);
-    onChange(formatted);
+
+    if (formatted.length === 10) {
+      const parsed = parseDate(formatted);
+      if (parsed) {
+        onChange(format(parsed, 'yyyy-MM-dd'));
+      } else {
+        onChange(formatted);
+      }
+    } else {
+      onChange(formatted);
+    }
   };
 
   const handleInputBlur = () => {
