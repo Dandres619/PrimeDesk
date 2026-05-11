@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { PDFPreviewDialog } from './PDFPreviewDialog';
-import { ConfirmDialog } from './ConfirmDialog';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import {
   Plus,

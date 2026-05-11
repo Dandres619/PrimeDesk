@@ -14,14 +14,14 @@ import { Horarios } from '@/components/Horarios';
 import { CategoriasProductos } from '@/components/CategoriasProductos';
 import { Productos } from '@/components/Productos';
 import { PedidosServicios } from '@/components/PedidosServicios';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Login } from '@/components/Login';
 import LandingPage from '@/components/LandingPage';
-import { ClientPanel } from '@/components/ClientPanel';
+import { ClientPanel } from '@/components/PanelCliente';
 import { MiPerfil } from '@/components/MiPerfil';
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { Empleados } from '@/components/Empleados';
-import { Verify } from '@/components/Verify';
+import { VerificarCuenta } from '@/components/VerificarCuenta';
 import {
     LayoutDashboard,
     ShieldCheck,
@@ -133,7 +133,7 @@ function AppContent() {
     if (path && path.startsWith('/verify')) {
         return (
             <>
-                <Verify />
+                <VerificarCuenta />
                 <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
             </>
         );

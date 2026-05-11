@@ -1,0 +1,124 @@
+import { parse, isValid } from 'date-fns';
+
+export const validateEmail = (email: string) => {
+  if (!email) return 'El correo es obligatorio';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Correo electrónico inválido';
+  return '';
+};
+
+export const validatePassword = (pass: string, isEditing: boolean) => {
+  if (!pass && isEditing) return '';
+  if (!pass && !isEditing) return 'La contraseña es obligatoria';
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+  if (!passwordRegex.test(pass)) return 'Contraseña insegura';
+  return '';
+};
+
+export const validateField = (name: string, value: string, currentData: any, isEditing: boolean) => {
+  let error = '';
+
+  switch (name) {
+    case 'correo':
+      error = validateEmail(value);
+      break;
+    case 'contrasena':
+      error = validatePassword(value, isEditing);
+      break;
+    case 'confirmarContrasena':
+      if ((!isEditing || currentData.contrasena) && value !== currentData.contrasena) {
+        error = 'Las contraseñas no coinciden';
+      }
+      break;
+    case 'nombre':
+      if (!value) error = 'El nombre es obligatorio';
+      break;
+    case 'apellido':
+      if (!value) error = 'El apellido es obligatorio';
+      break;
+    case 'documento':
+      if (!value) error = 'El documento es obligatorio';
+      else if (!/^\d{7,10}$/.test(value)) error = 'Debe tener entre 7 y 10 dígitos';
+      break;
+    case 'telefono':
+      if (!value) error = 'El teléfono es obligatorio';
+      else if (!/^\d{7,10}$/.test(value)) error = 'Debe tener entre 7 y 10 dígitos';
+      break;
+    case 'fecha_nacimiento':
+      if (value) {
+        let dateObj: Date | null = null;
+        let yearVal = 0;
+
+        if (value === 'INVALID') {
+          error = 'Fecha inválida';
+        } else if (value.includes('/')) {
+          const parts = value.split('/');
+          if (parts.length === 3 && parts[2]) yearVal = parseInt(parts[2]);
+          if (parts.length < 3 || !parts[2] || parts[2].length < 4) {
+            if (yearVal > 0 && yearVal < 1950) error = 'El año mínimo es 1950';
+            else error = 'Fecha incompleta';
+          } else {
+            const d = parse(value, 'dd/MM/yyyy', new Date());
+            if (isValid(d)) dateObj = d;
+            else error = 'Fecha inválida';
+          }
+        } else {
+          dateObj = new Date(value + 'T00:00:00');
+          yearVal = parseInt(value.split('-')[0]);
+        }
+
+        if (!error) {
+          if (yearVal > 0 && yearVal < 1950) error = 'El año mínimo es 1950';
+          else if (dateObj) {
+            const today = new Date();
+            const minAge = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+            if (dateObj > today) error = 'No puede ser en el futuro';
+            else if (dateObj > minAge) error = 'Debe ser mayor de 18 años';
+          }
+        }
+      }
+      break;
+    case 'fecha_ingreso':
+      if (!value) error = 'La fecha de ingreso es obligatoria';
+      else {
+        let dateObj: Date | null = null;
+        let yearVal = 0;
+
+        if (value === 'INVALID') {
+          error = 'Fecha inválida';
+        } else if (value.includes('/')) {
+          const parts = value.split('/');
+          if (parts.length === 3 && parts[2]) yearVal = parseInt(parts[2]);
+          if (parts.length < 3 || !parts[2] || parts[2].length < 4) {
+            const tenYearsAgoYear = new Date().getFullYear() - 10;
+            if (yearVal > 0 && yearVal < tenYearsAgoYear) error = 'Máximo 10 años atrás';
+            else error = 'Fecha incompleta';
+          } else {
+            const d = parse(value, 'dd/MM/yyyy', new Date());
+            if (isValid(d)) dateObj = d;
+            else error = 'Fecha inválida';
+          }
+        } else {
+          dateObj = new Date(value + 'T00:00:00');
+          yearVal = parseInt(value.split('-')[0]);
+        }
+
+        if (!error) {
+          const today = new Date();
+          const tenYearsAgo = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate());
+          if (yearVal > 0 && yearVal < tenYearsAgo.getFullYear()) error = 'Máximo 10 años atrás';
+          else if (dateObj) {
+            if (dateObj > today) error = 'No puede ser en el futuro';
+            else if (dateObj < tenYearsAgo) error = 'Máximo 10 años atrás';
+          }
+        }
+      }
+      break;
+    case 'barrio':
+      if (!value) error = 'El barrio es obligatorio';
+      break;
+    case 'direccion':
+      if (!value) error = 'La dirección es obligatoria';
+      break;
+  }
+  return error;
+};

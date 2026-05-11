@@ -863,7 +863,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
                             onChange={(v) => {
                               setRegisterData(prev => ({ ...prev, fecha_nacimiento: v }));
                             }}
-                            minAgeDate={globalMinAgeDate}
+                            minDate={globalMinAgeDate}
                             placeholder="Seleccionar fecha"
                             className="h-12"
                             error={!!(touchedFields.fecha_nacimiento && registerErrors.fecha_nacimiento)}

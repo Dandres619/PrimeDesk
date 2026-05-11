@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { ConfirmDialog } from './ConfirmDialog';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 import { Edit, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Eye, Loader2, Wrench } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isToday, parseISO, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';

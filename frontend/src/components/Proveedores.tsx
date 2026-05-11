@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
-import { ConfirmDialog } from './ConfirmDialog';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 import { Plus, Search, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 

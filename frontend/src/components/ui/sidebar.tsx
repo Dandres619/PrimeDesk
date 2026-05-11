@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, HTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip'
+import { Menu } from 'lucide-react'
 
 // 1. Contexto y Hook
 interface SidebarContextType {
@@ -37,7 +38,11 @@ export function useSidebar() {
 }
 
 // 2. Sidebar Principal (Colapsa en desktop, desliza en mobile)
-export function Sidebar({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
+interface SidebarProps extends HTMLAttributes<HTMLDivElement> {
+    collapsible?: "icon" | "none"
+}
+
+export function Sidebar({ className, children, collapsible, ...props }: SidebarProps) {
     const { isOpen, close } = useSidebar()
 
     return (
@@ -148,19 +153,30 @@ export function SidebarMenuItem({ className, ...props }: HTMLAttributes<HTMLLIEl
 }
 
 // 5. SidebarMenuButton (Oculta etiqueta cuando colapsa)
+export interface SidebarMenuButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    isActive?: boolean
+    tooltip?: string
+}
+
 export function SidebarMenuButton({
     className,
     children,
     onClick,
     tooltip,
+    isActive,
     ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { tooltip?: string }) {
+}: SidebarMenuButtonProps) {
     const { close, isOpen } = useSidebar();
 
     const button = (
         <button
             className={cn(
                 "flex w-full items-center rounded-md text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-50",
+
+                // Estilos de estado activo
+                isActive 
+                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold shadow-sm" 
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800",
 
                 // Estilos dinámicos: padding y justificación
                 isOpen ? 'justify-start gap-3 p-3' : 'justify-center p-3 md:w-full',
@@ -230,6 +246,8 @@ export function SidebarTrigger({
                 className
             )}
             {...props}
-        />
+        >
+            <Menu className="w-5 h-5" />
+        </button>
     )
 }

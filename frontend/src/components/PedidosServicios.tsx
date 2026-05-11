@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
-import { ConfirmDialog } from './ConfirmDialog';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 import { PDFPreviewDialog } from './PDFPreviewDialog';
 import { Plus, Search, Eye, Edit2, XCircle, FileText, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
