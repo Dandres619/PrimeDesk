@@ -1,5 +1,5 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './ui/dialog';
-import { Button } from './ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from './dialog';
+import { Button } from './button';
 import { AlertTriangle, Trash2, XCircle, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
