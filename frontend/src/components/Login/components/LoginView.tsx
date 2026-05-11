@@ -22,73 +22,82 @@ export function LoginView({
   setShowForgotPasswordModal
 }: LoginViewProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   return (
-    <div className="max-w-md mx-auto">
-      <div className="text-center mb-8">
-        <h3 className="text-2xl font-bold text-gray-800 mb-2">Iniciar Sesión</h3>
-        <p className="text-gray-500">
+    <div className="login-view-root">
+      {/* Header */}
+      <div className="lv-header">
+        <h3 className="lv-title">Iniciar Sesión</h3>
+        <p className="lv-subtitle">
           ¿No tienes una cuenta?{' '}
           <button
             onClick={() => setIsLogin(false)}
-            className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors"
+            className="lv-link"
           >
             Regístrate aquí
           </button>
         </p>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-700">Correo electrónico</Label>
-          <div className="relative group">
-            <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
+      <form onSubmit={handleLogin} className="lv-form">
+        {/* Email Field */}
+        <div className="lv-field-group">
+          <Label htmlFor="email" className="lv-label">Correo electrónico</Label>
+          <div className={`lv-input-wrapper ${focusedField === 'email' ? 'lv-input-focused' : ''}`}>
+            <Mail className="lv-input-icon" />
             <Input
               id="email"
               type="email"
-              placeholder="sofiaplus@gmail.com"
+              placeholder="ejemplo@correo.com"
               value={loginData.email}
               onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-              className="pl-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12"
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField(null)}
+              className="lv-input"
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <Label htmlFor="password" className="text-gray-700">Contraseña</Label>
+        {/* Password Field */}
+        <div className="lv-field-group">
+          <div className="lv-label-row">
+            <Label htmlFor="password" className="lv-label">Contraseña</Label>
             <button
               type="button"
               onClick={() => setShowForgotPasswordModal(true)}
-              className="text-sm text-indigo-600 hover:text-indigo-700 transition-colors"
+              className="lv-forgot-link"
             >
               ¿Olvidaste tu contraseña?
             </button>
           </div>
-          <div className="relative group">
-            <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
+          <div className={`lv-input-wrapper ${focusedField === 'password' ? 'lv-input-focused' : ''}`}>
+            <Lock className="lv-input-icon" />
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="••••••••"
               value={loginData.password}
               onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-              className="pl-10 pr-10 border-gray-200 focus:border-indigo-500 focus:ring-indigo-200 h-12"
+              onFocus={() => setFocusedField('password')}
+              onBlur={() => setFocusedField(null)}
+              className="lv-input lv-input-password"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
+              className="lv-toggle-password"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
         </div>
 
+        {/* Submit */}
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white h-12 shadow-lg shadow-indigo-200"
+          className="lv-submit-btn"
         >
           {isLoading ? (
             <>
@@ -98,30 +107,312 @@ export function LoginView({
           ) : (
             <>
               Iniciar Sesión
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-4 h-4 ml-2 lv-btn-arrow" />
             </>
           )}
         </Button>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-gray-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-500">Proximamente inicio con Gmail</span>
-          </div>
+        {/* Divider */}
+        <div className="lv-divider">
+          <div className="lv-divider-line" />
+          <span className="lv-divider-text">Próximamente inicio con Gmail</span>
+          <div className="lv-divider-line" />
         </div>
 
+        {/* Create Account */}
         <Button
           type="button"
           variant="outline"
-          className="w-full border-gray-200 text-gray-700 hover:bg-gray-50 h-12"
+          className="lv-create-btn"
           onClick={() => setIsLogin(false)}
         >
           Crear nueva cuenta
           <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </form>
+
+      <style>{`
+        .login-view-root {
+          width: 100%;
+        }
+
+        .lv-header {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .lv-title {
+          font-size: 1.75rem;
+          font-weight: 800;
+          color: #1e1b4b;
+          letter-spacing: -0.03em;
+          margin-bottom: 0.5rem;
+          background: linear-gradient(135deg, #4338ca, #7c3aed);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .lv-subtitle {
+          color: #6b7280;
+          font-size: 0.875rem;
+        }
+
+        .lv-link {
+          color: #4f46e5;
+          font-weight: 600;
+          background: none;
+          border: none;
+          cursor: pointer;
+          position: relative;
+          transition: color 0.2s ease;
+        }
+
+        .lv-link::after {
+          content: '';
+          position: absolute;
+          bottom: -1px;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background: #4f46e5;
+          transition: width 0.3s ease;
+        }
+
+        .lv-link:hover::after {
+          width: 100%;
+        }
+
+        .lv-link:hover {
+          color: #4338ca;
+        }
+
+        .lv-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+
+        .lv-field-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .lv-label {
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: #374151;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .lv-label-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .lv-forgot-link {
+          font-size: 0.75rem;
+          color: #6366f1;
+          font-weight: 500;
+          background: none;
+          border: none;
+          cursor: pointer;
+          transition: color 0.2s ease;
+        }
+
+        .lv-forgot-link:hover {
+          color: #4338ca;
+        }
+
+        .lv-input-wrapper {
+          position: relative;
+          border-radius: 12px;
+          background: #f8fafc;
+          border: 2px solid #e2e8f0;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          overflow: hidden;
+        }
+
+        .lv-input-wrapper::before {
+          content: '';
+          position: absolute;
+          inset: -2px;
+          border-radius: 14px;
+          background: linear-gradient(135deg, #6366f1, #a855f7);
+          opacity: 0;
+          z-index: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .lv-input-focused {
+          border-color: transparent;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), 0 4px 12px rgba(99, 102, 241, 0.08);
+        }
+
+        .lv-input-focused::before {
+          opacity: 1;
+        }
+
+        .lv-input-focused .lv-input,
+        .lv-input-focused .lv-toggle-password {
+          position: relative;
+          z-index: 1;
+        }
+
+        .lv-input-icon {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 16px;
+          height: 16px;
+          color: #9ca3af;
+          z-index: 1;
+          transition: color 0.3s ease;
+          pointer-events: none;
+        }
+
+        .lv-input-focused .lv-input-icon {
+          color: #6366f1;
+        }
+
+        .lv-input {
+          position: relative;
+          z-index: 1;
+          padding-left: 42px !important;
+          height: 48px !important;
+          border: none !important;
+          background: transparent !important;
+          font-size: 0.9rem;
+          box-shadow: none !important;
+          outline: none !important;
+          ring: none !important;
+        }
+
+        .lv-input:focus {
+          box-shadow: none !important;
+          ring: none !important;
+        }
+
+        .lv-input-password {
+          padding-right: 42px !important;
+        }
+
+        .lv-toggle-password {
+          position: absolute;
+          right: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 1;
+          color: #9ca3af;
+          background: none;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px;
+          border-radius: 6px;
+          transition: all 0.2s ease;
+        }
+
+        .lv-toggle-password:hover {
+          color: #6366f1;
+          background: rgba(99, 102, 241, 0.08);
+        }
+
+        .lv-submit-btn {
+          width: 100%;
+          height: 48px !important;
+          background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+          color: white !important;
+          border: none !important;
+          border-radius: 12px !important;
+          font-weight: 600 !important;
+          font-size: 0.9rem !important;
+          cursor: pointer;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3) !important;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .lv-submit-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, #4338ca, #6d28d9);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .lv-submit-btn:hover::before {
+          opacity: 1;
+        }
+
+        .lv-submit-btn:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4) !important;
+        }
+
+        .lv-submit-btn:active {
+          transform: translateY(0) !important;
+        }
+
+        .lv-submit-btn:disabled {
+          opacity: 0.7 !important;
+          transform: none !important;
+        }
+
+        .lv-btn-arrow {
+          transition: transform 0.3s ease;
+        }
+
+        .lv-submit-btn:hover .lv-btn-arrow {
+          transform: translateX(4px);
+        }
+
+        .lv-divider {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .lv-divider-line {
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+        }
+
+        .lv-divider-text {
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #9ca3af;
+          white-space: nowrap;
+        }
+
+        .lv-create-btn {
+          width: 100%;
+          height: 48px !important;
+          border: 2px solid #e2e8f0 !important;
+          border-radius: 12px !important;
+          color: #374151 !important;
+          font-weight: 600 !important;
+          background: transparent !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .lv-create-btn:hover {
+          border-color: #c7d2fe !important;
+          background: rgba(99, 102, 241, 0.04) !important;
+          color: #4f46e5 !important;
+        }
+      `}</style>
     </div>
   );
 }
