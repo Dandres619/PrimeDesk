@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { SidebarProvider, SidebarTrigger } from '../ui/sidebar';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { MiPerfil } from '../MiPerfil/index';
-import { useTheme } from '../ThemeProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useClientData } from './hooks/useClientData';
 import { ClientSidebar } from './components/ClientSidebar';
 import { MotosSection } from './components/MotosSection';
