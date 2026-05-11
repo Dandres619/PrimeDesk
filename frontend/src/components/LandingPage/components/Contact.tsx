@@ -1,4 +1,5 @@
 import { MapPin, Clock, Phone, Instagram, Facebook, Bike } from 'lucide-react';
+import contactImg from '@/assets/landing/contact-img.jpg';
 
 export function Contact() {
   return (
@@ -58,7 +59,7 @@ export function Contact() {
             {/* Visual Panel */}
             <div className="relative min-h-[400px] bg-slate-100">
               <img
-                src="https://images.unsplash.com/photo-1586449480537-3a22cf98b04c?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                src={contactImg}
                 className="absolute inset-0 w-full h-full object-cover"
                 alt="Ubicación"
               />

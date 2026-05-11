@@ -1,4 +1,5 @@
 import { Calendar, Wrench, ChevronDown } from 'lucide-react';
+import heroBg from '@/assets/landing/hero-bg.jpg';
 
 interface HeroProps {
   onRegisterClick: () => void;
@@ -10,7 +11,7 @@ export function Hero({ onRegisterClick }: HeroProps) {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/60 z-10"></div>
         <img
-          src="https://images.unsplash.com/photo-1742294740060-1b169f3c0807?q=80&w=1172&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+          src={heroBg}
           alt="Motorcycle workshop"
           className="w-full h-full object-cover"
         />

@@ -1,10 +1,16 @@
 import { Shield, CheckCircle } from 'lucide-react';
+import expertiseImg from '@/assets/landing/expertise-img.jpg';
+import user1 from '@/assets/landing/user-1.jpg';
+import user2 from '@/assets/landing/user-2.jpg';
+import user3 from '@/assets/landing/user-3.jpg';
 
 interface ExpertiseProps {
   onRegisterClick: () => void;
 }
 
 export function Expertise({ onRegisterClick }: ExpertiseProps) {
+  const users = [user1, user2, user3];
+
   return (
     <section id="nosotros" className="py-24 bg-white overflow-hidden">
       <div className="container mx-auto px-4 lg:px-8">
@@ -12,7 +18,7 @@ export function Expertise({ onRegisterClick }: ExpertiseProps) {
           <div className="relative">
             <div className="relative z-10 rounded-[2.5rem] overflow-hidden shadow-2xl">
               <img
-                src="https://images.unsplash.com/photo-1604260324056-45f7c778754a?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                src={expertiseImg}
                 alt="Mecánico trabajando"
                 className="w-full h-[600px] object-cover"
               />
@@ -83,9 +89,9 @@ export function Expertise({ onRegisterClick }: ExpertiseProps) {
               </button>
               <div className="flex items-center gap-3 px-6">
                 <div className="flex -space-x-3">
-                  {[1, 2, 3].map(i => (
+                  {users.map((u, i) => (
                     <div key={i} className="w-10 h-10 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
-                      <img src={`https://i.pravatar.cc/100?u=${i + 10}`} alt="User" />
+                      <img src={u} alt="User" />
                     </div>
                   ))}
                 </div>
