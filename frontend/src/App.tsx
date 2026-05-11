@@ -19,7 +19,7 @@ import { Login } from '@/components/Login';
 import LandingPage from '@/components/LandingPage';
 import { ClientPanel } from '@/components/PanelCliente';
 import { MiPerfil } from '@/components/MiPerfil';
-import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
+import { ThemeProvider, useTheme } from '@/providers/ThemeProvider';
 import { Empleados } from '@/components/Empleados';
 import { VerificarCuenta } from '@/components/VerificarCuenta';
 import {

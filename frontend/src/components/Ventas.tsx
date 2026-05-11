@@ -10,7 +10,7 @@ import { Textarea } from './ui/textarea';
 import { Checkbox } from './ui/checkbox';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import { ConfirmDialog } from './ui/ConfirmDialog';
-import { PDFPreviewDialog } from './PDFPreviewDialog';
+import { PDFPreviewDialog } from './shared/PDFPreviewDialog';
 import {
   Plus,
   Search,
