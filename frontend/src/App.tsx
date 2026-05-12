@@ -75,6 +75,7 @@ function AppContent() {
     const [showLanding, setShowLanding] = useState(true);
     const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
     const [currentUser, setCurrentUser] = useState<{ id?: number; id_cliente?: number; username: string; name: string; last_name: string; type: string; permisos: string[] } | null>(null);
+    const [viewTransition, setViewTransition] = useState(false);
 
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -202,32 +203,51 @@ function AppContent() {
     };
 
     const handleLandingLoginClick = () => {
-        setAuthMode('login');
-        setShowLanding(false);
+        setViewTransition(true);
+        setTimeout(() => {
+            setAuthMode('login');
+            setShowLanding(false);
+            setViewTransition(false);
+        }, 200);
     };
     const handleLandingRegisterClick = () => {
-        setAuthMode('register');
-        setShowLanding(false);
+        setViewTransition(true);
+        setTimeout(() => {
+            setAuthMode('register');
+            setShowLanding(false);
+            setViewTransition(false);
+        }, 200);
     };
 
-    if (!isAuthenticated && showLanding) {
-        return (
-            <>
-                <LandingPage onLoginClick={handleLandingLoginClick} onRegisterClick={handleLandingRegisterClick} />
-                <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
-            </>
-        );
-    }
+    const handleBackToLanding = () => {
+        setViewTransition(true);
+        setTimeout(() => {
+            setShowLanding(true);
+            setViewTransition(false);
+        }, 200);
+    };
 
-    if (!isAuthenticated && !showLanding) {
+    if (!isAuthenticated) {
         return (
-            <>
-                <Login onLogin={handleLogin} initialMode={authMode} />
-                <Button variant="ghost" onClick={() => setShowLanding(true)} className="fixed top-4 left-4 z-50 bg-background/50 hover:bg-background/80 backdrop-blur-sm">
-                    ← Volver
-                </Button>
+            <div className="min-h-screen bg-[#0f172a]"> {/* Fondo oscuro persistente para evitar pantallazo blanco */}
+                <div className={`transition-opacity duration-200 ease-linear ${viewTransition ? 'opacity-0' : 'opacity-100'}`}>
+                    {showLanding ? (
+                        <LandingPage onLoginClick={handleLandingLoginClick} onRegisterClick={handleLandingRegisterClick} />
+                    ) : (
+                        <>
+                            <Login onLogin={handleLogin} initialMode={authMode} />
+                            <Button 
+                                variant="ghost" 
+                                onClick={handleBackToLanding} 
+                                className="fixed top-6 left-6 z-[60] bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 rounded-xl px-4 py-2 flex items-center gap-2 transition-all"
+                            >
+                                <span className="text-lg">←</span> Volver a Inicio
+                            </Button>
+                        </>
+                    )}
+                </div>
                 <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
-            </>
+            </div>
         );
     }
 

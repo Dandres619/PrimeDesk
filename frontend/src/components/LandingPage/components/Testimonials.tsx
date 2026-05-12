@@ -17,18 +17,22 @@ export function Testimonials() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonialsList.map((t, i) => (
-            <div key={i} className="bg-slate-800/50 p-8 rounded-[2rem] border border-slate-700 hover:bg-slate-800 transition-colors">
+            <div 
+              key={i} 
+              className="bg-slate-800/50 p-8 rounded-[2rem] border border-slate-700 hover:bg-slate-800 transition-colors reveal-item"
+              style={{ transitionDelay: `${i * 150}ms` }}
+            >
               <div className="flex items-center gap-1 text-yellow-500 mb-6">
                 {[1, 2, 3, 4, 5].map(s => <Sparkles key={s} className="w-4 h-4 fill-current" />)}
               </div>
               <p className="text-slate-300 mb-8 italic">"{t.txt}"</p>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center font-bold text-blue-400">
+                <div className="w-12 h-12 bg-indigo-600/20 rounded-xl flex items-center justify-center font-bold text-indigo-400">
                   {t.name[0]}
                 </div>
                 <div>
                   <div className="font-bold">{t.name}</div>
-                  <div className="text-xs text-blue-400">{t.moto}</div>
+                  <div className="text-xs text-indigo-400">{t.moto}</div>
                 </div>
               </div>
             </div>

@@ -22,7 +22,7 @@ export function Expertise({ onRegisterClick }: ExpertiseProps) {
                 alt="Mecánico trabajando"
                 className="w-full h-[600px] object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/40 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/40 to-transparent"></div>
             </div>
 
             <div className="absolute -bottom-10 -right-10 bg-white p-8 rounded-3xl shadow-2xl z-20 border border-slate-100 hidden md:block">
@@ -37,23 +37,23 @@ export function Expertise({ onRegisterClick }: ExpertiseProps) {
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <CheckCircle className="w-4 h-4 text-blue-600" /> Repuestos Originales
+                  <CheckCircle className="w-4 h-4 text-indigo-600" /> Repuestos Originales
                 </div>
                 <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <CheckCircle className="w-4 h-4 text-blue-600" /> Técnicos Certificados
+                  <CheckCircle className="w-4 h-4 text-indigo-600" /> Técnicos Certificados
                 </div>
               </div>
             </div>
 
-            <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue-600/5 rounded-full blur-3xl -z-10"></div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] border border-blue-100 rounded-full -z-10 opacity-50"></div>
+            <div className="absolute -top-10 -left-10 w-40 h-40 bg-indigo-600/5 rounded-full blur-3xl -z-10"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] border border-indigo-100 rounded-full -z-10 opacity-50"></div>
           </div>
 
           <div className="space-y-8">
             <div>
-              <span className="text-blue-600 font-bold tracking-wider uppercase text-sm mb-3 block">Nuestra Trayectoria</span>
+              <span className="text-indigo-600 font-bold tracking-wider uppercase text-sm mb-3 block">Nuestra Trayectoria</span>
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight leading-tight">
-                Más que un taller, somos el <span className="text-blue-600">soporte vital</span> de tu pasión
+                Más que un taller, somos el <span className="text-indigo-600">soporte vital</span> de tu pasión
               </h2>
               <p className="text-lg text-slate-600 leading-relaxed">
                 En <strong>Rafa Motos</strong>, entendemos que tu motocicleta es más que un medio de transporte; es una extensión de tu libertad. Por eso, hemos perfeccionado el arte de la mecánica durante más de 15 años.
@@ -62,19 +62,19 @@ export function Expertise({ onRegisterClick }: ExpertiseProps) {
 
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-2">
-                <div className="text-4xl font-black text-blue-600">15+</div>
+                <div className="text-4xl font-black text-indigo-600">15+</div>
                 <div className="text-sm font-bold text-slate-900 uppercase tracking-widest">Años de Experticia</div>
                 <p className="text-xs text-slate-500">Liderando el mercado local con honestidad y precisión.</p>
               </div>
               <div className="space-y-2">
-                <div className="text-4xl font-black text-blue-600">8k+</div>
+                <div className="text-4xl font-black text-indigo-600">8k+</div>
                 <div className="text-sm font-bold text-slate-900 uppercase tracking-widest">Motos Atendidas</div>
                 <p className="text-xs text-slate-500">Desde scooters urbanas hasta superbikes de alta cilindrada.</p>
               </div>
             </div>
 
             <div className="pt-6">
-              <blockquote className="border-l-4 border-blue-600 pl-6 py-2 italic text-slate-700 text-lg">
+              <blockquote className="border-l-4 border-indigo-600 pl-6 py-2 italic text-slate-700 text-lg">
                 "Nuestro objetivo no es solo arreglar motos, es garantizar que cada cliente sienta la misma confianza que nosotros al salir a la ruta."
                 <footer className="mt-4 not-italic font-bold text-slate-900">— Rafael S., Fundador</footer>
               </blockquote>
@@ -83,7 +83,7 @@ export function Expertise({ onRegisterClick }: ExpertiseProps) {
             <div className="flex gap-4">
               <button
                 onClick={onRegisterClick}
-                className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+                className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
               >
                 Agendar Servicio
               </button>
