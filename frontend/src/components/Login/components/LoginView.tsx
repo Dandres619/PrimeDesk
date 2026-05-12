@@ -154,8 +154,8 @@ export function LoginView({
         }
 
         .lv-subtitle {
-          color: #6b7280;
-          font-size: 0.875rem;
+          color: #6b7280 !important;
+          font-size: 0.875rem !important;
         }
 
         .lv-link {
@@ -202,7 +202,7 @@ export function LoginView({
         .lv-label {
           font-size: 0.8rem;
           font-weight: 600;
-          color: #374151;
+          color: #374151 !important;
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
@@ -242,7 +242,7 @@ export function LoginView({
 
         .lv-input-focused {
           border-color: #4f46e5 !important;
-          background: white !important;
+          background: #ffffff !important;
           box-shadow: none !important;
           outline: none !important;
         }
@@ -277,7 +277,8 @@ export function LoginView({
           height: 48px !important;
           border: none !important;
           background: transparent !important;
-          font-size: 0.9rem;
+          font-size: 0.9rem !important;
+          color: #1f2937 !important;
           box-shadow: none !important;
           outline: none !important;
         }
@@ -393,7 +394,7 @@ export function LoginView({
           border-radius: 12px !important;
           color: #374151 !important;
           font-weight: 600 !important;
-          background: transparent !important;
+          background: #ffffff !important;
           transition: all 0.3s ease !important;
         }
 

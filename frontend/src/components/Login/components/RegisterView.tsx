@@ -416,8 +416,8 @@ export function RegisterView({
         }
 
         .rv-subtitle {
-          color: #6b7280;
-          font-size: 0.875rem;
+          color: #6b7280 !important;
+          font-size: 0.875rem !important;
         }
 
         .rv-link {
@@ -642,7 +642,7 @@ export function RegisterView({
 
         .rv-input-focused {
           border-color: #4f46e5 !important;
-          background: white !important;
+          background: #ffffff !important;
           box-shadow: none !important;
           outline: none !important;
         }
@@ -684,7 +684,8 @@ export function RegisterView({
           height: 44px !important;
           border: none !important;
           background: transparent !important;
-          font-size: 0.85rem;
+          font-size: 0.85rem !important;
+          color: #1f2937 !important;
           box-shadow: none !important;
           outline: none !important;
         }
@@ -735,6 +736,7 @@ export function RegisterView({
           border-radius: 12px !important;
           border: 2px solid #e2e8f0 !important;
           background: #f8fafc !important;
+          color: #1f2937 !important;
           padding-left: 38px !important;
           transition: all 0.3s ease !important;
         }
@@ -759,6 +761,7 @@ export function RegisterView({
           border-radius: 12px !important;
           border: 2px solid #e2e8f0 !important;
           background: #f8fafc !important;
+          color: #1f2937 !important;
           transition: all 0.3s ease !important;
         }
 
@@ -781,7 +784,7 @@ export function RegisterView({
           border-radius: 12px !important;
           color: #374151 !important;
           font-weight: 600 !important;
-          background: transparent !important;
+          background: #ffffff !important;
           transition: all 0.3s ease !important;
         }
 

@@ -76,6 +76,8 @@ function AppContent() {
     const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
     const [currentUser, setCurrentUser] = useState<{ id?: number; id_cliente?: number; username: string; name: string; last_name: string; type: string; permisos: string[] } | null>(null);
     const [viewTransition, setViewTransition] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [logoutPhase, setLogoutPhase] = useState<'idle' | 'fading-in' | 'fading-out'>('idle');
 
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -192,14 +194,29 @@ function AppContent() {
     };
 
     const confirmLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setIsAuthenticated(false);
-        setCurrentUser(null);
-        setActiveSection('dashboard');
-        setShowLanding(true);
-        toast.success('Sesión cerrada exitosamente', { duration: 4000 });
+        setIsLoggingOut(true);
+        setLogoutPhase('fading-in');
         setShowLogoutConfirm(false);
+        
+        // Fase 1: Fundido a negro
+        setTimeout(() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setIsAuthenticated(false);
+            setCurrentUser(null);
+            setActiveSection('dashboard');
+            setShowLanding(true);
+            
+            // Fase 2: Iniciar desvanecimiento para revelar la landing
+            setLogoutPhase('fading-out');
+            
+            // Fase 3: Limpiar estados al terminar
+            setTimeout(() => {
+                setIsLoggingOut(false);
+                setLogoutPhase('idle');
+                toast.success('Sesión cerrada exitosamente', { duration: 4000 });
+            }, 800);
+        }, 800);
     };
 
     const handleLandingLoginClick = () => {
@@ -227,148 +244,174 @@ function AppContent() {
         }, 200);
     };
 
-    if (!isAuthenticated) {
-        return (
-            <div className="min-h-screen bg-[#0f172a]"> {/* Fondo oscuro persistente para evitar pantallazo blanco */}
-                <div className={`transition-opacity duration-200 ease-linear ${viewTransition ? 'opacity-0' : 'opacity-100'}`}>
-                    {showLanding ? (
-                        <LandingPage onLoginClick={handleLandingLoginClick} onRegisterClick={handleLandingRegisterClick} />
-                    ) : (
-                        <>
-                            <Login onLogin={handleLogin} initialMode={authMode} />
-                            <Button 
-                                variant="ghost" 
-                                onClick={handleBackToLanding} 
-                                className="fixed top-6 left-6 z-[60] bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 rounded-xl px-4 py-2 flex items-center gap-2 transition-all"
-                            >
-                                <span className="text-lg">←</span> Volver a Inicio
-                            </Button>
-                        </>
-                    )}
+    const mainContent = () => {
+        if (!isAuthenticated) {
+            return (
+                <div className="min-h-screen bg-[#0f172a]"> {/* Fondo oscuro persistente para evitar pantallazo blanco */}
+                    <div className={`transition-opacity duration-200 ease-linear ${viewTransition ? 'opacity-0' : 'opacity-100'}`}>
+                        {showLanding ? (
+                            <LandingPage onLoginClick={handleLandingLoginClick} onRegisterClick={handleLandingRegisterClick} />
+                        ) : (
+                            <>
+                                <Login onLogin={handleLogin} initialMode={authMode} />
+                                <Button 
+                                    variant="ghost" 
+                                    onClick={handleBackToLanding} 
+                                    className="fixed top-6 left-6 z-[60] bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 rounded-xl px-4 py-2 flex items-center gap-2 transition-all"
+                                >
+                                    <span className="text-lg">←</span> Volver a Inicio
+                                </Button>
+                            </>
+                        )}
+                    </div>
                 </div>
-                <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
-            </div>
-        );
-    }
+            );
+        }
 
-    if (isAuthenticated && currentUser?.type === 'cliente') {
-        return (
-            <>
+        if (isAuthenticated && currentUser?.type === 'cliente') {
+            return (
                 <ClientPanel
                     currentUser={currentUser}
                     onLogout={() => {
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-                        setIsAuthenticated(false);
-                        setCurrentUser(null);
-                        setActiveSection('dashboard');
-                        setShowLanding(true);
+                        setIsLoggingOut(true);
+                        setLogoutPhase('fading-in');
+                        setTimeout(() => {
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('user');
+                            setIsAuthenticated(false);
+                            setCurrentUser(null);
+                            setActiveSection('dashboard');
+                            setShowLanding(true);
+                            setLogoutPhase('fading-out');
+                            setTimeout(() => {
+                                setIsLoggingOut(false);
+                                setLogoutPhase('idle');
+                            }, 800);
+                        }, 800);
                     }}
                 />
-                <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
-            </>
-        );
-    }
+            );
+        }
 
-    // Si está autenticado como admin, mostrar el panel administrativo
-    return (
-        <SidebarProvider>
-            <div className="min-h-screen w-full md:flex">
-                <Sidebar className="border-r border-border">
-                    <SidebarHeader className="border-b border-border p-6 flex flex-col items-center justify-center">
-                        <div className="flex flex-col items-center gap-1 text-center py-2">
-                            <h2 className="font-semibold text-2xl tracking-tight text-blue-900 dark:text-blue-100">Rafa Motos</h2>
-                            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Panel Administrativo</p>
-                        </div>
-                    </SidebarHeader>
-
-                    <SidebarContent className="p-4 overflow-y-auto sidebar-scroll">
-                        <SidebarMenu>
-                            {menuItems
-                                .filter(item => currentUser?.permisos?.includes(item.permission))
-                                .map((item) => (
-                                    <SidebarMenuItem key={item.id}>
-                                        <SidebarMenuButton
-                                            onClick={() => setActiveSection(item.id)}
-                                            tooltip={item.label}
-                                            className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${activeSection === item.id
-                                                ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                                                : 'hover:bg-muted/50'
-                                                }`}
-                                        >
-                                            <item.icon className={`w-5 h-5 ${activeSection === item.id ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'}`} />
-                                            <span>{item.label}</span>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))}
-                        </SidebarMenu>
-                    </SidebarContent>
-
-                    <SidebarFooter className="border-t border-border p-4">
-                        <SidebarMenu>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton
-                                    onClick={(e) => {
-                                        (e.currentTarget as HTMLButtonElement).blur();
-                                        handleLogout();
-                                    }}
-                                    tooltip="Cerrar sesión"
-                                    className="w-full justify-start gap-3 p-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                                >
-                                    <LogOut className="w-5 h-5" />
-                                    <span>Cerrar sesión</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarFooter>
-                </Sidebar>
-
-                <main className="flex-1 flex flex-col">
-                    <header className="border-b border-border p-4 bg-card">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <SidebarTrigger className="-ml-1" />
-                                <h1 className="text-xl font-semibold capitalize">
-                                    {menuItems.find(item => item.id === activeSection)?.label || 'Dashboard'}
-                                </h1>
+        // Si está autenticado como admin, mostrar el panel administrativo
+        return (
+            <SidebarProvider>
+                <div className="min-h-screen w-full md:flex">
+                    <Sidebar className="border-r border-border">
+                        <SidebarHeader className="border-b border-border p-6 flex flex-col items-center justify-center">
+                            <div className="flex flex-col items-center gap-1 text-center py-2">
+                                <h2 className="font-semibold text-2xl tracking-tight text-blue-900 dark:text-blue-100">Rafa Motos</h2>
+                                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Panel Administrativo</p>
                             </div>
-                            {currentUser && (
+                        </SidebarHeader>
+
+                        <SidebarContent className="p-4 overflow-y-auto sidebar-scroll">
+                            <SidebarMenu>
+                                {menuItems
+                                    .filter(item => currentUser?.permisos?.includes(item.permission))
+                                    .map((item) => (
+                                        <SidebarMenuItem key={item.id}>
+                                            <SidebarMenuButton
+                                                onClick={() => setActiveSection(item.id)}
+                                                tooltip={item.label}
+                                                className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${activeSection === item.id
+                                                    ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                                    : 'hover:bg-muted/50'
+                                                    }`}
+                                            >
+                                                <item.icon className={`w-5 h-5 ${activeSection === item.id ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'}`} />
+                                                <span>{item.label}</span>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    ))}
+                            </SidebarMenu>
+                        </SidebarContent>
+
+                        <SidebarFooter className="border-t border-border p-4">
+                            <SidebarMenu>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton
+                                        onClick={(e) => {
+                                            (e.currentTarget as HTMLButtonElement).blur();
+                                            handleLogout();
+                                        }}
+                                        tooltip="Cerrar sesión"
+                                        className="w-full justify-start gap-3 p-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                                    >
+                                        <LogOut className="w-5 h-5" />
+                                        <span>Cerrar sesión</span>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            </SidebarMenu>
+                        </SidebarFooter>
+                    </Sidebar>
+
+                    <main className="flex-1 flex flex-col">
+                        <header className="border-b border-border p-4 bg-card">
+                            <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                                        <UserCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                        <span>{currentUser.name} {currentUser.last_name}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-                                        <Sun className={`w-4 h-4 transition-colors ${theme === 'light' ? 'text-yellow-500' : 'text-muted-foreground'}`} />
-                                        <Switch
-                                            checked={theme === 'dark'}
-                                            onCheckedChange={toggleTheme}
-                                            className="data-[state=checked]:bg-blue-600"
-                                        />
-                                        <Moon className={`w-4 h-4 transition-colors ${theme === 'dark' ? 'text-blue-500' : 'text-muted-foreground'}`} />
-                                    </div>
+                                    <SidebarTrigger className="-ml-1" />
+                                    <h1 className="text-xl font-semibold capitalize">
+                                        {menuItems.find(item => item.id === activeSection)?.label || 'Dashboard'}
+                                    </h1>
                                 </div>
-                            )}
+                                {currentUser && (
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                            <UserCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                            <span>{currentUser.name} {currentUser.last_name}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+                                            <Sun className={`w-4 h-4 transition-colors ${theme === 'light' ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+                                            <Switch
+                                                checked={theme === 'dark'}
+                                                onCheckedChange={toggleTheme}
+                                                className="data-[state=checked]:bg-blue-600"
+                                            />
+                                            <Moon className={`w-4 h-4 transition-colors ${theme === 'dark' ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </header>
+
+                        <div key={activeSection} className="flex-1 p-6 bg-muted/30 animate-fade-slide-in">
+                            {renderContent()}
                         </div>
-                    </header>
+                    </main>
+                </div>
 
-                    <div key={activeSection} className="flex-1 p-6 bg-muted/30 animate-fade-slide-in">
-                        {renderContent()}
-                    </div>
-                </main>
-            </div>
+                <ConfirmDialog
+                    open={showLogoutConfirm}
+                    onOpenChange={setShowLogoutConfirm}
+                    title="Cerrar Sesión"
+                    description="¿Estás seguro de que deseas cerrar tu sesión? Perderás cualquier trabajo no guardado."
+                    confirmText="Cerrar Sesión"
+                    onConfirm={confirmLogout}
+                    variant="default"
+                />
+            </SidebarProvider>
+        );
+    };
 
-            <ConfirmDialog
-                open={showLogoutConfirm}
-                onOpenChange={setShowLogoutConfirm}
-                title="Cerrar Sesión"
-                description="¿Estás seguro de que deseas cerrar tu sesión? Perderás cualquier trabajo no guardado."
-                confirmText="Cerrar Sesión"
-                onConfirm={confirmLogout}
-                variant="default"
-            />
+    return (
+        <>
+            {mainContent()}
+            
             <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
-        </SidebarProvider>
+            
+            {/* Transition Overlay for Logout - PERSISTENT AT TOP LEVEL */}
+            {isLoggingOut && (
+                <div className={`fixed inset-0 z-[9999] bg-slate-950 flex items-center justify-center transition-all duration-700 ease-in-out pointer-events-none ${
+                    logoutPhase === 'fading-in' ? 'opacity-100 backdrop-blur-xl' : logoutPhase === 'fading-out' ? 'opacity-0 backdrop-blur-0' : 'opacity-0'
+                }`}>
+                    <div className={`flex flex-col items-center gap-4 transition-all duration-500 ${logoutPhase === 'fading-in' ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
+                        <PiMotorcycle className="w-16 h-16 text-white animate-pulse" />
+                        <p className="text-white font-medium tracking-widest uppercase text-xs opacity-50">Cerrando Sesión...</p>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 

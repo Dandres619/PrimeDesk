@@ -1,53 +1,88 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Bike } from 'lucide-react';
+import { Bike, CheckCircle } from 'lucide-react';
 import { useVerify } from './hooks/useVerify';
 import { LoadingView } from './components/LoadingView';
 import { SuccessView } from './components/SuccessView';
 import { ErrorView } from './components/ErrorView';
 import { VerificarCuentaStyles } from './styles/VerificarCuentaStyles';
 
+import heroBg from '@/assets/landing/hero-bg.jpg';
+
 export function VerificarCuenta() {
     const { status, message } = useVerify();
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
+        <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden font-sans bg-[#0f172a]">
+            {/* Cinematic Background (Same as Login) */}
+            <div className="absolute inset-0 z-0">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-indigo-950/90 to-slate-950/95 z-10" />
+                <img
+                    src={heroBg}
+                    alt="Motorcycle workshop"
+                    className="w-full h-full object-cover scale-105 animate-soft-zoom opacity-50 mix-blend-overlay"
+                />
+            </div>
+
             <VerificarCuentaStyles />
-            <div className="w-full max-w-md animate-blur-in">
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl mb-4 shadow-xl shadow-indigo-200">
-                        <Bike className="w-8 h-8 text-white" />
+
+            <div className="w-full max-w-lg relative z-20 animate-fade-in-up">
+                {/* Header Section (Branding) */}
+                <div className="text-center mb-10">
+                    <div className="login-hero-logo mx-auto">
+                        <div className="login-logo-icon">
+                            <Bike className="w-8 h-8 text-white" />
+                        </div>
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2 italic tracking-tight">Rafa Motos</h1>
-                    <p className="text-gray-500 font-medium">Verificación de Cuenta</p>
+                    <h1 className="login-hero-title">Rafa Motos</h1>
+                    <p className="login-hero-subtitle">Verificación de Cuenta</p>
                 </div>
 
-                <Card className="shadow-2xl border-0 bg-white/70 backdrop-blur-xl">
-                    <CardHeader className="text-center pb-2">
-                        {status === 'loading' && <LoadingView />}
-                        {status === 'success' && <SuccessView />}
-                        {status === 'error' && <ErrorView />}
-                        
-                        <CardTitle className="text-2xl font-bold text-gray-800">
+                {/* Form Card (White Panel Style) */}
+                <div className="login-form-card">
+                    <div className="login-form-header">
+                        <div className="mb-6 flex justify-center">
+                            {status === 'loading' && <LoadingView />}
+                            {status === 'success' && <SuccessView />}
+                            {status === 'error' && <ErrorView />}
+                        </div>
+
+                        <h2 className="lv-title">
                             {status === 'loading' ? 'Verificando...' : status === 'success' ? '¡Verificado!' : 'Algo salió mal'}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-center space-y-6">
-                        <p className="text-gray-600 leading-relaxed font-medium">
+                        </h2>
+                    </div>
+
+                    <div className="login-form-body text-center">
+                        <p className="lv-subtitle mb-8 px-4">
                             {message}
                         </p>
 
-                        <div className="pt-4">
-                            <Button
-                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold h-14 rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95"
-                                onClick={() => window.location.href = '/'}
-                            >
-                                {status === 'success' ? 'Ir a Iniciar Sesión' : 'Volver al Inicio'}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                        <Button
+                            onClick={() => window.location.href = '/'}
+                            className="lv-submit-btn mt-4"
+                        >
+                            {status === 'success' ? 'Ir al Login' : 'Volver al Inicio'}
+                            <CheckCircle className="w-4 h-4 lv-btn-arrow" />
+                        </Button>
+                    </div>
+                </div>
             </div>
+
+            <style>{`
+                @keyframes fade-in-up {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in-up {
+                    animation: fade-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                @keyframes soft-zoom {
+                    from { transform: scale(1); }
+                    to { transform: scale(1.1); }
+                }
+                .animate-soft-zoom {
+                    animation: soft-zoom 20s infinite alternate ease-in-out;
+                }
+            `}</style>
         </div>
     );
 }
