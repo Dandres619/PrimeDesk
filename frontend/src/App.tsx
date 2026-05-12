@@ -45,7 +45,6 @@ import { PiMotorcycle, PiWrench } from 'react-icons/pi';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Toaster } from '@/components/ui/sonner';
-import { toast } from 'sonner';
 import ResetPassword from '@/components/ResetPassword';
 
 const menuItems = [
@@ -77,7 +76,9 @@ function AppContent() {
     const [currentUser, setCurrentUser] = useState<{ id?: number; id_cliente?: number; username: string; name: string; last_name: string; type: string; permisos: string[] } | null>(null);
     const [viewTransition, setViewTransition] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [logoutPhase, setLogoutPhase] = useState<'idle' | 'fading-in' | 'fading-out'>('idle');
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const [transitionPhase, setTransitionPhase] = useState<'idle' | 'fading-in' | 'fading-out'>('idle');
+    const [logoutPhase, setLogoutPhase] = useState<'idle' | 'fading-in' | 'fading-out'>('idle'); 
 
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -107,7 +108,6 @@ function AppContent() {
                         permisos
                     });
 
-                    // Set first available section if dashboard is not allowed
                     if (type !== 'cliente' && permisos.length > 0 && !permisos.includes('gestionar_dashboard')) {
                         const firstItem = menuItems.find(item => permisos.includes(item.permission));
                         if (firstItem) setActiveSection(firstItem.id);
@@ -122,7 +122,6 @@ function AppContent() {
         }
     }, [API_URL]);
 
-    // Si la ruta es /reset-password, renderizamos el componente de restablecimiento
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     if (path && path.startsWith('/reset-password')) {
         return (
@@ -176,17 +175,28 @@ function AppContent() {
     };
 
     const handleLogin = (userData: any) => {
-        setCurrentUser(userData);
-        setIsAuthenticated(true);
-        setShowLanding(false);
+        setIsLoggingIn(true);
+        setTransitionPhase('fading-in');
 
-        // Auto-redirect to first available section if no dashboard permission
-        if (userData.type !== 'cliente' && userData.permisos && userData.permisos.length > 0) {
-            if (!userData.permisos.includes('gestionar_dashboard')) {
-                const firstItem = menuItems.find(item => userData.permisos.includes(item.permission));
-                if (firstItem) setActiveSection(firstItem.id);
+        setTimeout(() => {
+            setCurrentUser(userData);
+            setIsAuthenticated(true);
+            setShowLanding(false);
+
+            if (userData.type !== 'cliente' && userData.permisos && userData.permisos.length > 0) {
+                if (!userData.permisos.includes('gestionar_dashboard')) {
+                    const firstItem = menuItems.find(item => userData.permisos.includes(item.permission));
+                    if (firstItem) setActiveSection(firstItem.id);
+                }
             }
-        }
+
+            setTransitionPhase('fading-out');
+
+            setTimeout(() => {
+                setIsLoggingIn(false);
+                setTransitionPhase('idle');
+            }, 800);
+        }, 800);
     };
 
     const handleLogout = () => {
@@ -197,8 +207,7 @@ function AppContent() {
         setIsLoggingOut(true);
         setLogoutPhase('fading-in');
         setShowLogoutConfirm(false);
-        
-        // Fase 1: Fundido a negro
+
         setTimeout(() => {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -206,20 +215,24 @@ function AppContent() {
             setCurrentUser(null);
             setActiveSection('dashboard');
             setShowLanding(true);
-            
-            // Fase 2: Iniciar desvanecimiento para revelar la landing
+
             setLogoutPhase('fading-out');
-            
-            // Fase 3: Limpiar estados al terminar
+
             setTimeout(() => {
                 setIsLoggingOut(false);
                 setLogoutPhase('idle');
-                toast.success('Sesión cerrada exitosamente', { duration: 4000 });
             }, 800);
         }, 800);
     };
 
+    const cleanUrlHash = () => {
+        if (typeof window !== 'undefined' && window.location.hash) {
+            window.history.pushState("", document.title, window.location.pathname + window.location.search);
+        }
+    };
+
     const handleLandingLoginClick = () => {
+        cleanUrlHash();
         setViewTransition(true);
         setTimeout(() => {
             setAuthMode('login');
@@ -228,6 +241,7 @@ function AppContent() {
         }, 200);
     };
     const handleLandingRegisterClick = () => {
+        cleanUrlHash();
         setViewTransition(true);
         setTimeout(() => {
             setAuthMode('register');
@@ -247,16 +261,16 @@ function AppContent() {
     const mainContent = () => {
         if (!isAuthenticated) {
             return (
-                <div className="min-h-screen bg-[#0f172a]"> {/* Fondo oscuro persistente para evitar pantallazo blanco */}
+                <div className="min-h-screen bg-[#0f172a]">
                     <div className={`transition-opacity duration-200 ease-linear ${viewTransition ? 'opacity-0' : 'opacity-100'}`}>
                         {showLanding ? (
                             <LandingPage onLoginClick={handleLandingLoginClick} onRegisterClick={handleLandingRegisterClick} />
                         ) : (
                             <>
                                 <Login onLogin={handleLogin} initialMode={authMode} />
-                                <Button 
-                                    variant="ghost" 
-                                    onClick={handleBackToLanding} 
+                                <Button
+                                    variant="ghost"
+                                    onClick={handleBackToLanding}
                                     className="fixed top-6 left-6 z-[60] bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 rounded-xl px-4 py-2 flex items-center gap-2 transition-all"
                                 >
                                     <span className="text-lg">←</span> Volver a Inicio
@@ -293,7 +307,6 @@ function AppContent() {
             );
         }
 
-        // Si está autenticado como admin, mostrar el panel administrativo
         return (
             <SidebarProvider>
                 <div className="min-h-screen w-full md:flex">
@@ -397,17 +410,20 @@ function AppContent() {
     return (
         <>
             {mainContent()}
-            
+
             <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
-            
-            {/* Transition Overlay for Logout - PERSISTENT AT TOP LEVEL */}
-            {isLoggingOut && (
-                <div className={`fixed inset-0 z-[9999] bg-slate-950 flex items-center justify-center transition-all duration-700 ease-in-out pointer-events-none ${
-                    logoutPhase === 'fading-in' ? 'opacity-100 backdrop-blur-xl' : logoutPhase === 'fading-out' ? 'opacity-0 backdrop-blur-0' : 'opacity-0'
-                }`}>
-                    <div className={`flex flex-col items-center gap-4 transition-all duration-500 ${logoutPhase === 'fading-in' ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
-                        <PiMotorcycle className="w-16 h-16 text-white animate-pulse" />
-                        <p className="text-white font-medium tracking-widest uppercase text-xs opacity-50">Cerrando Sesión...</p>
+
+            {/* Transition Overlay for Login/Logout - PERSISTENT AT TOP LEVEL */}
+            {(isLoggingOut || isLoggingIn) && (
+                <div className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-700 ease-in-out pointer-events-none ${
+                    theme === 'dark' ? 'bg-slate-950' : 'bg-white'
+                } ${(logoutPhase === 'fading-in' || transitionPhase === 'fading-in') ? 'opacity-100 backdrop-blur-xl' : (logoutPhase === 'fading-out' || transitionPhase === 'fading-out') ? 'opacity-0 backdrop-blur-0' : 'opacity-0'
+                    }`}>
+                    <div className={`flex flex-col items-center gap-4 transition-all duration-500 ${(logoutPhase === 'fading-in' || transitionPhase === 'fading-in') ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
+                        <PiMotorcycle className={`w-16 h-16 animate-pulse ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`} />
+                        <p className={`font-medium tracking-widest uppercase text-xs opacity-50 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                            {isLoggingIn ? 'Preparando todo...' : 'Cerrando Sesión...'}
+                        </p>
                     </div>
                 </div>
             )}

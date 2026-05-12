@@ -182,8 +182,8 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
 
                 .lv-input-focused {
                     border-color: #4f46e5 !important;
-                    background: #ffffff !important;
-                    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1) !important;
+                    background: #f8fafc !important;
+                    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.05) !important;
                 }
 
                 .lv-input-icon {
@@ -213,6 +213,11 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                     color: #1f2937 !important;
                     box-shadow: none !important;
                     outline: none !important;
+                }
+
+                .lv-input::selection {
+                    background: #c7d2fe !important;
+                    color: #1e1b4b !important;
                 }
 
                 .lv-input-password {

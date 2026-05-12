@@ -118,7 +118,7 @@ export function RegisterView({
                   <Input
                     placeholder="Juan"
                     value={registerData.nombre}
-                    onChange={(e) => setRegisterData({ ...registerData, nombre: e.target.value })}
+                    onChange={(e) => setRegisterData({ ...registerData, nombre: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ]/g, '') })}
                     onFocus={() => {
                       setFocusedField('nombre');
                       setTouchedFields(prev => ({ ...prev, nombre: true }));
@@ -138,7 +138,7 @@ export function RegisterView({
                   <Input
                     placeholder="Pérez"
                     value={registerData.apellido}
-                    onChange={(e) => setRegisterData({ ...registerData, apellido: e.target.value })}
+                    onChange={(e) => setRegisterData({ ...registerData, apellido: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ]/g, '') })}
                     onFocus={() => {
                       setFocusedField('apellido');
                       setTouchedFields(prev => ({ ...prev, apellido: true }));
@@ -642,14 +642,19 @@ export function RegisterView({
 
         .rv-input-focused {
           border-color: #4f46e5 !important;
-          background: #ffffff !important;
-          box-shadow: none !important;
+          background: #f8fafc !important;
+          box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.05) !important;
           outline: none !important;
         }
 
         .rv-input-focused .rv-input {
           box-shadow: none !important;
           outline: none !important;
+        }
+
+        .rv-input::selection {
+          background: #c7d2fe !important;
+          color: #1e1b4b !important;
         }
 
         .rv-input-error {
@@ -665,7 +670,7 @@ export function RegisterView({
           width: 15px;
           height: 15px;
           color: #9ca3af;
-          z-index: 1;
+          z-index: 20 !important;
           transition: color 0.3s ease;
           pointer-events: none;
         }
@@ -688,6 +693,16 @@ export function RegisterView({
           color: #1f2937 !important;
           box-shadow: none !important;
           outline: none !important;
+        }
+
+        /* --- Autofill Fixes --- */
+        .rv-input:-webkit-autofill,
+        .rv-input:-webkit-autofill:hover,
+        .rv-input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #1f2937 !important;
+          -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+          transition: background-color 5000s ease-in-out 0s !important;
+          background-color: transparent !important;
         }
 
         .rv-input:focus {

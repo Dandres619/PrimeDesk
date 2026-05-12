@@ -48,6 +48,21 @@ export function usePassword() {
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // 1. Verificar límite de tiempo (5 minutos) para seguridad
+        const lastChange = localStorage.getItem('last_password_change');
+        const now = Date.now();
+        const COOLDOWN_TIME = 5 * 60 * 1000; // 5 minutos
+
+        if (lastChange) {
+            const timePassed = now - parseInt(lastChange);
+            if (timePassed < COOLDOWN_TIME) {
+                const remainingMs = COOLDOWN_TIME - timePassed;
+                const remainingMins = Math.ceil(remainingMs / 60000);
+                toast.warning(`Seguridad: Por favor espera ${remainingMins} minuto${remainingMins > 1 ? 's' : ''} antes de volver a cambiar tu contraseña.`);
+                return;
+            }
+        }
+
         const allFields: Record<string, boolean> = { ...touchedFields };
         ['contrasena_actual', 'nueva_contrasena', 'confirmar_contrasena'].forEach(f => allFields[f] = true);
         setTouchedFields(allFields);
@@ -80,6 +95,9 @@ export function usePassword() {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Error al cambiar contraseña');
             }
+
+            // Registrar el tiempo del cambio exitoso
+            localStorage.setItem('last_password_change', Date.now().toString());
 
             toast.success('Contraseña actualizada exitosamente');
             setPasswordData({ contrasena_actual: '', nueva_contrasena: '', confirmar_contrasena: '' });

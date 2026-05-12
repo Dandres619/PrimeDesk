@@ -35,7 +35,7 @@ export function useLogin(onLogin: (userData: any) => void) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.usuario));
 
-      toast.success('¡Bienvenido al sistema!');
+
 
       try {
         const profileRes = await fetch(`${API_URL}/auth/me`, {
@@ -48,6 +48,7 @@ export function useLogin(onLogin: (userData: any) => void) {
             id_cliente: profileData.ID_Cliente,
             username: profileData.correo,
             name: profileData.NombreCliente || profileData.NombreEmpleado || profileData.correo,
+            last_name: profileData.ApellidoCliente || profileData.ApellidoEmpleado || '',
             type: profileData.id_rol === 1 ? 'admin' : (profileData.id_rol === 2 ? 'empleado' : 'cliente'),
             permisos: profileData.permisos || []
           });
@@ -60,7 +61,8 @@ export function useLogin(onLogin: (userData: any) => void) {
       onLogin({
         id_cliente: data.usuario.id_cliente || null,
         username: data.usuario.correo,
-        name: data.usuario.correo,
+        name: data.usuario.nombre || data.usuario.correo,
+        last_name: data.usuario.apellido || '',
         type: data.usuario.id_rol === 1 ? 'admin' : (data.usuario.id_rol === 2 ? 'empleado' : 'cliente'),
         permisos: data.usuario.permisos || []
       });

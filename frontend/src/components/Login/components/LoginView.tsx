@@ -242,14 +242,19 @@ export function LoginView({
 
         .lv-input-focused {
           border-color: #4f46e5 !important;
-          background: #ffffff !important;
-          box-shadow: none !important;
+          background: #f8fafc !important;
+          box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.05) !important;
           outline: none !important;
         }
 
         .lv-input-focused .lv-input {
-          box-shadow: none !important;
-          outline: none !important;
+          background: transparent !important;
+          color: #1f2937 !important;
+        }
+
+        .lv-input::selection {
+          background: #c7d2fe !important;
+          color: #1e1b4b !important;
         }
 
         .lv-input-icon {
@@ -260,7 +265,7 @@ export function LoginView({
           width: 16px;
           height: 16px;
           color: #9ca3af;
-          z-index: 1;
+          z-index: 20 !important; /* Asegurar que el icono esté siempre por encima */
           transition: color 0.3s ease;
           pointer-events: none;
         }
@@ -283,6 +288,16 @@ export function LoginView({
           outline: none !important;
         }
 
+        /* --- Autofill Fixes --- */
+        .lv-input:-webkit-autofill,
+        .lv-input:-webkit-autofill:hover,
+        .lv-input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #1f2937 !important;
+          -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+          transition: background-color 5000s ease-in-out 0s !important;
+          background-color: transparent !important;
+        }
+
         .lv-input:focus {
           box-shadow: none !important;
           outline: none !important;
@@ -300,8 +315,8 @@ export function LoginView({
           transform: translateY(-50%);
           z-index: 10;
           color: #9ca3af;
-          background: none;
-          border: none;
+          background: transparent !important; /* Evitar que el botón tenga fondo propio */
+          border: none !important;
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -313,7 +328,7 @@ export function LoginView({
 
         .lv-toggle-password:hover {
           color: #6366f1;
-          background: rgba(99, 102, 241, 0.08);
+          background: rgba(99, 102, 241, 0.08) !important;
         }
 
         .lv-submit-btn {

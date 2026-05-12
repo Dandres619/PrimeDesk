@@ -11,8 +11,8 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('rafa-motos-theme') as Theme;
-    return savedTheme || 'light';
+    const savedTheme = localStorage.getItem('rafamotos-theme') as Theme;
+    return savedTheme || 'dark';
   });
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('rafa-motos-theme', theme);
+    localStorage.setItem('rafamotos-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
