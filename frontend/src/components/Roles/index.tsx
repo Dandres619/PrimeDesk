@@ -54,7 +54,7 @@ export function Roles() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="roles-root space-y-6">
       <RolesStyles />
 
       {isLoading ? (
@@ -63,7 +63,7 @@ export function Roles() {
           <p className="mp-loading-text">Cargando información...</p>
         </div>
       ) : (
-        <>
+        <div className="roles-content-animate space-y-6">
           <RolesHeader 
             isRoleDialogOpen={isRoleDialogOpen}
             setIsRoleDialogOpen={setIsRoleDialogOpen}
@@ -119,7 +119,7 @@ export function Roles() {
             autoClose={false}
             loadingText="Eliminando"
           />
-        </>
+        </div>
       )}
     </div>
   );

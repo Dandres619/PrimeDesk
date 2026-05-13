@@ -60,7 +60,20 @@ export function RolesTable({
                     <p>{r.name}</p>
                   </TableCell>
                   <TableCell>
-                    <p>{r.description ? r.description : 'Sin descripción'}</p>
+                    {r.description && r.description.length > 45 ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="cursor-help max-w-[300px] truncate">
+                            {r.description.substring(0, 45)}...
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[300px] break-words">
+                          <p>{r.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <p>{r.description || 'Sin descripción'}</p>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -114,7 +127,12 @@ export function RolesTable({
                               description: '¿Está seguro de que desea eliminar este rol? Esta acción no se puede deshacer.',
                               confirmText: 'Eliminar',
                               variant: 'delete',
-                              onConfirm: () => handleDeleteRole(r.id)
+                              onConfirm: async () => {
+                                const success = await handleDeleteRole(r.id);
+                                if (success) {
+                                  setConfirmDialog((prev: any) => ({ ...prev, open: false }));
+                                }
+                              }
                             })}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             disabled={r.status === 'Inactivo'}
