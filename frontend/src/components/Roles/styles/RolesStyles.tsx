@@ -75,17 +75,20 @@ export function RolesStyles() {
 
             /* Buttons */
             .roles-btn-primary {
-                background-color: #2563eb;
+                background: linear-gradient(135deg, #2563eb, #4f46e5);
                 color: #ffffff !important;
                 border: none;
-                border-radius: 6px;
+                border-radius: 10px;
                 padding: 10px 20px;
-                font-weight: 500;
-                transition: background-color 0.2s;
+                font-weight: 600;
+                box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+                transition: all 0.2s ease;
             }
 
             .roles-btn-primary:hover {
-                background-color: #1d4ed8;
+                background: linear-gradient(135deg, #1d4ed8, #4338ca);
+                box-shadow: 0 6px 14px rgba(37, 99, 235, 0.3);
+                transform: translateY(-1px);
             }
 
             .dark .roles-btn-primary {

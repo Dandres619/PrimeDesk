@@ -13,9 +13,10 @@ interface RoleDialogProps {
   onSave: (formData: any, editingRole: any) => Promise<boolean>;
   isProcessing: boolean;
   isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function RoleDialog({ role, permissions, onSave, isProcessing, isOpen }: RoleDialogProps) {
+export function RoleDialog({ role, permissions, onSave, isProcessing, isOpen, onOpenChange }: RoleDialogProps) {
   const [formData, setFormData] = useState({
     name: role?.name || '',
     description: role?.description || '',
@@ -76,6 +77,22 @@ export function RoleDialog({ role, permissions, onSave, isProcessing, isOpen }: 
       : [...prev.permissions, id]
   }));
 
+  const hasChanges = () => {
+    if (!role) return true;
+
+    if (formData.name !== role.name) return true;
+    if (formData.description !== (role.description || '')) return true;
+    if (formData.status !== role.status) return true;
+
+    const originalPermissions = role.permissions ? role.permissions.map((p: any) => p.ID_Permiso) : [];
+    if (formData.permissions.length !== originalPermissions.length) return true;
+
+    const hasDifferentPerms = formData.permissions.some((p: number) => !originalPermissions.includes(p));
+    if (hasDifferentPerms) return true;
+
+    return false;
+  };
+
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
     setFormData(prev => ({ ...prev, name: val }));
@@ -131,6 +148,7 @@ export function RoleDialog({ role, permissions, onSave, isProcessing, isOpen }: 
           onSave(formData, role);
         }}
         className="px-6 py-5 space-y-5"
+        noValidate
       >
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
@@ -208,20 +226,15 @@ export function RoleDialog({ role, permissions, onSave, isProcessing, isOpen }: 
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-          <Button
-            type="submit"
-            disabled={isProcessing}
-            className="roles-btn-primary px-6"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {role ? 'Actualizando...' : 'Creando...'}
-              </>
-            ) : (
-              <>{role ? 'Actualizar' : 'Crear'} Rol</>
-            )}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-slate-100 dark:border-slate-800 mt-2">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="h-11 px-6 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl flex-1 sm:flex-none">
+              {role ? 'Cerrar' : 'Cancelar'}
+            </Button>
+          </div>
+
+          <Button type="submit" disabled={isProcessing || (!!role && !hasChanges())} className="h-12 px-12 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-xl shadow-xl transition-all hover:scale-[1.02] active:scale-95">
+            {isProcessing ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : (role ? 'Actualizar Rol' : 'Crear Rol')}
           </Button>
         </div>
       </form>

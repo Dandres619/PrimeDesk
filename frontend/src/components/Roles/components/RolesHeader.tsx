@@ -46,6 +46,7 @@ export function RolesHeader({
           onSave={handleSaveRole}
           isProcessing={isProcessing}
           isOpen={isRoleDialogOpen}
+          onOpenChange={setIsRoleDialogOpen}
         />
       </Dialog>
     </div>

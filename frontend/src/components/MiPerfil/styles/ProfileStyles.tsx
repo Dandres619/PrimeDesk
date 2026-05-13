@@ -771,9 +771,33 @@ export function ProfileStyles() {
                 box-shadow: 0 10px 25px rgba(79, 70, 229, 0.6) !important;
             }
 
+            .dark .mp-btn-secondary {
+                border: 1.5px solid rgba(99, 102, 241, 0.4) !important;
+                color: #a5b4fc !important;
+                background: rgba(99, 102, 241, 0.05) !important;
+            }
+
+            .dark .mp-btn-secondary:hover:not(:disabled) {
+                background: rgba(99, 102, 241, 0.2) !important;
+                border-color: rgba(99, 102, 241, 0.8) !important;
+                color: #ffffff !important;
+                transform: translateY(-1px) !important;
+                box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25) !important;
+            }
+
             .dark .mp-photo-section {
                 background: rgba(2, 6, 23, 0.4) !important;
                 border: 1.5px dashed rgba(99, 102, 241, 0.4) !important;
+            }
+
+            .dark .mp-file-input::file-selector-button {
+                background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+                color: #ffffff !important;
+                border: none !important;
+                box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3) !important;
+            }
+            .dark .mp-file-input::file-selector-button:hover {
+                background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
             }
 
             .dark .mp-tips {
