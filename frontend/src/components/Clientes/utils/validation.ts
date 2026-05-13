@@ -54,12 +54,11 @@ export const validateField = (name: string, value: string, currentData: any, isE
           const parts = value.split('/');
           if (parts.length === 3 && parts[2]) yearVal = parseInt(parts[2]);
           if (parts.length < 3 || !parts[2] || parts[2].length < 4) {
-            if (yearVal > 0 && yearVal < 1950) error = 'El año mínimo es 1950';
-            else error = 'Fecha incompleta';
+            error = 'Debe poner una fecha válida';
           } else {
             const d = parse(value, 'dd/MM/yyyy', new Date());
             if (isValid(d)) dateObj = d;
-            else error = 'Fecha inválida';
+            else error = 'Debe poner una fecha válida';
           }
         } else {
           dateObj = new Date(value + 'T00:00:00');
@@ -67,12 +66,15 @@ export const validateField = (name: string, value: string, currentData: any, isE
         }
 
         if (!error) {
-          if (yearVal > 0 && yearVal < 1950) error = 'El año mínimo es 1950';
-          else if (dateObj) {
-            const today = new Date();
-            const minAge = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-            if (dateObj > today) error = 'No puede ser en el futuro';
-            else if (dateObj > minAge) error = 'Debe ser mayor de 18 años';
+          const today = new Date();
+          const minAgeDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+          
+          if (yearVal > 0 && yearVal < 1950) {
+            error = 'Debe ser al menos 1950';
+          } else if (dateObj) {
+            if (dateObj > today) error = 'No se puede fechas futuras';
+            else if (dateObj > minAgeDate) error = 'Debe ser mayor de edad';
+            else if (dateObj.getFullYear() < 1950) error = 'Debe ser al menos 1950';
           }
         }
       }

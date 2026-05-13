@@ -64,7 +64,7 @@ export function Clientes() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="clients-root space-y-6">
       <ClientsStyles />
 
       {isLoading ? (
@@ -73,7 +73,7 @@ export function Clientes() {
           <p className="mp-loading-text">Cargando información...</p>
         </div>
       ) : (
-        <>
+        <div className="clients-content-animate space-y-6">
           <ConfirmDialog
             open={confirmDialog.open}
             onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}
@@ -128,7 +128,7 @@ export function Clientes() {
             open={isViewDialogOpen}
             onOpenChange={setIsViewDialogOpen}
           />
-        </>
+        </div>
       )}
     </div>
   );

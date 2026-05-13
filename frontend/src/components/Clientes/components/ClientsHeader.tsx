@@ -33,7 +33,7 @@ export function ClientsHeader({
       </div>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
-          <Button onClick={() => setEditingClient(null)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
+          <Button onClick={() => setEditingClient(null)} className="cli-btn-primary whitespace-nowrap">
             <Plus className="w-4 h-4 mr-2" />
             Nuevo Cliente
           </Button>
