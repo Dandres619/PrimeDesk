@@ -71,7 +71,16 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, onClose }:
           {years.map(y => {
             const disabled = y > maxDate.getFullYear() || y < minDate.getFullYear();
             return (
-              <Button type="button" key={y} variant={y === currentDate.getFullYear() ? 'default' : 'ghost'} className="text-sm h-9 dark:hover:bg-indigo-500/40 dark:hover:text-white dark:text-slate-200" disabled={disabled} onClick={() => handleYearSelect(y)}>{y}</Button>
+              <Button 
+                type="button" 
+                key={y} 
+                variant={y === currentDate.getFullYear() ? 'default' : 'ghost'} 
+                className={`text-sm h-9 dark:hover:bg-indigo-500/40 dark:hover:text-white ${y === currentDate.getFullYear() ? 'dark:bg-indigo-600 dark:text-white hover:dark:bg-indigo-500' : 'dark:text-slate-200'}`} 
+                disabled={disabled} 
+                onClick={() => handleYearSelect(y)}
+              >
+                {y}
+              </Button>
             );
           })}
         </div>
@@ -106,7 +115,16 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, onClose }:
               currentDate.getFullYear() < minDate.getFullYear() ||
               currentDate.getFullYear() > maxDate.getFullYear();
             return (
-              <Button type="button" key={i} variant={i === currentDate.getMonth() ? 'default' : 'ghost'} disabled={disabled} className="text-sm h-9 dark:hover:bg-indigo-500/40 dark:hover:text-white dark:text-slate-200" onClick={() => handleMonthSelect(i)}>{m}</Button>
+              <Button 
+                type="button" 
+                key={i} 
+                variant={i === currentDate.getMonth() ? 'default' : 'ghost'} 
+                disabled={disabled} 
+                className={`text-sm h-9 dark:hover:bg-indigo-500/40 dark:hover:text-white ${i === currentDate.getMonth() ? 'dark:bg-indigo-600 dark:text-white hover:dark:bg-indigo-500' : 'dark:text-slate-200'}`} 
+                onClick={() => handleMonthSelect(i)}
+              >
+                {m}
+              </Button>
             );
           })}
         </div>

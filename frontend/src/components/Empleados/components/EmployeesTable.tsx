@@ -65,9 +65,9 @@ export function EmployeesTable({
   ];
 
   return (
-    <Card>
+    <Card data-slot="card">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle data-slot="card-title" className="flex items-center gap-2">
           Lista de Empleados ({employeesCount})
         </CardTitle>
       </CardHeader>

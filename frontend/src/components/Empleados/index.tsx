@@ -65,7 +65,7 @@ export function Empleados() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="employees-root space-y-6">
       <EmployeesStyles />
 
       {isLoading ? (
@@ -74,7 +74,7 @@ export function Empleados() {
           <p className="mp-loading-text">Cargando información...</p>
         </div>
       ) : (
-        <>
+        <div className="employees-content-animate space-y-6">
           <ConfirmDialog
             open={confirmDialog.open}
             onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}
@@ -129,7 +129,7 @@ export function Empleados() {
             open={isViewDialogOpen}
             onOpenChange={setIsViewDialogOpen}
           />
-        </>
+        </div>
       )}
     </div>
   );

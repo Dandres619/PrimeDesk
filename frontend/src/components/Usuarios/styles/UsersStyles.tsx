@@ -1,6 +1,82 @@
 export function UsersStyles() {
     return (
         <style>{`
+            .users-root {
+                min-height: 100vh;
+                border-radius: 20px;
+                overflow: hidden;
+                padding: 32px;
+            }
+
+            /* ── DARK MODE (CINEMATIC) ── */
+            .dark .users-root {
+                background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #020617 100%) !important;
+                color: #f1f5f9 !important;
+            }
+
+            .dark .users-root [data-slot="card"] {
+                background: rgba(15, 23, 42, 0.7) !important;
+                backdrop-filter: blur(12px) !important;
+                border: 1px solid rgba(99, 102, 241, 0.3) !important;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
+            }
+
+            .dark .users-root [data-slot="card-title"],
+            .dark [data-slot="dialog-title"] {
+                color: #ffffff !important;
+                text-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+            }
+
+            /* Autofill Fix */
+            .dark input:-webkit-autofill,
+            .dark input:-webkit-autofill:hover, 
+            .dark input:-webkit-autofill:focus, 
+            .dark input:-webkit-autofill:active {
+                -webkit-box-shadow: 0 0 0 30px #020617 inset !important;
+                -webkit-text-fill-color: #ffffff !important;
+                transition: background-color 5000s ease-in-out 0s;
+                caret-color: #ffffff !important;
+            }
+
+            /* Table Header */
+            .dark .users-root th {
+                color: #94a3b8 !important;
+                border-bottom: 1px solid rgba(99, 102, 241, 0.2) !important;
+                text-transform: uppercase;
+                font-size: 11px;
+                letter-spacing: 0.1em;
+            }
+
+            /* Table Rows */
+            .dark .users-root tr {
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+                transition: background 0.2s ease;
+            }
+
+            .dark .users-root tr:hover {
+                background: rgba(99, 102, 241, 0.05) !important;
+            }
+
+            .dark .users-root td {
+                color: #cbd5e1 !important;
+            }
+
+            /* Entrance Animation */
+            .users-content-animate {
+                animation: users-fade-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            }
+
+            @keyframes users-fade-in {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
             .mp-loading {
                 display: flex;
                 flex-direction: column;
