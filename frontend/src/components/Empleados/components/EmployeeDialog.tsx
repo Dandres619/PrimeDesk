@@ -198,6 +198,24 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
     }
   };
 
+  const hasChanges = () => {
+    if (!employee) return true;
+    return (
+      formData.nombre !== (employee.Nombre || '') ||
+      formData.apellido !== (employee.Apellido || '') ||
+      formData.tipo_documento !== (employee.TipoDocumento || 'CC') ||
+      formData.documento !== (employee.Documento || '') ||
+      formData.telefono !== (employee.Telefono || '') ||
+      formData.direccion !== (employee.Direccion || '') ||
+      formData.barrio !== (employee.Barrio || '') ||
+      formData.fecha_nacimiento !== (employee.FechaNacimiento ? employee.FechaNacimiento.split('T')[0] : '') ||
+      formData.fecha_ingreso !== (employee.FechaIngreso ? employee.FechaIngreso.split('T')[0] : '') ||
+      formData.id_rol !== (employee.ID_Rol || (employee.NombreRol === 'Administrador' ? 1 : 2)) ||
+      formData.fotoFile !== null ||
+      (formData.contrasena !== '' && formData.contrasena === formData.confirmarContrasena)
+    );
+  };
+
   const passReqs = [
     { label: '8+ caracteres', met: formData.contrasena.length >= 8 },
     { label: 'Una mayúscula', met: /[A-Z]/.test(formData.contrasena) },
@@ -549,7 +567,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
                 Siguiente paso <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
               </Button>
             ) : (
-              <Button type="submit" disabled={isSaving} className="h-12 px-12 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white font-black rounded-xl shadow-xl transition-all hover:scale-[1.02] active:scale-95">
+              <Button type="submit" disabled={isSaving || (!!employee && !hasChanges())} className="h-12 px-12 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-xl shadow-xl transition-all hover:scale-[1.02] active:scale-95">
                 {isSaving ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : (employee ? 'Actualizar Datos' : 'Guardar Empleado')}
               </Button>
             )}

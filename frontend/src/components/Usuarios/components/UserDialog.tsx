@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Lock as LockIcon, Edit, Eye, EyeOff, Loader2, Save as SaveIcon } from 'lucide-react';
+import { Mail, Lock as LockIcon, Edit, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -41,7 +41,7 @@ export function UserDialog({
   };
 
   const validatePassword = (pass: string) => {
-    if (!pass && editingUser) return ''; 
+    if (!pass && editingUser) return '';
     if (!pass && !editingUser) return 'La contraseña es obligatoria';
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
     if (!passwordRegex.test(pass)) return 'Contraseña insegura';
@@ -216,26 +216,24 @@ export function UserDialog({
             )}
           </div>
 
-          <div className="flex gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => { setShowModal(false); resetForm(); }}
-              className="flex-1 h-11 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all"
-            >
-              Cancelar
-            </Button>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-slate-100 dark:border-slate-800 mt-2">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => { setShowModal(false); resetForm(); }}
+                className="h-11 px-6 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl flex-1 sm:flex-none"
+              >
+                {editingUser ? 'Cerrar' : 'Cancelar'}
+              </Button>
+            </div>
+
             <Button
               type="submit"
               disabled={isSubmitDisabled()}
-              className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 dark:shadow-none text-white font-bold transition-all disabled:opacity-50"
+              className="h-12 px-12 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-xl shadow-xl transition-all hover:scale-[1.02] active:scale-95"
             >
-              {isSaving ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <SaveIcon className="w-4 h-4 mr-2" />
-              )}
-              Guardar Cambios
+              {isSaving ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : (editingUser ? 'Actualizar Usuario' : 'Crear Usuario')}
             </Button>
           </div>
         </form>
