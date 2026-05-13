@@ -71,7 +71,7 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, onClose }:
           {years.map(y => {
             const disabled = y > maxDate.getFullYear() || y < minDate.getFullYear();
             return (
-              <Button type="button" key={y} variant={y === currentDate.getFullYear() ? 'default' : 'ghost'} className="text-sm h-9" disabled={disabled} onClick={() => handleYearSelect(y)}>{y}</Button>
+              <Button type="button" key={y} variant={y === currentDate.getFullYear() ? 'default' : 'ghost'} className="text-sm h-9 dark:hover:bg-indigo-500/40 dark:hover:text-white dark:text-slate-200" disabled={disabled} onClick={() => handleYearSelect(y)}>{y}</Button>
             );
           })}
         </div>
@@ -89,7 +89,7 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, onClose }:
             newDate.setFullYear(newDate.getFullYear() - 1);
             setCurrentDate(newDate);
           }}><ChevronLeft className="h-4 w-4" /></Button>
-          <div className="font-bold text-sm cursor-pointer hover:bg-slate-100 px-2 py-1 rounded" onClick={() => {
+          <div className="font-bold text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-indigo-500/40 dark:hover:text-white px-2 py-1 rounded" onClick={() => {
             setYearPage(currentDate.getFullYear() - (currentDate.getFullYear() % 12));
             setView('years');
           }}>{currentDate.getFullYear()}</div>
@@ -101,12 +101,12 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, onClose }:
         </div>
         <div className="grid grid-cols-3 gap-2">
           {months.map((m, i) => {
-            const disabled = (currentDate.getFullYear() === maxDate.getFullYear() && i > maxDate.getMonth()) || 
-                             (currentDate.getFullYear() === minDate.getFullYear() && i < minDate.getMonth()) ||
-                             currentDate.getFullYear() < minDate.getFullYear() ||
-                             currentDate.getFullYear() > maxDate.getFullYear();
+            const disabled = (currentDate.getFullYear() === maxDate.getFullYear() && i > maxDate.getMonth()) ||
+              (currentDate.getFullYear() === minDate.getFullYear() && i < minDate.getMonth()) ||
+              currentDate.getFullYear() < minDate.getFullYear() ||
+              currentDate.getFullYear() > maxDate.getFullYear();
             return (
-              <Button type="button" key={i} variant={i === currentDate.getMonth() ? 'default' : 'ghost'} disabled={disabled} className="text-sm h-9" onClick={() => handleMonthSelect(i)}>{m}</Button>
+              <Button type="button" key={i} variant={i === currentDate.getMonth() ? 'default' : 'ghost'} disabled={disabled} className="text-sm h-9 dark:hover:bg-indigo-500/40 dark:hover:text-white dark:text-slate-200" onClick={() => handleMonthSelect(i)}>{m}</Button>
             );
           })}
         </div>
@@ -121,7 +121,7 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, onClose }:
     <div className="w-auto min-w-[320px]">
       <div className="flex justify-between items-center p-3 pb-0">
         <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={isPrevMonthDisabled} onClick={prevMonth}><ChevronLeft className="h-4 w-4" /></Button>
-        <div className="font-bold text-sm cursor-pointer hover:bg-slate-100 px-3 py-1.5 rounded flex items-center capitalize" onClick={() => setView('months')}>
+        <div className="font-bold text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-indigo-500/40 dark:hover:text-white px-3 py-1.5 rounded flex items-center capitalize" onClick={() => setView('months')}>
           {isValid(currentDate) ? format(currentDate, 'MMMM yyyy', { locale: es }) : 'Seleccionar fecha'}
         </div>
         <Button type="button" variant="outline" size="icon" className="h-7 w-7" disabled={isNextMonthDisabled} onClick={nextMonth}><ChevronRight className="h-4 w-4" /></Button>
@@ -147,8 +147,8 @@ export function CustomDatePicker({ value, onChange, minDate, maxDate, onClose }:
           weekdays: "flex justify-between mb-2",
           weekday: "text-slate-500 rounded-md w-10 font-medium text-sm text-center uppercase",
           week: "flex w-full mt-1 justify-between",
-          day: "h-10 w-10 p-0 font-medium text-center text-base relative aria-selected:bg-indigo-600 aria-selected:text-white rounded-lg hover:bg-slate-100 cursor-pointer flex items-center justify-center transition-colors",
-          today: "bg-slate-100 text-slate-900 font-bold",
+          day: "h-10 w-10 p-0 font-medium text-center text-base relative aria-selected:bg-indigo-600 aria-selected:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-indigo-500/40 dark:hover:text-white cursor-pointer flex items-center justify-center transition-colors",
+          today: "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold",
           outside: "text-slate-300 opacity-50",
         }}
       />

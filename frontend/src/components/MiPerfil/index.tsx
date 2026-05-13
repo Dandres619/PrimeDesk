@@ -53,7 +53,8 @@ export function MiPerfil() {
                             <p className="mp-loading-text">Cargando información...</p>
                         </div>
                     ) : (
-                        <div className="mp-grid">
+                        <div className="mp-content-animate">
+                            <div className="mp-grid">
                             <ProfileHeader
                                 formData={formData}
                                 profileData={profileData}
@@ -97,6 +98,7 @@ export function MiPerfil() {
                                     />
                                 )}
                             </div>
+                        </div>
                         </div>
                     )}
                 </div>

@@ -53,7 +53,7 @@ export function ProfileForm({
                             <div className={`mp-input-wrap ${touchedFields.nombre && formErrors.nombre ? 'mp-input-err' : ''}`}>
                                 <input
                                     value={formData.nombre}
-                                    onChange={e => setFormData({ ...formData, nombre: e.target.value })}
+                                    onChange={e => setFormData({ ...formData, nombre: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ]/g, '') })}
                                     onFocus={() => handleBlur('nombre')}
                                     onBlur={() => handleBlur('nombre')}
                                     placeholder="Tu nombre"
@@ -66,7 +66,7 @@ export function ProfileForm({
                             <div className={`mp-input-wrap ${touchedFields.apellido && formErrors.apellido ? 'mp-input-err' : ''}`}>
                                 <input
                                     value={formData.apellido}
-                                    onChange={e => setFormData({ ...formData, apellido: e.target.value })}
+                                    onChange={e => setFormData({ ...formData, apellido: e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ]/g, '') })}
                                     onFocus={() => handleBlur('apellido')}
                                     onBlur={() => handleBlur('apellido')}
                                     placeholder="Tu apellido"
