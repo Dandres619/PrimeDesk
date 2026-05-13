@@ -60,7 +60,7 @@ export function Usuarios() {
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div className="space-y-6">
+    <div className="users-root space-y-6">
       <UsersStyles />
 
       {isLoading ? (
@@ -69,7 +69,7 @@ export function Usuarios() {
           <p className="mp-loading-text">Cargando información...</p>
         </div>
       ) : (
-        <>
+        <div className="users-content-animate space-y-6">
           <UsersHeader />
 
           <div className="flex justify-start">
@@ -113,7 +113,7 @@ export function Usuarios() {
             setIsViewDialogOpen={setIsViewDialogOpen}
             tipoBadges={tipoBadges}
           />
-        </>
+        </div>
       )}
     </div>
   );

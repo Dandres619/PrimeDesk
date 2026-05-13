@@ -30,9 +30,9 @@ export function UsersTable({
   handleEdit
 }: UsersTableProps) {
   return (
-    <Card>
+    <Card data-slot="card">
       <CardHeader>
-        <CardTitle>Lista de Usuarios ({usersCount})</CardTitle>
+        <CardTitle data-slot="card-title">Lista de Usuarios ({usersCount})</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
