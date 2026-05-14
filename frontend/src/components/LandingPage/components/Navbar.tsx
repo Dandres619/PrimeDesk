@@ -13,11 +13,12 @@ export function Navbar({ isScrolled, isMenuOpen, setIsMenuOpen, onLoginClick, on
     <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-lg py-3' : 'bg-transparent py-5'}`}>
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex justify-between items-center">
-          {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <span className={`font-bold text-xl ${isScrolled ? 'text-gray-900' : 'text-white'}`}>
-              RafaMotos
-            </span>
+          <div className="relative h-14 w-40 flex items-center">
+            <img
+              src="/rafamotos-logo.png"
+              alt="Rafa Motos"
+              className="h-16 w-auto absolute left-0 top-1/2 -translate-y-1/2 object-contain"
+            />
           </div>
 
           {/* Desktop Menu */}
@@ -45,10 +46,10 @@ export function Navbar({ isScrolled, isMenuOpen, setIsMenuOpen, onLoginClick, on
               <LogIn className="w-4 h-4" />
               Iniciar Sesión
             </button>
-                <button onClick={onRegisterClick} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl flex items-center gap-2">
-                  <UserPlus className="w-4 h-4" />
-                  Registrarse
-                </button>
+            <button onClick={onRegisterClick} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all shadow-lg hover:shadow-xl flex items-center gap-2">
+              <UserPlus className="w-4 h-4" />
+              Registrarse
+            </button>
           </div>
 
           {/* Mobile Menu Button */}

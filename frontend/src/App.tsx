@@ -9,7 +9,7 @@ import { Agendamientos } from '@/components/Agendamientos';
 import { Proveedores } from '@/components/Proveedores';
 import { Compras } from '@/components/Compras';
 import { Ventas } from '@/components/Ventas';
-import { Servicios } from '@/components/Servicios';
+import { Servicios } from '@/components/Servicios/index';
 import { Horarios } from '@/components/Horarios';
 import { CategoriasProductos } from '@/components/CategoriasProductos';
 import { Productos } from '@/components/Productos';
@@ -78,7 +78,7 @@ function AppContent() {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [transitionPhase, setTransitionPhase] = useState<'idle' | 'fading-in' | 'fading-out'>('idle');
-    const [logoutPhase, setLogoutPhase] = useState<'idle' | 'fading-in' | 'fading-out'>('idle'); 
+    const [logoutPhase, setLogoutPhase] = useState<'idle' | 'fading-in' | 'fading-out'>('idle');
 
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -415,9 +415,8 @@ function AppContent() {
 
             {/* Transition Overlay for Login/Logout - PERSISTENT AT TOP LEVEL */}
             {(isLoggingOut || isLoggingIn) && (
-                <div className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-700 ease-in-out pointer-events-none ${
-                    theme === 'dark' ? 'bg-slate-950' : 'bg-white'
-                } ${(logoutPhase === 'fading-in' || transitionPhase === 'fading-in') ? 'opacity-100 backdrop-blur-xl' : (logoutPhase === 'fading-out' || transitionPhase === 'fading-out') ? 'opacity-0 backdrop-blur-0' : 'opacity-0'
+                <div className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-700 ease-in-out pointer-events-none ${theme === 'dark' ? 'bg-slate-950' : 'bg-white'
+                    } ${(logoutPhase === 'fading-in' || transitionPhase === 'fading-in') ? 'opacity-100 backdrop-blur-xl' : (logoutPhase === 'fading-out' || transitionPhase === 'fading-out') ? 'opacity-0 backdrop-blur-0' : 'opacity-0'
                     }`}>
                     <div className={`flex flex-col items-center gap-4 transition-all duration-500 ${(logoutPhase === 'fading-in' || transitionPhase === 'fading-in') ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
                         <PiMotorcycle className={`w-16 h-16 animate-pulse ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`} />
