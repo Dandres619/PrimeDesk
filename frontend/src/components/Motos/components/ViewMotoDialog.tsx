@@ -1,7 +1,8 @@
 import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Badge } from '../../ui/badge';
-import { Bike } from 'lucide-react';
+import { PiMotorcycle } from 'react-icons/pi';
+import { cn } from '@/lib/utils';
 
 interface ViewMotoDialogProps {
   viewingMoto: any;
@@ -13,34 +14,56 @@ const statusColors: any = {
 };
 
 export function ViewMotoDialog({ viewingMoto }: ViewMotoDialogProps) {
-  if (!viewingMoto) return null;
+  // We remove the early return so the component stays in the DOM during the exit animation
+  const data = viewingMoto || {};
 
   return (
-    <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
-      <DialogHeader>
-        <DialogTitle>Detalles de la Motocicleta</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg">
-            <Bike className="w-10 h-10" />
+    <DialogContent className="max-w-2xl animate-modal overflow-hidden p-0 bg-white dark:bg-slate-950 border-none shadow-2xl rounded-2xl">
+      <div className="px-8 pt-8 pb-6 border-b border-slate-100 dark:border-slate-800 relative overflow-hidden shrink-0">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-3xl -mr-20 -mt-20 rounded-full" />
+        <div className="relative z-10 flex flex-col gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none shrink-0 transition-transform hover:scale-105">
+              <PiMotorcycle className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  Detalles de la Motocicleta
+                </DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Consulta la información técnica y del propietario
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-bold text-blue-900 dark:text-blue-100 uppercase tracking-tight">{viewingMoto.Placa}</h3>
-            <p className="text-blue-700 dark:text-blue-400 font-medium">{viewingMoto.Marca} {viewingMoto.Modelo}</p>
-            <Badge className={statusColors[viewingMoto.Estado]}>{viewingMoto.Estado ? 'Activo' : 'Inactivo'}</Badge>
+        </div>
+      </div>
+
+      <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="flex items-center gap-6 p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all hover:bg-slate-100 dark:hover:bg-slate-900/80">
+          <div className="w-20 h-20 bg-white dark:bg-slate-900 rounded-2xl flex items-center justify-center text-blue-600 shadow-xl border border-slate-100 dark:border-slate-800">
+            <PiMotorcycle className="w-12 h-12" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">{data.Placa}</h3>
+            <div className="flex items-center gap-3">
+              <Badge className={cn("px-3 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider", statusColors[String(data.Estado)])}>
+                {data.Estado ? 'Activo' : 'Inactivo'}
+              </Badge>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <DetailItem label="Marca" value={viewingMoto.Marca} />
-          <DetailItem label="Modelo" value={viewingMoto.Modelo} />
-          <DetailItem label="Año" value={viewingMoto.Anio} />
-          <DetailItem label="Color" value={viewingMoto.Color} />
-          <DetailItem label="Cilindraje (cc)" value={viewingMoto.Motor} />
-          <DetailItem label="Kilometraje" value={`${viewingMoto.Kilometraje?.toLocaleString()} km`} />
-          <DetailItem label="Propietario" value={`${viewingMoto.NombreCliente} ${viewingMoto.ApellidoCliente}`} />
-          <DetailItem label="ID Motocicleta" value={viewingMoto.ID_Motocicleta} />
+        <div className="grid grid-cols-2 gap-6 bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <DetailItem label="Marca" value={data.Marca} />
+          <DetailItem label="Modelo" value={data.Modelo} />
+          <DetailItem label="Año" value={data.Anio} />
+          <DetailItem label="Color" value={data.Color} />
+          <DetailItem label="Cilindraje" value={data.Motor ? `${data.Motor} cc` : '-'} />
+          <DetailItem label="Kilometraje" value={data.Kilometraje ? `${data.Kilometraje.toLocaleString()} km` : '-'} />
+          <DetailItem label="Placa" value={data.Placa} />
+          <DetailItem label="Propietario" value={data.NombreCliente ? `${data.NombreCliente} ${data.ApellidoCliente}` : '-'} />
         </div>
       </div>
     </DialogContent>

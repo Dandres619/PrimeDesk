@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Dialog } from '../ui/dialog';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -56,36 +56,38 @@ export function Motos() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="motos-root space-y-6">
       <MotosStyles />
-      <MotosHeader
-        isDialogOpen={isDialogOpen}
-        setIsDialogOpen={setIsDialogOpen}
-        setEditingMoto={setEditingMoto}
-        editingMoto={editingMoto}
-        clients={clients}
-        onSave={onSave}
-        isSaving={isSaving}
-      />
-
-      <div className="flex justify-start">
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar motocicletas..."
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="pl-10"
-          />
-        </div>
-      </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center p-24">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+        <div className="mp-loading">
+          <div className="mp-loading-ring" />
+          <p className="mp-loading-text">Cargando motocicletas...</p>
         </div>
       ) : (
-        <>
+        <div className="motos-content-animate space-y-6">
+          <MotosHeader
+            isDialogOpen={isDialogOpen}
+            setIsDialogOpen={setIsDialogOpen}
+            setEditingMoto={setEditingMoto}
+            editingMoto={editingMoto}
+            clients={clients}
+            onSave={onSave}
+            isSaving={isSaving}
+          />
+
+          <div className="flex justify-start">
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar motocicletas..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
           <MotosTable
             paginatedMotos={paginatedMotos}
             totalFilteredMotos={filteredMotos.length}
@@ -114,7 +116,7 @@ export function Motos() {
             onConfirm={confirmDialog.onConfirm}
             loading={isDeleting}
           />
-        </>
+        </div>
       )}
     </div>
   );
