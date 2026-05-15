@@ -77,8 +77,8 @@ const create = async ({ id_motocicleta, id_empleado, dia, horainicio, horafin, n
 
       // 3. Crear automáticamente una reparación vinculada al agendamiento
       const [reparacion] = await tx`
-        INSERT INTO reparaciones (id_motocicleta, id_agendamiento, fecha, observaciones, tiposervicio, estado)
-        VALUES (${id_motocicleta}, ${agendamiento.ID_Agendamiento}, NOW(), ${notas || null}, 'Agendado', 'En proceso')
+        INSERT INTO reparaciones (id_motocicleta, id_agendamiento, observaciones, estado)
+        VALUES (${id_motocicleta}, ${agendamiento.ID_Agendamiento}, ${notas || null}, 'En proceso')
         RETURNING id_reparacion AS "ID_Reparacion"
       `;
 

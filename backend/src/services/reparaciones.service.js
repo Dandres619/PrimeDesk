@@ -15,8 +15,8 @@ const getAll = async (filters = {}) => {
 
   const rows = await sql`
         SELECT rep.id_reparacion AS "ID_Reparacion", rep.id_reparacion AS "id", rep.id_motocicleta AS "ID_Motocicleta", 
-               rep.id_agendamiento AS "ID_Agendamiento", rep.fecha AS "Fecha", 
-               rep.observaciones AS "Observaciones", rep.tiposervicio AS "TipoServicio", 
+               rep.id_agendamiento AS "ID_Agendamiento", 
+               rep.observaciones AS "Observaciones", 
                rep.estado AS "Estado",
                m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
                c.id_cliente AS "ID_Cliente", CONCAT(c.nombre, ' ', c.apellido) AS "NombreCliente",
@@ -36,7 +36,7 @@ const getAll = async (filters = {}) => {
         LEFT JOIN empleados e ON a.id_empleado = e.id_empleado
         LEFT JOIN ventas v_assoc ON rep.id_reparacion = v_assoc.id_reparacion
         ${where}
-        ORDER BY rep.fecha DESC
+        ORDER BY a.dia DESC NULLS LAST
     `;
   return rows;
 };
@@ -45,8 +45,8 @@ const getById = async (id) => {
   const sql = await getPool();
   const appointments = await sql`
         SELECT rep.id_reparacion AS "ID_Reparacion", rep.id_motocicleta AS "ID_Motocicleta", 
-               rep.id_agendamiento AS "ID_Agendamiento", rep.fecha AS "Fecha", 
-               rep.observaciones AS "Observaciones", rep.tiposervicio AS "TipoServicio", 
+               rep.id_agendamiento AS "ID_Agendamiento", 
+               rep.observaciones AS "Observaciones", 
                rep.estado AS "Estado",
                m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
                a.dia AS "DiaAgendamiento"
@@ -77,14 +77,14 @@ const getById = async (id) => {
   return { ...appointments[0], servicios: services, avances: progress };
 };
 
-const create = async ({ id_motocicleta, id_agendamiento, observaciones, tipo_servicio, estado, servicios }) => {
+const create = async ({ id_motocicleta, id_agendamiento, observaciones, estado, servicios }) => {
   const sql = await getPool();
 
   try {
     const result = await sql.begin(async (tx) => {
       const [reparacion] = await tx`
-                INSERT INTO reparaciones (id_motocicleta, id_agendamiento, fecha, observaciones, tiposervicio, estado)
-                VALUES (${id_motocicleta}, ${id_agendamiento || null}, NOW(), ${observaciones || null}, ${tipo_servicio || 'Directo'}, ${estado || 'En proceso'})
+                INSERT INTO reparaciones (id_motocicleta, id_agendamiento, observaciones, estado)
+                VALUES (${id_motocicleta}, ${id_agendamiento || null}, ${observaciones || null}, ${estado || 'En proceso'})
                 RETURNING id_reparacion AS "ID_Reparacion", id_motocicleta AS "ID_Motocicleta", id_agendamiento AS "ID_Agendamiento"
             `;
 
@@ -109,14 +109,15 @@ const create = async ({ id_motocicleta, id_agendamiento, observaciones, tipo_ser
   }
 };
 
-const update = async (id, { observaciones, tipo_servicio, estado }) => {
+const update = async (id, { observaciones, estado }) => {
   const sql = await getPool();
   const [row] = await sql`
         UPDATE reparaciones 
-        SET observaciones = ${observaciones || null}, tiposervicio = ${tipo_servicio}, estado = ${estado}
+        SET observaciones = ${observaciones || null}, estado = ${estado}
         WHERE id_reparacion = ${id}
         RETURNING id_reparacion AS "ID_Reparacion"
     `;
+
   if (!row) throw { status: 404, message: 'Reparación no encontrada.' };
   return row;
 };
