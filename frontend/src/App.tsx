@@ -6,7 +6,7 @@ import { Roles } from '@/components/Roles';
 import { Usuarios } from '@/components/Usuarios';
 import { Clientes } from '@/components/Clientes';
 import { Motos } from '@/components/Motos';
-import { Agendamientos } from '@/components/Agendamientos';
+import { Agendamientos } from '@/components/Agendamientos/index';
 import { Proveedores } from '@/components/Proveedores';
 import { Compras } from '@/components/Compras';
 import { Ventas } from '@/components/Ventas';
@@ -453,7 +453,7 @@ function AppContent() {
                     <>
                         {mainContent()}
 
-                        <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
+                        <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} toastOptions={{ style: { zIndex: 99999 } }} />
 
                         {/* Transition Overlay for Login/Logout - PERSISTENT AT TOP LEVEL */}
                         {(isLoggingOut || isLoggingIn) && (

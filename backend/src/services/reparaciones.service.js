@@ -1,4 +1,6 @@
 const { getPool } = require('../config/db');
+const supabase = require('../config/supabase');
+const path = require('path');
 
 const getAll = async (filters = {}) => {
   const sql = await getPool();
@@ -41,12 +43,17 @@ const getAll = async (filters = {}) => {
                  ) AS "servicios",
                  (
                    SELECT json_agg(json_build_object(
-                     'ID_Compra', rc.id_compra,
+                     'ID_Reparacion_Compra', rc.id_reparacion_compra,
+                     'ID_Producto', rc.id_producto,
+                     'NombreProducto', p.nombre,
+                     'Cantidad', rc.cantidad,
+                     'PrecioUnitario', rc.precio_unitario,
                      'Subtotal', rc.subtotal,
                      'Factura', rc.factura,
                      'Observaciones', rc.observaciones
                    ))
                    FROM reparaciones_compras rc
+                   LEFT JOIN productos p ON rc.id_producto = p.id_producto
                    WHERE rc.id_reparacion = rep.id_reparacion
                  ) AS "compras"
           FROM reparaciones rep
@@ -92,9 +99,11 @@ const getById = async (id) => {
     `;
 
   const purchases = await sql`
-        SELECT rc.id_compra AS "ID_Compra", rc.subtotal AS "Subtotal",
-               rc.factura AS "Factura", rc.observaciones AS "Observaciones"
+        SELECT rc.id_reparacion_compra AS "ID_Reparacion_Compra", rc.id_producto AS "ID_Producto",
+               p.nombre AS "NombreProducto", rc.cantidad AS "Cantidad", rc.precio_unitario AS "PrecioUnitario",
+               rc.subtotal AS "Subtotal", rc.factura AS "Factura", rc.observaciones AS "Observaciones"
         FROM reparaciones_compras rc
+        LEFT JOIN productos p ON rc.id_producto = p.id_producto
         WHERE rc.id_reparacion = ${id}
     `;
 
@@ -108,7 +117,7 @@ const create = async ({ id_motocicleta, id_agendamiento, observaciones, estado, 
     const result = await sql.begin(async (tx) => {
       const [reparacion] = await tx`
                 INSERT INTO reparaciones (id_motocicleta, id_agendamiento, observaciones, estado)
-                VALUES (${id_motocicleta}, ${id_agendamiento || null}, ${observaciones || null}, ${estado || 'En proceso'})
+                VALUES (${id_motocicleta}, ${id_agendamiento || null}, ${observaciones || null}, ${estado || 'Esperando motocicleta'})
                 RETURNING id_reparacion AS "ID_Reparacion", id_motocicleta AS "ID_Motocicleta", id_agendamiento AS "ID_Agendamiento"
             `;
 
@@ -157,10 +166,80 @@ const addServicio = async (id_reparacion, id_servicio) => {
   if (exists.length > 0) throw { status: 409, message: 'El servicio ya está en esta reparación.' };
 
   await sql`
-        INSERT INTO reparaciones_servicios (id_reparacion, id_servicio) 
-        VALUES (${id_reparacion}, ${id_servicio})
+        INSERT INTO reparaciones_servicios (id_reparacion, id_servicio, estado) 
+        VALUES (${id_reparacion}, ${id_servicio}, 'Pendiente')
     `;
   return { message: 'Servicio agregado a la reparación.' };
+};
+
+const updateEstado = async (id, estado, nota_estado) => {
+    const sql = await getPool();
+    const [row] = await sql`
+        UPDATE reparaciones 
+        SET estado = ${estado}, nota_estado = ${nota_estado || null}
+        WHERE id_reparacion = ${id}
+        RETURNING id_reparacion AS "ID_Reparacion"
+    `;
+    if (!row) throw { status: 404, message: 'Reparación no encontrada.' };
+    return row;
+};
+
+const updateServicioEstado = async (id_reparacion, id_servicio, estado, observaciones) => {
+    const sql = await getPool();
+    const [row] = await sql`
+        UPDATE reparaciones_servicios 
+        SET estado = ${estado}, observaciones = ${observaciones || null}, fecha_finalizacion = CASE WHEN ${estado} = 'Finalizado' THEN NOW() ELSE NULL END
+        WHERE id_reparacion = ${id_reparacion} AND id_servicio = ${id_servicio}
+        RETURNING id_reparacion AS "ID_Reparacion"
+    `;
+    if (!row) throw { status: 404, message: 'Servicio no encontrado en esta reparación.' };
+    return row;
+};
+
+const addCompra = async (id_reparacion, data, file) => {
+    const sql = await getPool();
+    const { id_producto, cantidad, precio_unitario, observaciones } = data;
+    const subtotal = (cantidad || 1) * (precio_unitario || 0);
+
+    let finalFoto = null;
+    if (file) {
+        try {
+            const fileBuffer = file.buffer;
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const ext = path.extname(file.originalname);
+            const fileName = `factura-${uniqueSuffix}${ext}`;
+
+            const { data: uploadData, error } = await supabase.storage
+                .from('facturas')
+                .upload(fileName, fileBuffer, {
+                    contentType: file.mimetype,
+                    upsert: true
+                });
+
+            if (error) {
+                console.error('❌ Error al subir a Supabase Storage (facturas):', error.message || error);
+                throw new Error(`Error en Supabase Storage: ${error.message || 'Sin detalles'}`);
+            } else {
+                console.log('✅ Factura subida exitosamente a Supabase Storage:', fileName);
+                const { data: publicUrl } = supabase.storage
+                    .from('facturas')
+                    .getPublicUrl(fileName);
+
+                finalFoto = publicUrl.publicUrl;
+            }
+        } catch (uploadErr) {
+            console.error('❌ Error crítico en el proceso de subida:', uploadErr.message);
+            throw uploadErr;
+        }
+    }
+
+    const [row] = await sql`
+        INSERT INTO reparaciones_compras (id_reparacion, id_producto, cantidad, precio_unitario, subtotal, factura, observaciones)
+        VALUES (${id_reparacion}, ${id_producto}, ${cantidad || 1}, ${precio_unitario || 0}, ${subtotal}, ${finalFoto}, ${observaciones || null})
+        RETURNING id_reparacion_compra AS "ID_Reparacion_Compra"
+    `;
+
+    return row;
 };
 
 const remove = async (id) => {
@@ -168,6 +247,7 @@ const remove = async (id) => {
   try {
     await sql.begin(async (tx) => {
       await tx`DELETE FROM reparaciones_servicios WHERE id_reparacion = ${id}`;
+      await tx`DELETE FROM reparaciones_compras WHERE id_reparacion = ${id}`;
       const [deleted] = await tx`
                 DELETE FROM reparaciones 
                 WHERE id_reparacion = ${id}
@@ -182,4 +262,4 @@ const remove = async (id) => {
 };
 
 
-module.exports = { getAll, getById, create, update, addServicio, remove };
+module.exports = { getAll, getById, create, update, addServicio, updateEstado, updateServicioEstado, addCompra, remove };

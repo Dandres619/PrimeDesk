@@ -23,7 +23,8 @@ export function Reparaciones() {
     mechanics,
     availableServices,
     handleSave,
-    anularReparacion
+    anularReparacion,
+    refreshData
   } = useReparaciones();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -103,11 +104,16 @@ export function Reparaciones() {
               mechanics={mechanics}
               availableServices={availableServices}
               editingOrder={editingReparacion}
-              onOpenChange={setIsDialogOpen}
+              onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) refreshData();
+              }}
+              onOrderUpdated={refreshData}
               onSave={(data) => {
                 if (!data) {
                   setIsDialogOpen(false);
                   setEditingReparacion(null);
+                  refreshData();
                   return;
                 }
                 handleSave(data);

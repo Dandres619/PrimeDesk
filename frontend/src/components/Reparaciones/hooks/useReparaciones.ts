@@ -90,6 +90,8 @@ export function useReparaciones() {
 
     setEditingReparacion({
       ...order,
+      servicios: details.servicios,
+      compras: details.compras,
       selectedServices: details.servicios.map((s: any) => s.ID_Servicio)
     });
     setIsDialogOpen(true);
@@ -121,7 +123,7 @@ export function useReparaciones() {
             id_motocicleta: parseInt(data.motorcycleId),
             id_agendamiento: null,
             observaciones: data.observations,
-            estado: 'En proceso',
+            estado: 'Esperando motocicleta',
             servicios: data.selectedServices
           })
         });
@@ -135,7 +137,7 @@ export function useReparaciones() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
               observaciones: data.observations,
-              estado: 'En proceso'
+              estado: editingReparacion.Estado || editingReparacion.estadoBase || 'Esperando motocicleta'
             })
           });
         }
@@ -217,6 +219,7 @@ export function useReparaciones() {
     handleOpenView,
     handleSave,
     anularReparacion,
-    loadDetails
+    loadDetails,
+    refreshData: fetchData
   };
 }
