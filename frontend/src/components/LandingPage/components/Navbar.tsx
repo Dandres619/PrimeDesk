@@ -15,7 +15,7 @@ export function Navbar({ isScrolled, isMenuOpen, setIsMenuOpen, onLoginClick, on
         <div className="flex justify-between items-center">
           <div className="relative h-14 w-40 flex items-center">
             <img
-              src="/rafamotos-logo.png"
+              src="/favicon/rafamotos-logo.png"
               alt="Rafa Motos"
               className="h-16 w-auto absolute left-0 top-1/2 -translate-y-1/2 object-contain"
             />

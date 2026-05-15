@@ -42,6 +42,37 @@ export function ClientPanelStyles() {
       .dark .calendar-day.today {
         background-color: #1e3a8a30;
       }
+
+      /* Loading Estándar */
+      .mp-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+        gap: 16px;
+      }
+      .mp-loading-ring {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #cbd5e1;
+        border-top-color: #2563eb;
+        border-radius: 50%;
+        animation: mp-spin 0.8s linear infinite;
+      }
+      @keyframes mp-spin { to { transform: rotate(360deg); } }
+      .mp-loading-text {
+        font-size: 14px;
+        color: #64748b;
+        font-weight: 500;
+      }
+      .dark .mp-loading-ring {
+        border-color: rgba(255, 255, 255, 0.1);
+        border-top-color: #6366f1;
+      }
+      .dark .mp-loading-text {
+        color: #94a3b8;
+      }
     `}</style>
   );
 }

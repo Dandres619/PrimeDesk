@@ -13,7 +13,9 @@ import { ClientPanelStyles } from './styles/ClientPanelStyles';
 import { toast } from 'sonner';
 import { parseISO, isBefore, startOfDay, isToday } from 'date-fns';
 import { Badge } from '../ui/badge';
-import { Loader2 } from 'lucide-react';
+import { UserCircle, Sun, Moon } from 'lucide-react';
+import { Switch } from '../ui/switch';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import React from 'react';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -25,7 +27,7 @@ interface ClientPanelProps {
 
 export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   const { theme, toggleTheme } = useTheme();
-  const [activeSection, setActiveSection] = useState('perfil');
+  const location = useLocation();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const {
@@ -40,7 +42,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
   useEffect(() => {
     fetchClientData();
-  }, [fetchClientData, activeSection]);
+  }, [fetchClientData, location.pathname]);
 
   const [showMotoModal, setShowMotoModal] = useState(false);
   const [editingMoto, setEditingMoto] = useState<any>(null);
@@ -55,9 +57,22 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   const [selectedMoto, setSelectedMoto] = useState<any>(null);
   const [isDeletingMoto, setIsDeletingMoto] = useState(false);
 
+  const handleCreateMoto = () => {
+    setEditingMoto(null);
+    setMotoFormData({
+      marca: '', modelo: '', ano: new Date().getFullYear(), placa: '', color: '', cilindraje: '', kilometraje: '' as any
+    });
+    setShowMotoModal(true);
+  };
+
   const handleEditMoto = (moto: any) => {
     setEditingMoto(moto);
-    setMotoFormData({ ...moto });
+    // Asegurarse de que los nombres de campos coincidan (ano vs anio, etc si es necesario)
+    setMotoFormData({
+      ...moto,
+      ano: moto.ano || moto.anio || new Date().getFullYear(),
+      cilindraje: moto.cilindraje || moto.motor || ''
+    });
     setShowMotoModal(true);
   };
 
@@ -80,10 +95,6 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
 
   const handleSubmitMoto = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!motoFormData.marca || !motoFormData.modelo || !motoFormData.placa) {
-      toast.error('Por favor complete los campos obligatorios');
-      return;
-    }
     setIsSubmittingMoto(true);
     try {
       const token = localStorage.getItem('token');
@@ -104,8 +115,13 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
           estado: true
         })
       });
-      if (!response.ok) throw new Error('Error al guardar la motocicleta');
-      toast.success(editingMoto ? 'Moto actualizada' : 'Moto agregada');
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Error al guardar motocicleta');
+      }
+
+      toast.success(`Motocicleta ${editingMoto ? 'actualizada' : 'registrada'} exitosamente`);
       setShowMotoModal(false);
       setEditingMoto(null);
       fetchClientData(false);
@@ -129,8 +145,11 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!response.ok) throw new Error('Error al eliminar');
-      toast.success('Moto eliminada');
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Error al eliminar motocicleta');
+      }
+      toast.success('Motocicleta eliminada');
       setShowDeleteMotoConfirm(false);
       fetchClientData(false);
     } catch (error: any) {
@@ -246,66 +265,87 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     return <Badge className={variants[estado.toLowerCase()] || 'bg-slate-100'}>{estado}</Badge>;
   };
 
+  const clientMenuItems = [
+    { id: 'perfil', label: 'Mi Perfil' },
+    { id: 'motos', label: 'Mis Motocicletas' },
+    { id: 'agendar', label: 'Agendar Servicio' },
+  ];
+
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-slate-50 dark:bg-slate-950">
+      <div className="flex min-h-screen w-full bg-muted/30">
         <ClientPanelStyles />
         <ClientSidebar
-          activeSection={activeSection}
-          setActiveSection={setActiveSection}
           setShowLogoutConfirm={setShowLogoutConfirm}
           theme={theme}
-          toggleTheme={toggleTheme}
           currentUser={currentUser}
         />
 
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <header className="border-b border-slate-200 dark:border-slate-800 p-4 bg-white dark:bg-slate-900 shrink-0">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger className="-ml-1" />
-              <h1 className="text-xl font-semibold capitalize text-slate-800 dark:text-slate-100">
-                {activeSection === 'perfil' ? 'Mi Perfil' : activeSection === 'motos' ? 'Mis Motocicletas' : 'Agendar Cita'}
-              </h1>
+          <header className="border-b border-border p-4 bg-card">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="-ml-1" />
+                <h1 className="text-xl font-semibold capitalize">
+                  {clientMenuItems.find(item => `/cliente/${item.id}` === location.pathname)?.label || 'Panel Cliente'}
+                </h1>
+              </div>
+              {currentUser && (
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <UserCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span>{currentUser.name} {currentUser.last_name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+                    <Sun className={`w-4 h-4 transition-colors ${theme === 'light' ? 'text-yellow-500' : 'text-muted-foreground'}`} />
+                    <Switch
+                      checked={theme === 'dark'}
+                      onCheckedChange={toggleTheme}
+                      className="data-[state=checked]:bg-blue-600"
+                    />
+                    <Moon className={`w-4 h-4 transition-colors ${theme === 'dark' ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                  </div>
+                </div>
+              )}
             </div>
           </header>
 
-          <div className="flex-1 p-4 md:p-8 overflow-y-auto">
-          {isLoadingData ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+          <div className="flex-1 p-6 overflow-y-auto sidebar-scroll">
+            <div className="max-w-7xl mx-auto space-y-8 animate-fade-slide-in">
+              <Routes>
+                <Route path="perfil" element={<MiPerfil />} />
+                <Route path="motos" element={
+                  <MotosSection
+                    motos={motos}
+                    isLoadingData={isLoadingData}
+                    handleCreateMoto={handleCreateMoto}
+                    handleEditMoto={handleEditMoto}
+                    fetchMotoHistory={fetchMotoHistory}
+                    handleDeleteMoto={handleDeleteMoto}
+                    selectedMotoForHistory={selectedMotoForHistory}
+                    setSelectedMotoForHistory={setSelectedMotoForHistory}
+                    motoHistory={motoHistory}
+                    isFetchingHistory={isFetchingHistory}
+                    getMotoName={(id: number) => motos.find((m: any) => m.id === id)?.placa || ''}
+                    getEstadoBadge={getEstadoBadge}
+                  />
+                } />
+                <Route path="agendar" element={
+                  <AppointmentsSection
+                    currentDate={currentDate}
+                    isLoadingData={isLoadingData}
+                    setCurrentDate={setCurrentDate}
+                    getAppointmentsForDate={getAppointmentsForDate}
+                    handleDateClick={handleDateClick}
+                    setSelectedAppointment={setSelectedAppointment}
+                    setAppointmentDetailsOpen={setAppointmentDetailsOpen}
+                  />
+                } />
+                <Route path="*" element={<Navigate to="perfil" replace />} />
+              </Routes>
             </div>
-          ) : (
-            <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-              {activeSection === 'perfil' && <MiPerfil />}
-              {activeSection === 'motos' && (
-                <MotosSection
-                  motos={motos}
-                  setShowMotoModal={setShowMotoModal}
-                  handleEditMoto={handleEditMoto}
-                  fetchMotoHistory={fetchMotoHistory}
-                  handleDeleteMoto={handleDeleteMoto}
-                  selectedMotoForHistory={selectedMotoForHistory}
-                  setSelectedMotoForHistory={setSelectedMotoForHistory}
-                  motoHistory={motoHistory}
-                  isFetchingHistory={isFetchingHistory}
-                  getMotoName={(id: number) => motos.find((m: any) => m.id === id)?.placa || ''}
-                  getEstadoBadge={getEstadoBadge}
-                />
-              )}
-              {activeSection === 'agendar' && (
-                <AppointmentsSection
-                  currentDate={currentDate}
-                  setCurrentDate={setCurrentDate}
-                  getAppointmentsForDate={getAppointmentsForDate}
-                  handleDateClick={handleDateClick}
-                  setSelectedAppointment={setSelectedAppointment}
-                  setAppointmentDetailsOpen={setAppointmentDetailsOpen}
-                />
-              )}
-            </div>
-          )}
-        </div>
-      </main>
+          </div>
+        </main>
 
         <MotoDialog
           open={showMotoModal}

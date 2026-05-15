@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bike, CheckCircle, User, Sparkles } from 'lucide-react';
 import { useLogin } from './hooks/useLogin';
 import { useRegister } from './hooks/useRegister';
@@ -13,6 +14,7 @@ interface LoginProps {
 }
 
 export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [mounted, setMounted] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
@@ -22,11 +24,17 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    setIsLogin(initialMode === 'login');
+  }, [initialMode]);
+
   const handleModeSwitch = (login: boolean) => {
     setTransitioning(true);
     setTimeout(() => {
-      setIsLogin(login);
-      setTransitioning(false);
+      navigate(login ? '/login' : '/registro');
+      setTimeout(() => {
+        setTransitioning(false);
+      }, 50);
     }, 300);
   };
 
@@ -114,14 +122,16 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
 
               <div className="login-hero-divider" />
 
-              <h2 className="login-hero-heading">
-                {isLogin ? 'Bienvenido de nuevo' : 'Únete a nosotros'}
-              </h2>
-              <p className="login-hero-description">
-                {isLogin
-                  ? 'Accede a tu panel de control y gestiona tus motocicletas con la mejor experiencia.'
-                  : 'Crea tu cuenta y disfruta de todos los beneficios que tenemos para ti y tu moto.'}
-              </p>
+              <div className={`login-hero-text-wrapper ${transitioning ? 'login-hero-exit' : 'login-hero-enter'}`}>
+                <h2 className="login-hero-heading">
+                  {isLogin ? 'Bienvenido de nuevo' : 'Únete a nosotros'}
+                </h2>
+                <p className="login-hero-description">
+                  {isLogin
+                    ? 'Accede a tu panel de control y gestiona tus motocicletas con la mejor experiencia.'
+                    : 'Crea tu cuenta y disfruta de todos los beneficios que tenemos para ti y tu moto.'}
+                </p>
+              </div>
 
               {/* Feature List */}
               <div className="login-features">
@@ -546,6 +556,20 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
         .login-form-exit {
           opacity: 0;
           transform: translateY(10px);
+        }
+
+        .login-hero-text-wrapper {
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .login-hero-enter {
+          opacity: 1;
+          transform: translateX(0);
+        }
+
+        .login-hero-exit {
+          opacity: 0;
+          transform: translateX(-15px);
         }
 
         /* --- Responsive --- */

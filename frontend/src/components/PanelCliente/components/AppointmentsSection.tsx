@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale';
 
 interface AppointmentsSectionProps {
   currentDate: Date;
+  isLoadingData?: boolean;
   setCurrentDate: (date: Date) => void;
   getAppointmentsForDate: (date: Date) => any[];
   handleDateClick: (date: Date) => void;
@@ -15,12 +16,21 @@ interface AppointmentsSectionProps {
 
 export function AppointmentsSection({
   currentDate,
+  isLoadingData,
   setCurrentDate,
   getAppointmentsForDate,
   handleDateClick,
   setSelectedAppointment,
   setAppointmentDetailsOpen
 }: AppointmentsSectionProps) {
+  if (isLoadingData) {
+    return (
+      <div className="mp-loading">
+        <div className="mp-loading-ring" />
+        <p className="mp-loading-text">Cargando información...</p>
+      </div>
+    );
+  }
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);

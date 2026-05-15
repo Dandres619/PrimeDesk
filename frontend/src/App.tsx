@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Dashboard } from '@/components/Dashboard';
 import { Roles } from '@/components/Roles';
@@ -68,11 +69,9 @@ const menuItems = [
 
 function AppContent() {
     const { theme, toggleTheme } = useTheme();
-    const [activeSection, setActiveSection] = useState('dashboard');
+    const navigate = useNavigate();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [showLanding, setShowLanding] = useState(true);
-    const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+    const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
     const [currentUser, setCurrentUser] = useState<{ id?: number; id_cliente?: number; username: string; name: string; last_name: string; type: string; permisos: string[] } | null>(null);
     const [viewTransition, setViewTransition] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -82,20 +81,27 @@ function AppContent() {
 
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
+    const getPrefix = (type?: string) => {
+        const t = type?.toLowerCase();
+        if (t === 'administrador' || t === 'admin') return '/admin';
+        if (t === 'mecánico' || t === 'mecanico' || t === 'empleado' || t === 'mec') return '/mecanico';
+        if (t === 'cliente' || t === 'cli') return '/cliente';
+        return '';
+    };
+
     React.useEffect(() => {
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
 
         if (token && storedUser) {
             setIsAuthenticated(true);
-            setShowLanding(false);
 
             fetch(`${API_URL}/auth/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
                 .then(res => res.json())
                 .then(profileData => {
-                    const type = profileData.id_rol === 1 ? 'admin' : (profileData.id_rol === 2 ? 'empleado' : 'cliente');
+                    const type = profileData.id_rol === 1 ? 'administrador' : (profileData.id_rol === 2 ? 'mecánico' : 'cliente');
                     const permisos = profileData.permisos || [];
 
                     setCurrentUser({
@@ -108,9 +114,22 @@ function AppContent() {
                         permisos
                     });
 
-                    if (type !== 'cliente' && permisos.length > 0 && !permisos.includes('gestionar_dashboard')) {
-                        const firstItem = menuItems.find(item => permisos.includes(item.permission));
-                        if (firstItem) setActiveSection(firstItem.id);
+                    if (type !== 'cliente') {
+                        const prefix = getPrefix(type);
+                        const isAtRoot = window.location.pathname === '/' || window.location.pathname === prefix || window.location.pathname === prefix + '/';
+
+                        if (isAtRoot) {
+                            if (permisos.includes('gestionar_dashboard')) {
+                                navigate(`${prefix}/dashboard`);
+                            } else {
+                                const firstItem = menuItems.find(item => permisos.includes(item.permission));
+                                if (firstItem) navigate(`${prefix}/${firstItem.id}`);
+                            }
+                        }
+                    } else if (type === 'cliente') {
+                        if (window.location.pathname === '/' || window.location.pathname === '/cliente') {
+                            navigate('/cliente/perfil');
+                        }
                     }
                 })
                 .catch(() => {
@@ -122,57 +141,10 @@ function AppContent() {
         }
     }, [API_URL]);
 
-    const path = typeof window !== 'undefined' ? window.location.pathname : '';
-    if (path && path.startsWith('/reset-password')) {
-        return (
-            <>
-                <ResetPassword />
-                <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
-            </>
-        );
-    }
+    // Los chequeos manuales de 'path' han sido eliminados para usar Routes en el return principal
 
-    if (path && path.startsWith('/verify')) {
-        return (
-            <>
-                <VerificarCuenta />
-                <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
-            </>
-        );
-    }
+    // renderContent ha sido reemplazado por Routes directamente en el JSX
 
-    const renderContent = () => {
-        const activeItem = menuItems.find(item => item.id === activeSection);
-        if (activeItem && currentUser?.permisos && !currentUser.permisos.includes(activeItem.permission)) {
-            return (
-                <div className="flex flex-col items-center justify-center p-12 text-center h-full">
-                    <ShieldCheck className="w-16 h-16 text-red-500 mb-4" />
-                    <h2 className="text-2xl font-bold mb-2">Acceso Denegado</h2>
-                    <p className="text-muted-foreground">No tienes los permisos necesarios para ver este módulo.</p>
-                </div>
-            );
-        }
-
-        switch (activeSection) {
-            case 'dashboard': return <Dashboard />;
-            case 'mi-perfil': return <MiPerfil />;
-            case 'roles': return <Roles />;
-            case 'usuarios': return <Usuarios />;
-            case 'empleados': return <Empleados />;
-            case 'clientes': return <Clientes />;
-            case 'motos': return <Motos />;
-            case 'servicios': return <Servicios />;
-            case 'reparaciones': return <PedidosServicios />;
-            case 'horarios': return <Horarios />;
-            case 'agendamientos': return <Agendamientos />;
-            case 'categorias-productos': return <CategoriasProductos />;
-            case 'productos': return <Productos />;
-            case 'proveedores': return <Proveedores />;
-            case 'compras': return <Compras />;
-            case 'ventas': return <Ventas />;
-            default: return <Dashboard />;
-        }
-    };
 
     const handleLogin = (userData: any) => {
         setIsLoggingIn(true);
@@ -181,12 +153,22 @@ function AppContent() {
         setTimeout(() => {
             setCurrentUser(userData);
             setIsAuthenticated(true);
-            setShowLanding(false);
 
-            if (userData.type !== 'cliente' && userData.permisos && userData.permisos.length > 0) {
-                if (!userData.permisos.includes('gestionar_dashboard')) {
-                    const firstItem = menuItems.find(item => userData.permisos.includes(item.permission));
-                    if (firstItem) setActiveSection(firstItem.id);
+            // Redirección basada en rol con prefijos
+            const prefix = getPrefix(userData.type);
+            if (userData.type === 'administrador') {
+                navigate(`${prefix}/dashboard`);
+            } else if (userData.type === 'cliente') {
+                navigate('/cliente/perfil');
+            } else if (userData.type === 'mecánico') {
+                navigate(`${prefix}/agendamientos`);
+            } else {
+                // Fallback para otros roles
+                if (userData.permisos?.includes('gestionar_dashboard')) {
+                    navigate(`${prefix}/dashboard`);
+                } else {
+                    const firstItem = menuItems.find(item => userData.permisos?.includes(item.permission));
+                    navigate(firstItem ? `${prefix}/${firstItem.id}` : `${prefix}/dashboard`);
                 }
             }
 
@@ -213,8 +195,7 @@ function AppContent() {
             localStorage.removeItem('user');
             setIsAuthenticated(false);
             setCurrentUser(null);
-            setActiveSection('dashboard');
-            setShowLanding(true);
+            navigate('/inicio');
 
             setLogoutPhase('fading-out');
 
@@ -235,27 +216,31 @@ function AppContent() {
         cleanUrlHash();
         setViewTransition(true);
         setTimeout(() => {
-            setAuthMode('login');
-            setShowLanding(false);
-            setViewTransition(false);
-        }, 200);
+            navigate('/login');
+            setTimeout(() => {
+                setViewTransition(false);
+            }, 50);
+        }, 250);
     };
     const handleLandingRegisterClick = () => {
         cleanUrlHash();
         setViewTransition(true);
         setTimeout(() => {
-            setAuthMode('register');
-            setShowLanding(false);
-            setViewTransition(false);
-        }, 200);
+            navigate('/registro');
+            setTimeout(() => {
+                setViewTransition(false);
+            }, 50);
+        }, 250);
     };
 
     const handleBackToLanding = () => {
         setViewTransition(true);
         setTimeout(() => {
-            setShowLanding(true);
-            setViewTransition(false);
-        }, 200);
+            navigate('/inicio');
+            setTimeout(() => {
+                setViewTransition(false);
+            }, 50);
+        }, 250);
     };
 
     const mainContent = () => {
@@ -263,20 +248,47 @@ function AppContent() {
             return (
                 <div className="min-h-screen bg-[#0f172a]">
                     <div className={`transition-opacity duration-200 ease-linear ${viewTransition ? 'opacity-0' : 'opacity-100'}`}>
-                        {showLanding ? (
-                            <LandingPage onLoginClick={handleLandingLoginClick} onRegisterClick={handleLandingRegisterClick} />
-                        ) : (
-                            <>
-                                <Login onLogin={handleLogin} initialMode={authMode} />
-                                <Button
-                                    variant="ghost"
-                                    onClick={handleBackToLanding}
-                                    className="fixed top-6 left-6 z-[60] bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 rounded-xl px-4 py-2 flex items-center gap-2 transition-all"
-                                >
-                                    <span className="text-lg">←</span> Volver a Inicio
-                                </Button>
-                            </>
-                        )}
+                        <Routes>
+                            <Route path="/inicio" element={<LandingPage onLoginClick={handleLandingLoginClick} onRegisterClick={handleLandingRegisterClick} />} />
+                            <Route path="/login" element={
+                                <>
+                                    <Login onLogin={handleLogin} initialMode="login" />
+                                    <Button
+                                        variant="ghost"
+                                        onClick={handleBackToLanding}
+                                        className="fixed top-6 left-6 z-[60] bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 rounded-xl px-4 py-2 flex items-center gap-2 transition-all"
+                                    >
+                                        <span className="text-lg">←</span> Volver a Inicio
+                                    </Button>
+                                </>
+                            } />
+                            <Route path="/registro" element={
+                                <>
+                                    <Login onLogin={handleLogin} initialMode="register" />
+                                    <Button
+                                        variant="ghost"
+                                        onClick={handleBackToLanding}
+                                        className="fixed top-6 left-6 z-[60] bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 rounded-xl px-4 py-2 flex items-center gap-2 transition-all"
+                                    >
+                                        <span className="text-lg">←</span> Volver a Inicio
+                                    </Button>
+                                </>
+                            } />
+                            <Route path="*" element={<Navigate to="/inicio" replace />} />
+                        </Routes>
+                    </div>
+                </div>
+            );
+        }
+
+        if (isAuthenticated && !currentUser) {
+            return (
+                <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-slate-950' : 'bg-white'}`}>
+                    <div className="flex flex-col items-center gap-4">
+                        <PiMotorcycle className={`w-16 h-16 animate-pulse ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`} />
+                        <p className={`font-medium tracking-widest uppercase text-xs opacity-50 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                            Cargando perfil...
+                        </p>
                     </div>
                 </div>
             );
@@ -284,26 +296,15 @@ function AppContent() {
 
         if (isAuthenticated && currentUser?.type === 'cliente') {
             return (
-                <ClientPanel
-                    currentUser={currentUser}
-                    onLogout={() => {
-                        setIsLoggingOut(true);
-                        setLogoutPhase('fading-in');
-                        setTimeout(() => {
-                            localStorage.removeItem('token');
-                            localStorage.removeItem('user');
-                            setIsAuthenticated(false);
-                            setCurrentUser(null);
-                            setActiveSection('dashboard');
-                            setShowLanding(true);
-                            setLogoutPhase('fading-out');
-                            setTimeout(() => {
-                                setIsLoggingOut(false);
-                                setLogoutPhase('idle');
-                            }, 800);
-                        }, 800);
-                    }}
-                />
+                <Routes>
+                    <Route path="/cliente/*" element={
+                        <ClientPanel
+                            currentUser={currentUser}
+                            onLogout={confirmLogout}
+                        />
+                    } />
+                    <Route path="*" element={<Navigate to="/cliente/perfil" replace />} />
+                </Routes>
             );
         }
 
@@ -313,7 +314,18 @@ function AppContent() {
                     <Sidebar className="border-r border-border">
                         <SidebarHeader className="border-b border-border p-6 flex flex-col items-center justify-center">
                             <div className="flex flex-col items-center gap-1 text-center py-2">
-                                <h2 className="font-semibold text-2xl tracking-tight text-blue-900 dark:text-blue-100">Rafa Motos</h2>
+                                <div className="relative h-14 w-40 flex items-center justify-center">
+                                    <img
+                                        src="/favicon/rafamotos-logo.png"
+                                        alt="Rafa Motos"
+                                        className={`h-16 w-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 object-contain transition-all duration-300 ${theme === 'dark' ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+                                    />
+                                    <img
+                                        src="/favicon/rafamotos-logo-light.png"
+                                        alt="Rafa Motos"
+                                        className={`h-16 w-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 object-contain transition-all duration-300 ${theme === 'light' ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+                                    />
+                                </div>
                                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Panel Administrativo</p>
                             </div>
                         </SidebarHeader>
@@ -325,14 +337,14 @@ function AppContent() {
                                     .map((item) => (
                                         <SidebarMenuItem key={item.id}>
                                             <SidebarMenuButton
-                                                onClick={() => setActiveSection(item.id)}
+                                                onClick={() => navigate(`${getPrefix(currentUser?.type)}/${item.id}`)}
                                                 tooltip={item.label}
-                                                className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${activeSection === item.id
+                                                className={`w-full justify-start gap-3 p-3 rounded-lg transition-colors ${location.pathname === `${getPrefix(currentUser?.type)}/${item.id}` || (location.pathname === getPrefix(currentUser?.type) && item.id === 'dashboard')
                                                     ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
                                                     : 'hover:bg-muted/50'
                                                     }`}
                                             >
-                                                <item.icon className={`w-5 h-5 ${activeSection === item.id ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'}`} />
+                                                <item.icon className={`w-5 h-5 ${location.pathname === `${getPrefix(currentUser?.type)}/${item.id}` || (location.pathname === getPrefix(currentUser?.type) && item.id === 'dashboard') ? 'text-blue-700 dark:text-blue-400' : 'text-muted-foreground'}`} />
                                                 <span>{item.label}</span>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
@@ -365,7 +377,7 @@ function AppContent() {
                                 <div className="flex items-center gap-4">
                                     <SidebarTrigger className="-ml-1" />
                                     <h1 className="text-xl font-semibold capitalize">
-                                        {menuItems.find(item => item.id === activeSection)?.label || 'Dashboard'}
+                                        {menuItems.find(item => `${getPrefix(currentUser?.type)}/${item.id}` === location.pathname)?.label || 'Dashboard'}
                                     </h1>
                                 </div>
                                 {currentUser && (
@@ -388,8 +400,33 @@ function AppContent() {
                             </div>
                         </header>
 
-                        <div key={activeSection} className="flex-1 p-6 bg-muted/30 animate-fade-slide-in">
-                            {renderContent()}
+                        <div className="flex-1 p-6 bg-muted/30 animate-fade-slide-in">
+                            <Routes>
+                                {menuItems.map(item => (
+                                    <Route
+                                        key={item.id}
+                                        path={`${getPrefix(currentUser?.type)}/${item.id}`}
+                                        element={item.id === 'dashboard' ? <Dashboard /> :
+                                            item.id === 'mi-perfil' ? <MiPerfil /> :
+                                                item.id === 'roles' ? <Roles /> :
+                                                    item.id === 'usuarios' ? <Usuarios /> :
+                                                        item.id === 'empleados' ? <Empleados /> :
+                                                            item.id === 'clientes' ? <Clientes /> :
+                                                                item.id === 'motos' ? <Motos /> :
+                                                                    item.id === 'servicios' ? <Servicios /> :
+                                                                        item.id === 'reparaciones' ? <PedidosServicios /> :
+                                                                            item.id === 'horarios' ? <Horarios /> :
+                                                                                item.id === 'agendamientos' ? <Agendamientos /> :
+                                                                                    item.id === 'categorias-productos' ? <CategoriasProductos /> :
+                                                                                        item.id === 'productos' ? <Productos /> :
+                                                                                            item.id === 'proveedores' ? <Proveedores /> :
+                                                                                                item.id === 'compras' ? <Compras /> :
+                                                                                                    item.id === 'ventas' ? <Ventas /> : <Dashboard />} />
+                                ))}
+                                <Route path="*" element={
+                                    <Navigate to={`${getPrefix(currentUser?.type)}${currentUser?.type === 'administrador' || currentUser?.permisos?.includes('gestionar_dashboard') ? '/dashboard' : '/agendamientos'}`} replace />
+                                } />
+                            </Routes>
                         </div>
                     </main>
                 </div>
@@ -409,23 +446,31 @@ function AppContent() {
 
     return (
         <>
-            {mainContent()}
+            <Routes>
+                <Route path="/reset-password/*" element={<ResetPassword />} />
+                <Route path="/verify/*" element={<VerificarCuenta />} />
+                <Route path="/*" element={
+                    <>
+                        {mainContent()}
 
-            <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
+                        <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} />
 
-            {/* Transition Overlay for Login/Logout - PERSISTENT AT TOP LEVEL */}
-            {(isLoggingOut || isLoggingIn) && (
-                <div className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-700 ease-in-out pointer-events-none ${theme === 'dark' ? 'bg-slate-950' : 'bg-white'
-                    } ${(logoutPhase === 'fading-in' || transitionPhase === 'fading-in') ? 'opacity-100 backdrop-blur-xl' : (logoutPhase === 'fading-out' || transitionPhase === 'fading-out') ? 'opacity-0 backdrop-blur-0' : 'opacity-0'
-                    }`}>
-                    <div className={`flex flex-col items-center gap-4 transition-all duration-500 ${(logoutPhase === 'fading-in' || transitionPhase === 'fading-in') ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
-                        <PiMotorcycle className={`w-16 h-16 animate-pulse ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`} />
-                        <p className={`font-medium tracking-widest uppercase text-xs opacity-50 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                            {isLoggingIn ? 'Preparando todo...' : 'Cerrando Sesión...'}
-                        </p>
-                    </div>
-                </div>
-            )}
+                        {/* Transition Overlay for Login/Logout - PERSISTENT AT TOP LEVEL */}
+                        {(isLoggingOut || isLoggingIn) && (
+                            <div className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-700 ease-in-out pointer-events-none ${theme === 'dark' ? 'bg-slate-950' : 'bg-white'
+                                } ${(logoutPhase === 'fading-in' || transitionPhase === 'fading-in') ? 'opacity-100 backdrop-blur-xl' : (logoutPhase === 'fading-out' || transitionPhase === 'fading-out') ? 'opacity-0 backdrop-blur-0' : 'opacity-0'
+                                }`}>
+                                <div className={`flex flex-col items-center gap-4 transition-all duration-500 ${(logoutPhase === 'fading-in' || transitionPhase === 'fading-in') ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
+                                    <PiMotorcycle className={`w-16 h-16 animate-pulse ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`} />
+                                    <p className={`font-medium tracking-widest uppercase text-xs opacity-50 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                        {isLoggingIn ? 'Preparando todo...' : 'Cerrando Sesión...'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                } />
+            </Routes>
         </>
     );
 }
