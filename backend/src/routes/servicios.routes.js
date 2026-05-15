@@ -15,6 +15,7 @@ router.post('/', verifyToken, requirePermiso('gestionar_servicios'),
     [
         body('nombre').notEmpty().withMessage('Nombre requerido.'),
         body('duracion').optional().isNumeric().withMessage('La duración debe ser un número.'),
+        body('precio').notEmpty().withMessage('Precio requerido.').isNumeric().withMessage('El precio debe ser un número.'),
         handleValidation
     ],
     ctrl.create
@@ -23,6 +24,7 @@ router.put('/:id', verifyToken, requirePermiso('gestionar_servicios'),
     [
         body('nombre').notEmpty().withMessage('Nombre requerido.'),
         body('duracion').optional().isNumeric().withMessage('La duración debe ser un número.'),
+        body('precio').notEmpty().withMessage('Precio requerido.').isNumeric().withMessage('El precio debe ser un número.'),
         handleValidation
     ],
     ctrl.update
