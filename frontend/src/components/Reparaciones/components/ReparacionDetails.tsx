@@ -3,7 +3,7 @@ import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
-import { Bike, Clock, Wrench } from 'lucide-react';
+import { Bike, Wrench } from 'lucide-react';
 
 interface ReparacionDetailsProps {
   reparacion: any;
@@ -63,7 +63,6 @@ export function ReparacionDetails({ reparacion, getStatusBadge, onClose }: Repar
         <div className="grid grid-cols-2 gap-6 bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 text-left">
           <DetailItem label="Cliente" value={data.clientName} />
           <DetailItem label="Identificación" value={data.clientDocument} />
-          <DetailItem label="Nro Avances" value={`${data.progress?.length || 0} registros`} />
         </div>
 
         {/* Services List */}
@@ -80,27 +79,13 @@ export function ReparacionDetails({ reparacion, getStatusBadge, onClose }: Repar
           </div>
         </div>
 
-        {/* Timeline */}
-        <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-left">
-          <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5 text-blue-600" /> Línea de Tiempo de Avances
-          </Label>
-          <div className="relative space-y-6 before:absolute before:left-[1rem] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100 dark:before:bg-slate-800">
-            {data.progress?.length > 0 ? data.progress.map((p: any) => (
-              <div key={p.id} className="relative pl-10">
-                <div className="absolute left-0 top-1 w-8 h-8 bg-white dark:bg-slate-800 border-2 border-blue-500 rounded-xl flex items-center justify-center z-10 shadow-sm">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{p.description}</p>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">
-                    Técnico: {p.technician}
-                  </p>
-                </div>
-              </div>
-            )) : (
-              <p className="text-sm text-slate-400 italic pl-10">No hay avances registrados aún.</p>
-            )}
+        {/* Observations */}
+        <div className="space-y-3 text-left">
+          <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Observaciones Generales</Label>
+          <div className="p-5 bg-blue-50/30 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-800/50">
+            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic">
+              "{data.observations || 'Sin observaciones registradas'}"
+            </p>
           </div>
         </div>
       </div>

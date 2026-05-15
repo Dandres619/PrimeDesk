@@ -47,7 +47,6 @@ export function useReparaciones() {
       setReparaciones(dataRep.map((r: any) => ({
         id: r.ID_Reparacion,
         orderNumber: `R-${r.ID_Reparacion.toString().padStart(3, '0')}`,
-        date: r.Fecha,
         motorcycleId: r.ID_Motocicleta,
         motorcycleBrand: r.Marca,
         motorcycleModel: r.Modelo,
@@ -58,8 +57,7 @@ export function useReparaciones() {
         associatedSaleId: null,
         anulada: r.Estado === 'Anulada',
         estadoBase: r.Estado,
-        selectedServices: [],
-        progress: []
+        selectedServices: []
       })));
 
     } catch (error: any) {
@@ -92,13 +90,7 @@ export function useReparaciones() {
 
     setEditingReparacion({
       ...order,
-      selectedServices: details.servicios.map((s: any) => s.ID_Servicio),
-      progress: details.avances.map((a: any) => ({
-        id: a.ID_ReparacionAvance,
-        description: a.Descripcion,
-        technician: `${a.NombreEmpleado} ${a.ApellidoEmpleado}`,
-        technicianId: a.ID_Empleado
-      }))
+      selectedServices: details.servicios.map((s: any) => s.ID_Servicio)
     });
     setIsDialogOpen(true);
   };
@@ -114,13 +106,7 @@ export function useReparaciones() {
       clientName: clientInfo.Nombre + ' ' + (clientInfo.Apellido || ''),
       clientPhone: clientInfo.Telefono,
       clientDocument: clientInfo.Documento,
-      selectedServices: details.servicios.map((s: any) => s.Nombre),
-      progress: details.avances.map((a: any) => ({
-        id: a.ID_ReparacionAvance,
-        description: a.Descripcion,
-        technician: `${a.NombreEmpleado} ${a.ApellidoEmpleado}`,
-        date: a.Fecha
-      }))
+      selectedServices: details.servicios.map((s: any) => s.Nombre)
     });
   };
 
@@ -135,24 +121,13 @@ export function useReparaciones() {
             id_motocicleta: parseInt(data.motorcycleId),
             id_agendamiento: null,
             observaciones: data.observations,
-            estado: 'Pendiente de Venta',
+            estado: 'En proceso',
             servicios: data.selectedServices
           })
         });
 
         const resData = await res.json();
         if (!res.ok) throw new Error(resData.message || 'Error al crear reparación');
-        const newRepId = resData.ID_Reparacion;
-
-        if (data.progress && data.progress.length > 0) {
-          for (const p of data.progress) {
-            await fetch(`${API_URL}/reparaciones/${newRepId}/avances`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ id_empleado: p.technicianId, descripcion: p.description })
-            });
-          }
-        }
       } else {
         if (data.observations !== editingReparacion.observations) {
           await fetch(`${API_URL}/reparaciones/${editingReparacion.id}`, {
@@ -160,7 +135,6 @@ export function useReparaciones() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
               observaciones: data.observations,
-              tipo_servicio: 'Directo',
               estado: 'En proceso'
             })
           });
@@ -173,17 +147,6 @@ export function useReparaciones() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({ id_servicio: s })
-            });
-          }
-        }
-
-        const oldAvancesIds = editingReparacion.progress.map((p: any) => p.id);
-        for (const p of data.progress) {
-          if (!oldAvancesIds.includes(p.id) && typeof p.id === 'string' && p.id.startsWith('new_')) {
-            await fetch(`${API_URL}/reparaciones/${editingReparacion.id}/avances`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ id_empleado: p.technicianId, descripcion: p.description })
             });
           }
         }
@@ -203,7 +166,7 @@ export function useReparaciones() {
       const res = await fetch(`${API_URL}/reparaciones/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ estado: 'Anulada', tipo_servicio: 'Directo' })
+        body: JSON.stringify({ estado: 'Anulada' })
       });
       if (!res.ok) {
         const resData = await res.json();

@@ -64,17 +64,7 @@ const getById = async (id) => {
         WHERE rs.id_reparacion = ${id}
     `;
 
-  const progress = await sql`
-        SELECT ra.id_avance AS "ID_ReparacionAvance", ra.id_reparacion AS "ID_Reparacion", 
-               ra.id_empleado AS "ID_Empleado", ra.descripcion AS "Descripcion", ra.fecha AS "Fecha",
-               e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado"
-        FROM reparaciones_avances ra
-        INNER JOIN empleados e ON ra.id_empleado = e.id_empleado
-        WHERE ra.id_reparacion = ${id}
-        ORDER BY ra.fecha DESC
-    `;
-
-  return { ...appointments[0], servicios: services, avances: progress };
+  return { ...appointments[0], servicios: services };
 };
 
 const create = async ({ id_motocicleta, id_agendamiento, observaciones, estado, servicios }) => {
@@ -122,16 +112,6 @@ const update = async (id, { observaciones, estado }) => {
   return row;
 };
 
-const addAvance = async (id_reparacion, id_empleado, descripcion) => {
-  const sql = await getPool();
-  const [row] = await sql`
-        INSERT INTO reparaciones_avances (id_reparacion, id_empleado, descripcion, fecha)
-        VALUES (${id_reparacion}, ${id_empleado}, ${descripcion}, NOW())
-        RETURNING id_avance AS "ID_ReparacionAvance"
-    `;
-  return row;
-};
-
 const addServicio = async (id_reparacion, id_servicio) => {
   const sql = await getPool();
   const exists = await sql`
@@ -152,7 +132,6 @@ const remove = async (id) => {
   try {
     await sql.begin(async (tx) => {
       await tx`DELETE FROM reparaciones_servicios WHERE id_reparacion = ${id}`;
-      await tx`DELETE FROM reparaciones_avances WHERE id_reparacion = ${id}`;
       const [deleted] = await tx`
                 DELETE FROM reparaciones 
                 WHERE id_reparacion = ${id}
@@ -166,4 +145,5 @@ const remove = async (id) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, addAvance, addServicio, remove };
+
+module.exports = { getAll, getById, create, update, addServicio, remove };
