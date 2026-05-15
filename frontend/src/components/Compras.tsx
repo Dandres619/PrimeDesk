@@ -1,22 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Calendar } from './ui/calendar';
 import { PDFPreviewDialog } from './shared/PDFPreviewDialog';
 import { ConfirmDialog } from './ui/ConfirmDialog';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from './ui/pagination';
 import {
-  Plus,
   Search,
-  CalendarIcon,
-  Trash2,
   Loader2,
   XCircle,
   Eye,
@@ -32,13 +26,8 @@ export function Compras() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [purchases, setPurchases] = useState<any[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
-  const [motorbikes, setMotorbikes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [isAnuling, setIsAnuling] = useState(false);
-  const [showNewDialog, setShowNewDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [purchaseToCancel, setPurchaseToCancel] = useState<any>(null);
   const [viewingPurchase, setViewingPurchase] = useState<any>(null);
@@ -53,7 +42,7 @@ export function Compras() {
   const fetchInitialData = async () => {
     setIsLoading(true);
     try {
-      await Promise.all([fetchPurchases(), fetchSuppliers(), fetchProducts(), fetchMotorbikes()]);
+      await fetchPurchases();
     } catch (error) {
       toast.error('Error al cargar datos');
     } finally {
@@ -67,24 +56,6 @@ export function Compras() {
     setPurchases(data);
   };
 
-  const fetchSuppliers = async () => {
-    const response = await fetch(`${API_URL}/proveedores`, { headers: { 'Authorization': `Bearer ${token}` } });
-    const data = await response.json();
-    setSuppliers(data);
-  };
-
-  const fetchProducts = async () => {
-    const response = await fetch(`${API_URL}/productos`, { headers: { 'Authorization': `Bearer ${token}` } });
-    const data = await response.json();
-    setAvailableProducts(data);
-  };
-
-  const fetchMotorbikes = async () => {
-    const response = await fetch(`${API_URL}/motocicletas`, { headers: { 'Authorization': `Bearer ${token}` } });
-    const data = await response.json();
-    setMotorbikes(data);
-  };
-
   const filteredPurchases = purchases.filter((p: any) =>
     (p.ID_Compra?.toString() || '').includes(searchTerm.toLowerCase()) ||
     (p.NombreEmpresa || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -93,38 +64,6 @@ export function Compras() {
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(filteredPurchases.length / itemsPerPage));
   const paginatedPurchases = filteredPurchases.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  const handleSavePurchase = async (pData: any) => {
-    if (!pData) { setShowNewDialog(false); return; }
-    setIsSaving(true);
-    try {
-      const resp = await fetch(`${API_URL}/compras`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          id_proveedor: parseInt(pData.supplierId),
-          id_motocicleta: parseInt(pData.motorcycleId),
-          fechacompra: pData.date,
-          total: pData.total,
-          notas: pData.notes,
-          detalle: pData.items.map((it: any) => ({
-            id_producto: parseInt(it.productId),
-            cantidad: it.quantity,
-            precio_unitario: it.unitPrice,
-            subtotal: it.total
-          }))
-        })
-      });
-      if (!resp.ok) throw new Error('Error al guardar');
-      toast.success('Compra registrada');
-      fetchInitialData();
-      setShowNewDialog(false);
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleCancelPurchase = async () => {
     setIsAnuling(true);
@@ -213,12 +152,9 @@ export function Compras() {
     <div className="space-y-6">
       <div className="flex justify-between items-center gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Compras</h1>
-          <p className="text-muted-foreground">Gestión de compras para reparaciones</p>
+          <h1 className="text-2xl font-semibold">Compras (Historial)</h1>
+          <p className="text-muted-foreground">Registro de repuestos comprados para reparaciones</p>
         </div>
-        <Button onClick={() => setShowNewDialog(true)} className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
-          <Plus className="w-4 h-4 mr-2" /> Nueva Compra
-        </Button>
       </div>
 
       <div className="flex justify-start">
@@ -305,9 +241,7 @@ export function Compras() {
         </CardContent>
       </Card>
 
-      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
-        <PurchaseDialog suppliers={suppliers} availableProducts={availableProducts} motorbikes={motorbikes} onSave={handleSavePurchase} isSaving={isSaving} />
-      </Dialog>
+
 
       <Dialog open={!!viewingPurchase} onOpenChange={() => setViewingPurchase(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -351,141 +285,5 @@ export function Compras() {
         loading={isAnuling}
       />
     </div>
-  );
-}
-
-function PurchaseDialog({ suppliers, availableProducts, motorbikes, onSave, isSaving }: any) {
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [formData, setFormData] = useState({ supplierId: '', motorcycleId: '', notes: '' });
-  const [items, setItems] = useState<any[]>([{ id: Date.now(), productId: '', quantity: 0, unitPrice: '', total: 0 }]);
-
-  const addItem = () => {
-    if (items.length < availableProducts.length) {
-      setItems([...items, { id: Date.now(), productId: '', quantity: 0, unitPrice: '', total: 0 }]);
-    }
-  };
-
-  const updateItem = (id: number, f: string, v: any) => {
-    setItems(items.map(it => {
-      if (it.id === id) {
-        const up = { ...it, [f]: v };
-        if (f === 'productId') {
-          const p = availableProducts.find((prod: any) => prod.ID_Producto === parseInt(v));
-          if (p) { up.quantity = p.Cantidad; up.unitPrice = ''; up.total = 0; }
-          else { up.quantity = 0; up.unitPrice = ''; up.total = 0; }
-        } else if (f === 'unitPrice') {
-          up.unitPrice = v === '' ? '' : parseFloat(v);
-          up.total = (up.quantity || 0) * (parseFloat(v) || 0);
-        }
-        return up;
-      }
-      return it;
-    }));
-  };
-
-  const total = items.reduce((s, it) => s + (it.total || 0), 0);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.supplierId) return toast.error('Debe seleccionar un proveedor');
-    if (!date) return toast.error('Debe seleccionar una fecha');
-    if (!formData.motorcycleId) return toast.error('Debe seleccionar una motocicleta');
-    const validItems = items.filter(it => it.productId);
-    if (validItems.length === 0) return toast.error('Agregue al menos un producto');
-
-    for (const it of validItems) {
-      const product = availableProducts.find((p: any) => p.ID_Producto === parseInt(it.productId));
-      if (product && product.Cantidad === 0) return toast.error(`El producto "${product.Nombre}" tiene cantidad 0`);
-      if (parseFloat(it.unitPrice) < 1000) return toast.error(`El precio de "${product?.Nombre}" debe ser mayor a 1000`);
-    }
-
-    onSave({ ...formData, date: format(date, 'yyyy-MM-dd HH:mm:ss'), items: validItems, total });
-  };
-
-  return (
-    <DialogContent className="max-w-6xl">
-      <DialogHeader><DialogTitle>Nueva Compra</DialogTitle></DialogHeader>
-      <form onSubmit={handleSubmit} className="space-y-6 pr-2 max-h-[80vh] overflow-y-auto">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Proveedor *</Label>
-            <select value={formData.supplierId} onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })} className="w-full p-2 border rounded">
-              <option value="">Seleccionar proveedor...</option>
-              {suppliers.map((s: any) => <option key={s.ID_Proveedor} value={s.ID_Proveedor}>{s.NombreEmpresa}</option>)}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label>Fecha de Compra *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal h-10 border-slate-200 hover:border-blue-400 transition-colors">
-                  <CalendarIcon className="mr-2 h-4 w-4 text-blue-600" />
-                  {date ? format(date, "PPP", { locale: es }) : <span>Seleccionar fecha...</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[380px] p-2 border-none shadow-2xl rounded-xl overflow-hidden bg-white" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  locale={es}
-                  className="p-4"
-                  classNames={{
-                    months: "flex w-full flex-col",
-                    month: "w-full space-y-4",
-                    month_caption: "flex justify-center h-10 items-center relative",
-                    caption_label: "text-base font-bold text-slate-900",
-                    nav: "flex items-center space-x-1",
-                    button_previous: "absolute left-1 h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100 flex items-center justify-center border rounded-md border-slate-200",
-                    button_next: "absolute right-1 h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100 flex items-center justify-center border rounded-md border-slate-200",
-                    table: "w-full border-collapse",
-                    weekdays: "flex justify-between mb-2",
-                    weekday: "text-slate-500 rounded-md w-12 font-medium text-sm text-center uppercase",
-                    week: "flex w-full mt-2 justify-between",
-                    day: "h-12 w-12 p-0 font-medium text-center text-base relative focus-within:relative focus-within:z-20 aria-selected:bg-blue-600 aria-selected:text-white rounded-lg hover:bg-slate-100 cursor-pointer flex items-center justify-center transition-colors",
-                    today: "bg-slate-100 text-slate-900 font-bold",
-                    outside: "text-slate-300 opacity-50",
-                  }}
-                  disabled={(d) => d > new Date()}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label>Motocicleta *</Label>
-          <select value={formData.motorcycleId} onChange={(e) => setFormData({ ...formData, motorcycleId: e.target.value })} className="w-full p-2 border rounded text-sm">
-            <option value="">Seleccionar motocicleta...</option>
-            {motorbikes.map((m: any) => <option key={m.ID_Motocicleta} value={m.ID_Motocicleta}>{m.Placa} - {m.NombreCliente} {m.ApellidoCliente}</option>)}
-          </select>
-        </div>
-        <div className="space-y-4 pt-2">
-          <div className="flex justify-between items-center mb-2"><h4 className="font-semibold">Productos</h4><Button type="button" onClick={addItem} variant="outline" size="sm" disabled={items.length >= availableProducts.length}><Plus className="w-4 h-4 mr-1" /> Agregar Producto</Button></div>
-          {items.map((it) => (
-            <div key={it.id} className="grid grid-cols-6 gap-2 items-end p-3 border rounded-lg bg-white shadow-sm">
-              <div className="col-span-2"><Label className="text-xs">Producto</Label>
-                <select value={it.productId} onChange={(e) => updateItem(it.id, 'productId', e.target.value)} className="w-full p-2 border rounded-md text-sm">
-                  <option value="">Seleccionar</option>
-                  {availableProducts.filter((p: any) => !items.some(selected => selected.productId === p.ID_Producto.toString() && selected.id !== it.id)).map((p: any) => <option key={p.ID_Producto} value={p.ID_Producto}>{p.Nombre}</option>)}
-                </select>
-              </div>
-              <div><Label className="text-xs">Cantidad</Label><Input type="number" value={it.quantity} readOnly className="bg-gray-100 text-center" /></div>
-              <div><Label className="text-xs">Precio</Label>
-                <Input type="number" value={it.unitPrice} onKeyDown={(e) => { if (e.key === '-' || e.key === 'e') e.preventDefault(); }} onChange={(e) => updateItem(it.id, 'unitPrice', e.target.value)} placeholder="0.00" />
-              </div>
-              <div><Label className="text-xs">Subtotal</Label><div className="h-10 flex items-center font-bold px-2">${(it.total || 0).toLocaleString()}</div></div>
-              <div className="flex justify-center pb-1"><Button type="button" variant="ghost" className="text-red-500" onClick={() => setItems(items.filter((i: any) => i.id !== it.id))} disabled={items.length === 1}><Trash2 className="w-5 h-5" /></Button></div>
-            </div>
-          ))}
-        </div>
-        <div className="pt-6 border-t mt-6 space-y-4">
-          <div className="space-y-2 w-full"><Label className="text-xs uppercase font-bold text-muted-foreground">Observaciones</Label><Textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="h-20 resize-none" placeholder="Notas de la compra..." /></div>
-          <div className="flex justify-between items-center">
-            <div className="text-left"><p className="text-xs text-muted-foreground uppercase font-semibold">Total Compra</p><div className="text-3xl font-black text-blue-600">${total.toLocaleString()}</div></div>
-            <div className="flex gap-2"><Button type="button" variant="outline" onClick={() => onSave(null)} className="px-6 h-11">Cerrar</Button><Button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 px-8 h-11 font-bold shadow-md">{isSaving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}Registrar Compra</Button></div>
-          </div>
-        </div>
-      </form>
-    </DialogContent>
   );
 }
