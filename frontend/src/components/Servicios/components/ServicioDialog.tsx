@@ -20,6 +20,7 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
     nombre: '',
     descripcion: '',
     duracion: 30,
+    precio: 0,
     estado: true
   });
 
@@ -38,6 +39,15 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
         else if (value < 5) error = 'Mínimo 5 min';
         else if (value > 1440) error = 'Máximo 1440 min (24h)';
         break;
+      case 'precio':
+        if (value === '') error = 'El precio es obligatorio';
+        else if (isNaN(value)) error = 'Solo números';
+        else if (value < 5000) error = 'Mínimo $5.000';
+        else if (value > 500000) error = 'Máximo $500.000';
+        break;
+      case 'descripcion':
+        if (value && value.length > 80) error = 'Máximo 80 caracteres';
+        break;
     }
     setErrors(prev => ({ ...prev, [name]: error }));
     return error;
@@ -49,6 +59,7 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
         nombre: service.Nombre || '',
         descripcion: service.Descripcion || '',
         duracion: service.Duracion || 30,
+        precio: Math.round(parseFloat(service.Precio)) || 0,
         estado: service.Estado ?? true
       });
       setErrors({});
@@ -58,6 +69,7 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
         nombre: '',
         descripcion: '',
         duracion: 30,
+        precio: 0,
         estado: true
       });
       setErrors({});
@@ -66,24 +78,33 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
   }, [service]);
 
   const blockInvalidChar = (e: React.KeyboardEvent) => {
-    if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault();
+  };
+
+  const formatPrice = (value: any) => {
+    if (value === '' || value === undefined || value === null) return '';
+    // Convertir a número y redondear para eliminar decimales de la DB
+    const numValue = Math.round(parseFloat(value.toString().replace(/[^\d.]/g, '')));
+    if (isNaN(numValue)) return '';
+    return numValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
   const handleInputChange = (name: string, value: any) => {
     let finalValue = value;
-    if (name === 'duracion') {
+    if (name === 'duracion' || name === 'precio') {
       if (value === '') {
         finalValue = '';
       } else {
         const strValue = value.toString().replace(/\D/g, '');
-        const clipped = strValue.slice(0, 4);
+        const clipped = name === 'duracion' ? strValue.slice(0, 4) : strValue.slice(0, 6);
         let num = parseInt(clipped);
 
-        if (num > 1440) num = 1440;
+        if (name === 'duracion' && num > 1440) num = 1440;
         finalValue = isNaN(num) ? '' : num;
       }
     }
 
+    if (finalValue === undefined) return;
     setFormData(prev => ({ ...prev, [name]: finalValue }));
     if (touched[name]) {
       validateField(name, finalValue);
@@ -92,7 +113,6 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
 
   const handleFocus = (name: string) => {
     setTouched(prev => ({ ...prev, [name]: true }));
-    validateField(name, (formData as any)[name]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -156,11 +176,17 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
               </div>
               <Input
                 id="nombre"
+                name="service-name"
+                autoComplete="on"
                 value={formData.nombre}
                 onChange={(e) => handleInputChange('nombre', e.target.value)}
+                onInput={(e) => handleInputChange('nombre', e.currentTarget.value)}
                 onFocus={() => handleFocus('nombre')}
                 placeholder="Ej: Mantenimiento Preventivo"
-                className={cn("h-11 rounded-xl bg-slate-50/50 dark:bg-slate-900/50", touched.nombre && errors.nombre ? 'border-red-500' : '')}
+                className={cn(
+                  "h-11 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 transition-all focus:ring-2",
+                  touched.nombre && errors.nombre ? 'border-red-500 ring-red-500/10' : 'focus:ring-blue-500/10'
+                )}
               />
             </div>
 
@@ -172,33 +198,69 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
               <div className="relative">
                 <Input
                   id="duracion"
-                  type="number"
+                  name="service-duration"
+                  type="text"
+                  autoComplete="on"
                   value={formData.duracion}
                   onChange={(e) => handleInputChange('duracion', e.target.value)}
+                  onInput={(e) => handleInputChange('duracion', e.currentTarget.value)}
                   onFocus={() => handleFocus('duracion')}
                   onKeyDown={blockInvalidChar}
                   className={cn(
-                    "h-11 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 no-arrows [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none pr-12",
-                    touched.duracion && errors.duracion ? 'border-red-500' : ''
+                    "h-11 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 pr-12 transition-all focus:ring-2",
+                    touched.duracion && errors.duracion ? 'border-red-500 ring-red-500/10' : 'focus:ring-blue-500/10'
                   )}
                 />
                 <span className="absolute right-4 top-3 text-xs font-bold text-slate-400 pointer-events-none">MIN</span>
               </div>
             </div>
 
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="precio" className="text-sm font-bold text-slate-700 dark:text-slate-300">Precio *</Label>
+                {touched.precio && errors.precio && <span className="text-red-500 text-[10px] font-bold uppercase">{errors.precio}</span>}
+              </div>
+              <div className="relative">
+                <Input
+                  id="precio"
+                  name="precio"
+                  type="text"
+                  autoComplete="on"
+                  value={formatPrice(formData.precio)}
+                  onChange={(e) => handleInputChange('precio', e.target.value)}
+                  onFocus={() => handleFocus('precio')}
+                  onKeyDown={blockInvalidChar}
+                  className={cn(
+                    "h-11 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 pl-8",
+                    touched.precio && errors.precio ? 'border-red-500' : ''
+                  )}
+                />
+                <span className="absolute left-4 top-3 text-xs font-bold text-slate-400 pointer-events-none">$</span>
+              </div>
+            </div>
+
             <div className="space-y-2 md:col-span-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="descripcion" className="text-sm font-bold text-slate-700 dark:text-slate-300">Descripción</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="descripcion" className="text-sm font-bold text-slate-700 dark:text-slate-300">Descripción <span className='text-xs text-slate-400 font-medium'>Opcional</span></Label>
+                </div>
                 {touched.descripcion && errors.descripcion && <span className="text-red-500 text-[10px] font-bold uppercase">{errors.descripcion}</span>}
               </div>
               <Textarea
                 id="descripcion"
                 value={formData.descripcion}
-                onChange={(e) => handleInputChange('descripcion', e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value.length <= 120) { // Permitir un poco más para que vean el error pero validar a 80
+                    handleInputChange('descripcion', e.target.value);
+                  }
+                }}
                 onFocus={() => handleFocus('descripcion')}
                 placeholder="Describa detalladamente el servicio..."
-                rows={4}
-                className={cn("rounded-xl bg-slate-50/50 dark:bg-slate-900/50", touched.descripcion && errors.descripcion ? 'border-red-500' : '')}
+                rows={3}
+                className={cn(
+                  "rounded-xl bg-slate-50/50 dark:bg-slate-900/50 resize-none transition-all focus:ring-2",
+                  touched.descripcion && errors.descripcion ? 'border-red-500 ring-red-500/10' : 'focus:ring-blue-500/10'
+                )}
               />
             </div>
           </div>
@@ -208,7 +270,18 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
           <Button
             type="button"
             variant="ghost"
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              setFormData({
+                nombre: '',
+                descripcion: '',
+                duracion: 30,
+                precio: 0,
+                estado: true
+              });
+              setErrors({});
+              setTouched({});
+              onOpenChange(false);
+            }}
             className="h-11 px-6 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl w-full sm:w-auto"
           >
             Cancelar

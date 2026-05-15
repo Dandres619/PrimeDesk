@@ -84,7 +84,8 @@ export function Servicios() {
           />
 
           <ServiciosTable
-            services={paginatedServices}
+            services={filteredServices}
+            paginatedServices={paginatedServices}
             currentPage={currentPage}
             totalPages={totalPages}
             setCurrentPage={setCurrentPage}
@@ -94,12 +95,18 @@ export function Servicios() {
             onToggleStatus={toggleStatus}
           />
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) setEditingService(null);
+          }}>
             <ServicioDialog
               service={editingService}
               onSave={onSave}
               isSaving={isSaving}
-              onOpenChange={setIsDialogOpen}
+              onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) setEditingService(null);
+              }}
             />
           </Dialog>
 

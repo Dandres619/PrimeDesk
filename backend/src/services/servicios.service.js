@@ -2,17 +2,20 @@ const { getPool } = require('../config/db');
 
 const getAll = async () => {
     const sql = await getPool();
-    return await sql`SELECT id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", duracion AS "Duracion", estado AS "Estado" FROM servicios ORDER BY id_servicio`;
+    return await sql`SELECT id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", duracion AS "Duracion", precio AS "Precio", estado AS "Estado" FROM servicios ORDER BY id_servicio`;
 };
 
 const getById = async (id) => {
     const sql = await getPool();
-    const rows = await sql`SELECT id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", duracion AS "Duracion", estado AS "Estado" FROM servicios WHERE id_servicio = ${id}`;
+    const rows = await sql`SELECT id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", duracion AS "Duracion", precio AS "Precio", estado AS "Estado" FROM servicios WHERE id_servicio = ${id}`;
     if (rows.length === 0) throw { status: 404, message: 'Servicio no encontrado.' };
     return rows[0];
 };
 
-const create = async ({ nombre, descripcion, duracion }) => {
+const create = async (data) => {
+    const { nombre, descripcion, duracion, precio } = data;
+    console.log('📦 Intentando crear servicio:', { nombre, descripcion, duracion, precio });
+    
     const sql = await getPool();
 
     // Validar nombre duplicado
@@ -20,14 +23,23 @@ const create = async ({ nombre, descripcion, duracion }) => {
     if (existing) throw { status: 400, message: 'Ya existe un servicio con este nombre.' };
 
     const [row] = await sql`
-        INSERT INTO servicios (nombre, descripcion, duracion, estado) 
-        VALUES (${nombre}, ${descripcion || null}, ${duracion || 30}, TRUE)
-        RETURNING id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", duracion AS "Duracion", estado AS "Estado"
+        INSERT INTO servicios (nombre, descripcion, duracion, precio, estado) 
+        VALUES (
+            ${nombre}, 
+            ${descripcion ?? null}, 
+            ${parseInt(duracion) || 30}, 
+            ${parseFloat(precio) || 0}, 
+            TRUE
+        )
+        RETURNING id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", duracion AS "Duracion", precio AS "Precio", estado AS "Estado"
     `;
     return row;
 };
 
-const update = async (id, { nombre, descripcion, duracion, estado }) => {
+const update = async (id, data) => {
+    const { nombre, descripcion, duracion, precio, estado } = data;
+    console.log('📦 Intentando actualizar servicio ID:', id, 'con datos:', { nombre, descripcion, duracion, precio, estado });
+
     const sql = await getPool();
 
     // Validar nombre duplicado
@@ -36,9 +48,14 @@ const update = async (id, { nombre, descripcion, duracion, estado }) => {
 
     const [row] = await sql`
         UPDATE servicios 
-        SET nombre = ${nombre}, descripcion = ${descripcion || null}, duracion = ${duracion || 30}, estado = ${estado} 
+        SET 
+            nombre = ${nombre}, 
+            descripcion = ${descripcion ?? null}, 
+            duracion = ${parseInt(duracion) || 30}, 
+            precio = ${parseFloat(precio) || 0}, 
+            estado = ${estado ?? true} 
         WHERE id_servicio = ${id}
-        RETURNING id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", duracion AS "Duracion", estado AS "Estado"
+        RETURNING id_servicio AS "ID_Servicio", nombre AS "Nombre", descripcion AS "Descripcion", duracion AS "Duracion", precio AS "Precio", estado AS "Estado"
     `;
     if (!row) throw { status: 404, message: 'Servicio no encontrado.' };
 

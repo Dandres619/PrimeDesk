@@ -97,6 +97,7 @@ export function useServicios() {
           nombre: service.Nombre,
           descripcion: service.Descripcion,
           duracion: service.Duracion || service.duracion || 30,
+          precio: service.Precio || service.precio || 0,
           estado: !service.Estado
         })
       });

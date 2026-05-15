@@ -14,7 +14,7 @@ import { Servicios } from '@/components/Servicios/index';
 import { Horarios } from '@/components/Horarios';
 import { CategoriasProductos } from '@/components/CategoriasProductos';
 import { Productos } from '@/components/Productos';
-import { PedidosServicios } from '@/components/PedidosServicios';
+import { Reparaciones } from '@/components/Reparaciones';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Login } from '@/components/Login';
 import LandingPage from '@/components/LandingPage';
@@ -414,7 +414,7 @@ function AppContent() {
                                                             item.id === 'clientes' ? <Clientes /> :
                                                                 item.id === 'motos' ? <Motos /> :
                                                                     item.id === 'servicios' ? <Servicios /> :
-                                                                        item.id === 'reparaciones' ? <PedidosServicios /> :
+                                                                        item.id === 'reparaciones' ? <Reparaciones /> :
                                                                             item.id === 'horarios' ? <Horarios /> :
                                                                                 item.id === 'agendamientos' ? <Agendamientos /> :
                                                                                     item.id === 'categorias-productos' ? <CategoriasProductos /> :

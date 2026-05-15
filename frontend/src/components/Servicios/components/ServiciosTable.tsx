@@ -8,6 +8,7 @@ import { Eye, Edit, Trash2 } from 'lucide-react';
 
 interface ServiciosTableProps {
   services: any[];
+  paginatedServices: any[];
   currentPage: number;
   totalPages: number;
   setCurrentPage: (page: number) => void;
@@ -19,6 +20,7 @@ interface ServiciosTableProps {
 
 export function ServiciosTable({
   services,
+  paginatedServices,
   currentPage,
   totalPages,
   setCurrentPage,
@@ -41,24 +43,43 @@ export function ServiciosTable({
               <TableHead>Servicio</TableHead>
               <TableHead>Descripción</TableHead>
               <TableHead>Duración</TableHead>
+              <TableHead>Precio</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {services.length > 0 ? (
-              services.map(s => (
+            {paginatedServices.length > 0 ? (
+              paginatedServices.map(s => (
                 <TableRow key={s.ID_Servicio}>
                   <TableCell>
                     <p className="font-medium text-left">{s.Nombre}</p>
                   </TableCell>
                   <TableCell>
-                    <p className="line-clamp-2 text-left">{s.Descripcion || 'Sin descripción detallada.'}</p>
+                    {s.Descripcion && s.Descripcion.length > 45 ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="cursor-help max-w-[250px] truncate text-left">
+                            {s.Descripcion.substring(0, 45)}...
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[300px] break-words">
+                          <p>{s.Descripcion}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <p className="text-left">{s.Descripcion || 'Sin descripción detallada.'}</p>
+                    )}
                   </TableCell>
                   <TableCell className="text-left">
                     <div>
                       <p>{s.Duracion || s.duracion || 0} min</p>
                     </div>
+                  </TableCell>
+                  <TableCell className="text-left">
+                    <p>
+                      {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(s.Precio || s.precio || 0)}
+                    </p>
                   </TableCell>
                   <TableCell className="text-left">
                     <div className="flex items-center gap-2">
@@ -112,7 +133,7 @@ export function ServiciosTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                   No se encontraron servicios.
                 </TableCell>
               </TableRow>
@@ -120,8 +141,7 @@ export function ServiciosTable({
           </TableBody>
         </Table>
 
-        {totalPages > 1 && (
-          <div className="mt-6 flex justify-center">
+        <div className="mt-6 flex justify-center">
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
@@ -137,8 +157,7 @@ export function ServiciosTable({
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
-          </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );

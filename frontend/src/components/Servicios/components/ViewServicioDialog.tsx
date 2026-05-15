@@ -43,7 +43,7 @@ export function ViewServicioDialog({ service, onClose }: ViewServicioDialogProps
               <Wrench className="w-12 h-12" />
             </div>
             <div className="space-y-1 text-left">
-              <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">{data.Nombre || '-'}</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">{data.Nombre || '-'}</h3>
               <div className="flex items-center gap-3">
                 <Badge className={cn("px-3 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider",
                   data.Estado ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
@@ -55,11 +55,17 @@ export function ViewServicioDialog({ service, onClose }: ViewServicioDialogProps
           </div>
 
           <div className="grid grid-cols-2 gap-6 bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 text-left">
-            <div className="space-y-1 col-span-2 text-center border-b border-slate-100 dark:border-slate-800 pb-4">
-              <Label className="text-xs text-muted-foreground uppercase font-semibold block w-full text-center">Duración Estimada</Label>
-              <p className="font-medium text-foreground text-lg">{data.Duracion || data.duracion || 0} minutos</p>
+            <div className="space-y-1 text-center border-r border-slate-100 dark:border-slate-800 pb-2">
+              <Label className="text-[10px] text-muted-foreground uppercase font-black block w-full">Duración Estimada</Label>
+              <p className="font-bold text-foreground text-xl tracking-tighter">{data.Duracion || data.duracion || 0} MIN</p>
             </div>
-            <div className="space-y-1 col-span-2">
+            <div className="space-y-1 text-center pb-2">
+              <Label className="text-[10px] text-muted-foreground uppercase font-black block w-full">Precio del Servicio</Label>
+              <p className="font-bold text-blue-600 dark:text-blue-400 text-xl tracking-tighter">
+                {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(data.Precio || data.precio || 0)}
+              </p>
+            </div>
+            <div className="space-y-1 col-span-2 border-t border-slate-100 dark:border-slate-800 pt-4">
               <Label className="text-xs text-muted-foreground uppercase font-semibold">Descripción</Label>
               <p className="mt-1 p-4 bg-slate-50/50 dark:bg-slate-900/50 text-foreground rounded-lg border border-slate-100 dark:border-slate-800 italic">
                 {data.Descripcion || 'Sin descripción detallada.'}
