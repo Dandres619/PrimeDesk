@@ -11,7 +11,7 @@ import { Proveedores } from '@/components/Proveedores';
 import { Compras } from '@/components/Compras';
 import { Ventas } from '@/components/Ventas';
 import { Servicios } from '@/components/Servicios/index';
-import { Horarios } from '@/components/Horarios';
+import { Horarios } from '@/components/Horarios/index';
 import { CategoriasProductos } from '@/components/CategoriasProductos';
 import { Productos } from '@/components/Productos';
 import { Reparaciones } from '@/components/Reparaciones';
