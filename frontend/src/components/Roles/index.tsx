@@ -15,13 +15,13 @@ export function Roles() {
   const [viewingRole, setViewingRole] = useState<any>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState({ 
-    open: false, 
-    title: '', 
-    description: '', 
-    confirmText: '', 
-    variant: 'default' as any, 
-    onConfirm: () => { } 
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: '',
+    description: '',
+    confirmText: '',
+    variant: 'default' as any,
+    onConfirm: () => { }
   });
 
   const {
@@ -60,11 +60,11 @@ export function Roles() {
       {isLoading ? (
         <div className="mp-loading">
           <div className="mp-loading-ring" />
-          <p className="mp-loading-text">Cargando información...</p>
+          <p className="mp-loading-text">Cargando Roles...</p>
         </div>
       ) : (
         <div className="roles-content-animate space-y-6">
-          <RolesHeader 
+          <RolesHeader
             isRoleDialogOpen={isRoleDialogOpen}
             setIsRoleDialogOpen={setIsRoleDialogOpen}
             allPermissions={allPermissions}
@@ -77,16 +77,16 @@ export function Roles() {
           <div className="flex justify-start">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar roles..." 
-                value={searchTerm} 
-                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
-                className="pl-10" 
+              <Input
+                placeholder="Buscar roles..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="pl-10"
               />
             </div>
           </div>
 
-          <RolesTable 
+          <RolesTable
             roles={filteredRoles}
             paginatedRoles={paginatedRoles}
             currentPage={currentPage}
@@ -101,7 +101,7 @@ export function Roles() {
             handleDeleteRole={handleDeleteRole}
           />
 
-          <ViewRoleDialog 
+          <ViewRoleDialog
             viewingRole={viewingRole}
             setIsViewDialogOpen={setIsViewDialogOpen}
             isViewDialogOpen={isViewDialogOpen}

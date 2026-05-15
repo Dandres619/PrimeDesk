@@ -15,13 +15,13 @@ export function Clientes() {
   const [viewingClient, setViewingClient] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [confirmDialog, setConfirmDialog] = useState({ 
-    open: false, 
-    title: '', 
-    description: '', 
-    confirmText: '', 
-    variant: 'delete' as any, 
-    onConfirm: () => { } 
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: '',
+    description: '',
+    confirmText: '',
+    variant: 'delete' as any,
+    onConfirm: () => { }
   });
 
   const {
@@ -70,7 +70,7 @@ export function Clientes() {
       {isLoading ? (
         <div className="mp-loading">
           <div className="mp-loading-ring" />
-          <p className="mp-loading-text">Cargando información...</p>
+          <p className="mp-loading-text">Cargando Clientes...</p>
         </div>
       ) : (
         <div className="clients-content-animate space-y-6">
@@ -87,7 +87,7 @@ export function Clientes() {
             loadingText="Eliminando..."
           />
 
-          <ClientsHeader 
+          <ClientsHeader
             isDialogOpen={isDialogOpen}
             setIsDialogOpen={setIsDialogOpen}
             setEditingClient={setEditingClient}
@@ -99,16 +99,16 @@ export function Clientes() {
           <div className="flex justify-start">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar clientes..." 
-                value={searchTerm} 
-                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
-                className="pl-10" 
+              <Input
+                placeholder="Buscar clientes..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="pl-10"
               />
             </div>
           </div>
 
-          <ClientsTable 
+          <ClientsTable
             clientsCount={filteredClients.length}
             paginatedClients={paginatedClients}
             currentPage={currentPage}
@@ -123,7 +123,7 @@ export function Clientes() {
             deleteClient={onDelete}
           />
 
-          <ViewClientDialog 
+          <ViewClientDialog
             client={viewingClient}
             open={isViewDialogOpen}
             onOpenChange={setIsViewDialogOpen}

@@ -73,7 +73,7 @@ export function Servicios() {
       {isLoading ? (
         <div className="mp-loading">
           <div className="mp-loading-ring" />
-          <p className="mp-loading-text">Cargando servicios...</p>
+          <p className="mp-loading-text">Cargando Servicios...</p>
         </div>
       ) : (
         <div className="servicios-content-animate space-y-6">

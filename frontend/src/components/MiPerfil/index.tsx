@@ -50,55 +50,55 @@ export function MiPerfil() {
                     {isLoading ? (
                         <div className="mp-loading">
                             <div className="mp-loading-ring" />
-                            <p className="mp-loading-text">Cargando información...</p>
+                            <p className="mp-loading-text">Cargando Perfil...</p>
                         </div>
                     ) : (
                         <div className="mp-content-animate">
                             <div className="mp-grid">
-                            <ProfileHeader
-                                formData={formData}
-                                profileData={profileData}
-                                fotoPreview={fotoPreview}
-                                fileInputRef={fileInputRef}
-                                handleFileChange={handleFileChange}
-                                activeSection={activeSection}
-                                setActiveSection={setActiveSection}
-                            />
+                                <ProfileHeader
+                                    formData={formData}
+                                    profileData={profileData}
+                                    fotoPreview={fotoPreview}
+                                    fileInputRef={fileInputRef}
+                                    handleFileChange={handleFileChange}
+                                    activeSection={activeSection}
+                                    setActiveSection={setActiveSection}
+                                />
 
-                            <div className="mp-main">
-                                {activeSection === 'perfil' && (
-                                    <ProfileForm
-                                        formData={formData}
-                                        setFormData={setFormData}
-                                        formErrors={formErrors}
-                                        touchedFields={profileTouched}
-                                        handleBlur={handleProfileBlur}
-                                        handleProfileSubmit={handleProfileSubmit}
-                                        handleFileChange={handleFileChange}
-                                        isProcessing={isProcessing}
-                                        hasProfileChanges={hasProfileChanges}
-                                    />
-                                )}
+                                <div className="mp-main">
+                                    {activeSection === 'perfil' && (
+                                        <ProfileForm
+                                            formData={formData}
+                                            setFormData={setFormData}
+                                            formErrors={formErrors}
+                                            touchedFields={profileTouched}
+                                            handleBlur={handleProfileBlur}
+                                            handleProfileSubmit={handleProfileSubmit}
+                                            handleFileChange={handleFileChange}
+                                            isProcessing={isProcessing}
+                                            hasProfileChanges={hasProfileChanges}
+                                        />
+                                    )}
 
-                                {activeSection === 'seguridad' && (
-                                    <PasswordForm
-                                        passwordData={passwordData}
-                                        setPasswordData={setPasswordData}
-                                        passwordErrors={passwordErrors}
-                                        touchedFields={passwordTouched}
-                                        handleBlur={handlePasswordBlur}
-                                        handlePasswordSubmit={handlePasswordSubmit}
-                                        isProcessingPassword={isProcessingPassword}
-                                        showCurrentPassword={showCurrentPassword}
-                                        setShowCurrentPassword={setShowCurrentPassword}
-                                        showNewPassword={showNewPassword}
-                                        setShowNewPassword={setShowNewPassword}
-                                        showConfirmPassword={showConfirmPassword}
-                                        setShowConfirmPassword={setShowConfirmPassword}
-                                    />
-                                )}
+                                    {activeSection === 'seguridad' && (
+                                        <PasswordForm
+                                            passwordData={passwordData}
+                                            setPasswordData={setPasswordData}
+                                            passwordErrors={passwordErrors}
+                                            touchedFields={passwordTouched}
+                                            handleBlur={handlePasswordBlur}
+                                            handlePasswordSubmit={handlePasswordSubmit}
+                                            isProcessingPassword={isProcessingPassword}
+                                            showCurrentPassword={showCurrentPassword}
+                                            setShowCurrentPassword={setShowCurrentPassword}
+                                            showNewPassword={showNewPassword}
+                                            setShowNewPassword={setShowNewPassword}
+                                            showConfirmPassword={showConfirmPassword}
+                                            setShowConfirmPassword={setShowConfirmPassword}
+                                        />
+                                    )}
+                                </div>
                             </div>
-                        </div>
                         </div>
                     )}
                 </div>

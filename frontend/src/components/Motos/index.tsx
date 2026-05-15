@@ -62,7 +62,7 @@ export function Motos() {
       {isLoading ? (
         <div className="mp-loading">
           <div className="mp-loading-ring" />
-          <p className="mp-loading-text">Cargando motocicletas...</p>
+          <p className="mp-loading-text">Cargando Motocicletas...</p>
         </div>
       ) : (
         <div className="motos-content-animate space-y-6">

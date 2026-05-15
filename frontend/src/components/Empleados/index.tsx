@@ -15,13 +15,13 @@ export function Empleados() {
   const [viewingEmployee, setViewingEmployee] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [confirmDialog, setConfirmDialog] = useState({ 
-    open: false, 
-    title: '', 
-    description: '', 
-    confirmText: '', 
-    variant: 'delete' as any, 
-    onConfirm: () => { } 
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: '',
+    description: '',
+    confirmText: '',
+    variant: 'delete' as any,
+    onConfirm: () => { }
   });
 
   const {
@@ -71,7 +71,7 @@ export function Empleados() {
       {isLoading ? (
         <div className="mp-loading">
           <div className="mp-loading-ring" />
-          <p className="mp-loading-text">Cargando información...</p>
+          <p className="mp-loading-text">Cargando Empleados...</p>
         </div>
       ) : (
         <div className="employees-content-animate space-y-6">
@@ -88,7 +88,7 @@ export function Empleados() {
             loadingText="Eliminando..."
           />
 
-          <EmployeesHeader 
+          <EmployeesHeader
             isDialogOpen={isDialogOpen}
             setIsDialogOpen={setIsDialogOpen}
             setEditingEmployee={setEditingEmployee}
@@ -100,16 +100,16 @@ export function Empleados() {
           <div className="flex justify-start">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar empleados..." 
-                value={searchTerm} 
-                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
-                className="pl-10" 
+              <Input
+                placeholder="Buscar empleados..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="pl-10"
               />
             </div>
           </div>
 
-          <EmployeesTable 
+          <EmployeesTable
             employeesCount={filteredEmployees.length}
             paginatedEmployees={paginatedEmployees}
             currentPage={currentPage}
@@ -124,7 +124,7 @@ export function Empleados() {
             deleteEmployee={onDelete}
           />
 
-          <ViewEmployeeDialog 
+          <ViewEmployeeDialog
             employee={viewingEmployee}
             open={isViewDialogOpen}
             onOpenChange={setIsViewDialogOpen}

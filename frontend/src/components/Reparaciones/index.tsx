@@ -64,18 +64,18 @@ export function Reparaciones() {
   return (
     <div className="reparaciones-root space-y-6 text-left">
       <ReparacionesStyles />
-      
+
       {isLoading ? (
         <div className="mp-loading">
           <div className="mp-loading-ring" />
-          <p className="mp-loading-text">Cargando reparaciones...</p>
+          <p className="mp-loading-text">Cargando Reparaciones...</p>
         </div>
       ) : (
         <div className="reparaciones-content-animate space-y-6">
-          <ReparacionesHeader 
+          <ReparacionesHeader
             searchTerm={searchTerm}
             setSearchTerm={(val) => { setSearchTerm(val); setCurrentPage(1); }}
-            onNew={() => { setEditingReparacion(null); setIsDialogOpen(true); }} 
+            onNew={() => { setEditingReparacion(null); setIsDialogOpen(true); }}
           />
 
           <ReparacionesTable
@@ -97,7 +97,7 @@ export function Reparaciones() {
 
           {/* New/Edit Dialog */}
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingReparacion(null); }}>
-            <ReparacionDialog 
+            <ReparacionDialog
               clients={clients}
               motorcycles={motorcycles}
               mechanics={mechanics}
@@ -117,29 +117,29 @@ export function Reparaciones() {
 
           {/* View Details Dialog */}
           <Dialog open={!!viewingReparacion} onOpenChange={(open) => { if (!open) setViewingReparacion(null); }}>
-            <ReparacionDetails 
-              reparacion={viewingReparacion} 
+            <ReparacionDetails
+              reparacion={viewingReparacion}
               getStatusBadge={getStatusBadge}
               onClose={() => setViewingReparacion(null)}
             />
           </Dialog>
 
-          <ConfirmDialog 
-            open={confirmDialog.open} 
-            onOpenChange={(open: boolean) => setConfirmDialog(prev => ({ ...prev, open }))} 
-            title={confirmDialog.title} 
-            description={confirmDialog.description} 
-            confirmText={confirmDialog.confirmText} 
-            variant={confirmDialog.variant} 
-            onConfirm={confirmDialog.onConfirm} 
+          <ConfirmDialog
+            open={confirmDialog.open}
+            onOpenChange={(open: boolean) => setConfirmDialog(prev => ({ ...prev, open }))}
+            title={confirmDialog.title}
+            description={confirmDialog.description}
+            confirmText={confirmDialog.confirmText}
+            variant={confirmDialog.variant}
+            onConfirm={confirmDialog.onConfirm}
           />
 
-          <PDFPreviewDialog 
-            open={pdfPreview.open} 
-            onOpenChange={(open) => setPdfPreview(prev => ({ ...prev, open }))} 
-            data={pdfPreview.data} 
-            type={pdfPreview.type} 
-            onGenerate={() => { }} 
+          <PDFPreviewDialog
+            open={pdfPreview.open}
+            onOpenChange={(open) => setPdfPreview(prev => ({ ...prev, open }))}
+            data={pdfPreview.data}
+            type={pdfPreview.type}
+            onGenerate={() => { }}
           />
         </div>
       )}

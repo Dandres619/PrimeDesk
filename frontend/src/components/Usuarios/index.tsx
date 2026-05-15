@@ -66,7 +66,7 @@ export function Usuarios() {
       {isLoading ? (
         <div className="mp-loading">
           <div className="mp-loading-ring" />
-          <p className="mp-loading-text">Cargando información...</p>
+          <p className="mp-loading-text">Cargando Usuarios...</p>
         </div>
       ) : (
         <div className="users-content-animate space-y-6">
@@ -75,16 +75,16 @@ export function Usuarios() {
           <div className="flex justify-start">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar usuarios..." 
-                value={searchTerm} 
-                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
-                className="pl-10" 
+              <Input
+                placeholder="Buscar usuarios..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="pl-10"
               />
             </div>
           </div>
 
-          <UsersTable 
+          <UsersTable
             usersCount={filteredUsers.length}
             paginatedUsers={paginatedUsers}
             currentPage={currentPage}
@@ -96,7 +96,7 @@ export function Usuarios() {
             handleEdit={handleEdit}
           />
 
-          <UserDialog 
+          <UserDialog
             showModal={showModal}
             setShowModal={setShowModal}
             editingUser={editingUser}
@@ -107,7 +107,7 @@ export function Usuarios() {
             resetForm={resetForm}
           />
 
-          <ViewUserDialog 
+          <ViewUserDialog
             viewingUser={viewingUser}
             isViewDialogOpen={isViewDialogOpen}
             setIsViewDialogOpen={setIsViewDialogOpen}
