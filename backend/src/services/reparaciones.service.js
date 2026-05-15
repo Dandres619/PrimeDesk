@@ -13,32 +13,56 @@ const getAll = async (filters = {}) => {
     where = sql`WHERE rep.id_motocicleta = ${id_motocicleta}`;
   }
 
-  const rows = await sql`
-        SELECT rep.id_reparacion AS "ID_Reparacion", rep.id_reparacion AS "id", rep.id_motocicleta AS "ID_Motocicleta", 
-               rep.id_agendamiento AS "ID_Agendamiento", 
-               rep.observaciones AS "Observaciones", 
-               rep.estado AS "Estado",
-               m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
-               c.id_cliente AS "ID_Cliente", CONCAT(c.nombre, ' ', c.apellido) AS "NombreCliente",
-               a.dia AS "DiaAgendamiento",
-               CONCAT(e.nombre, ' ', e.apellido) AS "Mecanico",
-               v_assoc.id_venta AS "AssociatedSaleId",
-               (
-                 SELECT json_agg(json_build_object('ID_Servicio', s.id_servicio, 'NombreServicio', s.nombre))
-                 FROM reparaciones_servicios rs
-                 JOIN servicios s ON rs.id_servicio = s.id_servicio
-                 WHERE rs.id_reparacion = rep.id_reparacion
-               ) AS "servicios"
-        FROM reparaciones rep
-        INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
-        INNER JOIN clientes c ON m.id_cliente = c.id_cliente
-        LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
-        LEFT JOIN empleados e ON a.id_empleado = e.id_empleado
-        LEFT JOIN ventas v_assoc ON rep.id_reparacion = v_assoc.id_reparacion
-        ${where}
-        ORDER BY a.dia DESC NULLS LAST
-    `;
-  return rows;
+  try {
+    const rows = await sql`
+          SELECT rep.id_reparacion AS "ID_Reparacion", 
+                 rep.id_reparacion AS "id", 
+                 rep.id_motocicleta AS "ID_Motocicleta", 
+                 rep.id_agendamiento AS "ID_Agendamiento", 
+                 rep.observaciones AS "Observaciones", 
+                 rep.estado AS "Estado",
+                 rep.nota_estado AS "NotaEstado",
+                 m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
+                 c.id_cliente AS "ID_Cliente", CONCAT(c.nombre, ' ', c.apellido) AS "NombreCliente",
+                 a.dia AS "DiaAgendamiento",
+                 CONCAT(e.nombre, ' ', e.apellido) AS "Mecanico",
+                 v_assoc.id_venta AS "AssociatedSaleId",
+                 (
+                   SELECT json_agg(json_build_object(
+                     'ID_Servicio', s.id_servicio, 
+                     'NombreServicio', s.nombre,
+                     'Estado', rs.estado,
+                     'Observaciones', rs.observaciones,
+                     'FechaFinalizacion', rs.fecha_finalizacion
+                   ))
+                   FROM reparaciones_servicios rs
+                   JOIN servicios s ON rs.id_servicio = s.id_servicio
+                   WHERE rs.id_reparacion = rep.id_reparacion
+                 ) AS "servicios",
+                 (
+                   SELECT json_agg(json_build_object(
+                     'ID_Compra', rc.id_compra,
+                     'Subtotal', rc.subtotal,
+                     'Factura', rc.factura,
+                     'Observaciones', rc.observaciones
+                   ))
+                   FROM reparaciones_compras rc
+                   WHERE rc.id_reparacion = rep.id_reparacion
+                 ) AS "compras"
+          FROM reparaciones rep
+          INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
+          INNER JOIN clientes c ON m.id_cliente = c.id_cliente
+          LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
+          LEFT JOIN empleados e ON a.id_empleado = e.id_empleado
+          LEFT JOIN ventas v_assoc ON rep.id_reparacion = v_assoc.id_reparacion
+          ${where}
+          ORDER BY COALESCE(a.dia, '1900-01-01'::date) DESC, rep.id_reparacion DESC
+      `;
+    return rows;
+  } catch (err) {
+    console.error('❌ Error en reparaciones.service.getAll:', err);
+    throw err;
+  }
 };
 
 const getById = async (id) => {
@@ -48,6 +72,7 @@ const getById = async (id) => {
                rep.id_agendamiento AS "ID_Agendamiento", 
                rep.observaciones AS "Observaciones", 
                rep.estado AS "Estado",
+               rep.nota_estado AS "NotaEstado",
                m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
                a.dia AS "DiaAgendamiento"
         FROM reparaciones rep
@@ -58,13 +83,22 @@ const getById = async (id) => {
   if (appointments.length === 0) throw { status: 404, message: 'Reparación no encontrada.' };
 
   const services = await sql`
-        SELECT s.id_servicio AS "ID_Servicio", s.nombre AS "Nombre" 
+        SELECT s.id_servicio AS "ID_Servicio", s.nombre AS "Nombre",
+               rs.estado AS "Estado", rs.observaciones AS "Observaciones",
+               rs.fecha_finalizacion AS "FechaFinalizacion"
         FROM reparaciones_servicios rs
         INNER JOIN servicios s ON rs.id_servicio = s.id_servicio
         WHERE rs.id_reparacion = ${id}
     `;
 
-  return { ...appointments[0], servicios: services };
+  const purchases = await sql`
+        SELECT rc.id_compra AS "ID_Compra", rc.subtotal AS "Subtotal",
+               rc.factura AS "Factura", rc.observaciones AS "Observaciones"
+        FROM reparaciones_compras rc
+        WHERE rc.id_reparacion = ${id}
+    `;
+
+  return { ...appointments[0], servicios: services, compras: purchases };
 };
 
 const create = async ({ id_motocicleta, id_agendamiento, observaciones, estado, servicios }) => {
@@ -99,11 +133,13 @@ const create = async ({ id_motocicleta, id_agendamiento, observaciones, estado, 
   }
 };
 
-const update = async (id, { observaciones, estado }) => {
+const update = async (id, { observaciones, estado, nota_estado }) => {
   const sql = await getPool();
   const [row] = await sql`
         UPDATE reparaciones 
-        SET observaciones = ${observaciones || null}, estado = ${estado}
+        SET observaciones = ${observaciones || null}, 
+            estado = ${estado},
+            nota_estado = ${nota_estado || null}
         WHERE id_reparacion = ${id}
         RETURNING id_reparacion AS "ID_Reparacion"
     `;
