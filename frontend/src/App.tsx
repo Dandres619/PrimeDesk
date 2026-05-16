@@ -13,7 +13,7 @@ import { Ventas } from '@/components/Ventas';
 import { Servicios } from '@/components/Servicios/index';
 import { Horarios } from '@/components/Horarios/index';
 import { Categorias } from '@/components/Categorias/index';
-import { Productos } from '@/components/Productos';
+import { Productos } from '@/components/Productos/index';
 import { Reparaciones } from '@/components/Reparaciones';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Login } from '@/components/Login';
