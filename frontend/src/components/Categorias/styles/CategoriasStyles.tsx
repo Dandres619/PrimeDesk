@@ -21,11 +21,33 @@ export function CategoriasStyles() {
                 box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
             }
 
-            .dark .categorias-root [data-slot="card-title"],
-            .dark [data-slot="dialog-title"] {
-                color: #ffffff !important;
-                text-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
-            }
+      .dark .categorias-root [data-slot="card-title"],
+      .dark [data-slot="dialog-title"] {
+        color: #ffffff !important;
+        text-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+      }
+
+      /* Table Styles in Dark Mode */
+      .dark .categorias-root th {
+        color: #94a3b8 !important;
+        border-bottom: 1px solid rgba(99, 102, 241, 0.2) !important;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+      }
+
+      .dark .categorias-root tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        transition: background 0.2s ease;
+      }
+
+      .dark .categorias-root tr:hover {
+        background: rgba(99, 102, 241, 0.05) !important;
+      }
+
+      .dark .categorias-root td {
+        color: #cbd5e1 !important;
+      }
 
             /* Entrance Animation */
             .categorias-content-animate {
