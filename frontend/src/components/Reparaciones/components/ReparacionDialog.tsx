@@ -412,7 +412,7 @@ export function ReparacionDialog({
                   <div className="space-y-3">
                     <Label className="text-[9px] font-black uppercase text-slate-600">Observaciones Globales</Label>
                     <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl min-h-[100px] text-xs text-slate-400">
-                      {localOrder?.Observaciones || 'Sin observaciones...'}
+                      {localOrder?.Observaciones || localOrder?.observations || 'Sin observaciones...'}
                     </div>
                   </div>
                 </div>
