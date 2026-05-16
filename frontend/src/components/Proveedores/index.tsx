@@ -146,64 +146,91 @@ export function Proveedores() {
             </div>
 
             {viewingSupplier && (
-              <div className="p-8 space-y-8 text-left overflow-y-auto max-h-[60vh] custom-scrollbar">
+              <div className="p-8 space-y-6 text-left overflow-y-auto max-h-[60vh] custom-scrollbar">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <h3 className="text-sm font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800/50 pb-2 mb-2">
+
+                  {/* Column 1: Información General */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold tracking-tight text-foreground uppercase border-b border-slate-100 dark:border-slate-800 pb-2">
                       Información General
                     </h3>
+
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                      <Label className="text-xs text-muted-foreground uppercase font-semibold">
                         {viewingSupplier.personType === 'Natural' ? 'Nombre' : 'Nombre Empresa'}
                       </Label>
-                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.name}</p>
+                      <p className="font-medium text-foreground">{viewingSupplier.name || '-'}</p>
                     </div>
+
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Tipo de Persona</Label>
-                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.personType || "Natural"}</p>
+                      <Label className="text-xs text-muted-foreground uppercase font-semibold">
+                        Tipo de Persona
+                      </Label>
+                      <p className="font-medium text-foreground">{viewingSupplier.personType || "Natural"}</p>
                     </div>
+
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                      <Label className="text-xs text-muted-foreground uppercase font-semibold">
                         {viewingSupplier.personType === 'Natural' ? 'Documento' : 'NIT'}
                       </Label>
-                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.taxId || "N/A"}</p>
+                      <p className="font-medium text-foreground">{viewingSupplier.taxId || "-"}</p>
                     </div>
+
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Especialidad</Label>
-                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.specialty || "N/A"}</p>
+                      <Label className="text-xs text-muted-foreground uppercase font-semibold">
+                        Especialidad
+                      </Label>
+                      <p className="font-medium text-foreground">{viewingSupplier.specialty || "-"}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-6">
-                    <h3 className="text-sm font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800/50 pb-2 mb-2">
+                  {/* Column 2: Datos de Contacto */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold tracking-tight text-foreground uppercase border-b border-slate-100 dark:border-slate-800 pb-2">
                       Datos de Contacto
                     </h3>
+
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Contacto</Label>
-                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.contact}</p>
+                      <Label className="text-xs text-muted-foreground uppercase font-semibold">
+                        Persona de Contacto
+                      </Label>
+                      <p className="font-medium text-foreground">{viewingSupplier.contact || '-'}</p>
                     </div>
+
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Teléfono</Label>
-                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.phone}</p>
+                      <Label className="text-xs text-muted-foreground uppercase font-semibold">
+                        Teléfono
+                      </Label>
+                      <p className="font-medium text-foreground">{viewingSupplier.phone || '-'}</p>
                     </div>
+
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Correo Electrónico</Label>
-                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.email}</p>
+                      <Label className="text-xs text-muted-foreground uppercase font-semibold">
+                        Correo Electrónico
+                      </Label>
+                      <p className="font-medium text-foreground">{viewingSupplier.email || '-'}</p>
                     </div>
+
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Dirección</Label>
-                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.address}, {viewingSupplier.city}, {viewingSupplier.country}</p>
+                      <Label className="text-xs text-muted-foreground uppercase font-semibold">
+                        Dirección
+                      </Label>
+                      <p className="font-medium text-foreground">{viewingSupplier.address}, {viewingSupplier.city}, {viewingSupplier.country}</p>
                     </div>
+
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Sitio Web</Label>
-                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.website || "No registra"}</p>
+                      <Label className="text-xs text-muted-foreground uppercase font-semibold">
+                        Sitio Web
+                      </Label>
+                      <p className="font-medium text-foreground">{viewingSupplier.website || "No registra"}</p>
                     </div>
                   </div>
+
                 </div>
 
                 {viewingSupplier.notes && (
                   <div className="space-y-2 pt-6 border-t border-slate-100 dark:border-slate-800/50">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <Label className="text-xs text-muted-foreground uppercase font-semibold">
                       Notas Adicionales
                     </Label>
                     <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium leading-relaxed">
