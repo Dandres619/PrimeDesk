@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { CalendarClock, Clock, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { format, subMonths, addMonths, isSameMonth, isToday, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -55,17 +55,7 @@ export function Agendamientos() {
       <AgendamientosStyles />
 
       <div className="agendamientos-content-animate space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center transition-transform hover:scale-105">
-              <CalendarClock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Agendamientos</h1>
-              <p className="text-sm text-muted-foreground">Gestión y visualización de citas de servicio técnico</p>
-            </div>
-          </div>
-        </div>
+
 
 
         <Card>
@@ -74,7 +64,7 @@ export function Agendamientos() {
               <div className="flex items-center gap-2">
                 <CardTitle className="text-lg">Calendario de Agendamientos</CardTitle>
                 <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-none font-bold">
-                  {enrichedApts.length} citas
+                  {enrichedApts.length} agendamientos
                 </Badge>
               </div>
               <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -116,14 +106,18 @@ export function Agendamientos() {
                 const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                 const dayStr = format(day, 'yyyy-MM-dd');
                 const dayApts = enrichedApts.filter(a => a.date === dayStr);
-                const isClickable = isCurr && !isWeekend;
                 const past = isBefore(startOfDay(day), startOfDay(new Date()));
+                const isClickable = isCurr && !isWeekend && !past;
 
                 return (
                   <div
                     key={i}
                     onClick={() => {
-                      if (!isClickable) return;
+                      if (!isCurr) return;
+                      if (isWeekend) {
+                        toast.error('No se pueden agendar servicios en fines de semana');
+                        return;
+                      }
                       if (past) {
                         toast.error('No se pueden agendar servicios en fechas pasadas');
                         return;
@@ -135,9 +129,9 @@ export function Agendamientos() {
                     className={cn(
                       "min-h-[120px] p-3 rounded-2xl border transition-all relative group flex flex-col gap-2",
                       !isCurr ? "bg-slate-50/50 dark:bg-slate-900/20 opacity-40 border-transparent" : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800",
-                      isWeekend && isCurr ? "bg-slate-50 dark:bg-slate-900/50 opacity-80" : "",
+                      (isWeekend || past) && isCurr ? "bg-slate-50 dark:bg-slate-900/50 opacity-80" : "",
                       isToday(day) ? "border-blue-500 shadow-sm bg-blue-50/10 dark:bg-blue-900/10 ring-1 ring-blue-500/20" : "",
-                      isClickable && !past ? "hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 cursor-pointer" : "cursor-default"
+                      isClickable ? "hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 cursor-pointer" : (isCurr ? "cursor-pointer" : "cursor-default")
                     )}
                   >
                     {isToday(day) && (
@@ -178,7 +172,7 @@ export function Agendamientos() {
                           className="text-[11px] text-slate-500 dark:text-slate-400 font-bold px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors text-center mt-1"
                           onClick={(e) => { e.stopPropagation(); setMoreApts(dayApts); setIsMoreOpen(true); }}
                         >
-                          +{dayApts.length - 2} citas más
+                          +{dayApts.length - 2} agendamientos más
                         </div>
                       )}
                     </div>
@@ -224,7 +218,7 @@ export function Agendamientos() {
           <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl animate-modal bg-white dark:bg-slate-950">
             <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
               <DialogHeader>
-                <DialogTitle className="text-lg font-bold">Citas del día</DialogTitle>
+                <DialogTitle className="text-lg font-bold">Agendamientos del día</DialogTitle>
               </DialogHeader>
             </div>
             <div className="p-6 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
