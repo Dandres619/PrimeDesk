@@ -12,7 +12,7 @@ import { Compras } from '@/components/Compras';
 import { Ventas } from '@/components/Ventas';
 import { Servicios } from '@/components/Servicios/index';
 import { Horarios } from '@/components/Horarios/index';
-import { CategoriasProductos } from '@/components/CategoriasProductos';
+import { Categorias } from '@/components/Categorias/index';
 import { Productos } from '@/components/Productos';
 import { Reparaciones } from '@/components/Reparaciones';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -417,7 +417,7 @@ function AppContent() {
                                                                         item.id === 'reparaciones' ? <Reparaciones /> :
                                                                             item.id === 'horarios' ? <Horarios /> :
                                                                                 item.id === 'agendamientos' ? <Agendamientos /> :
-                                                                                    item.id === 'categorias-productos' ? <CategoriasProductos /> :
+                                                                                    item.id === 'categorias-productos' ? <Categorias /> :
                                                                                         item.id === 'productos' ? <Productos /> :
                                                                                             item.id === 'proveedores' ? <Proveedores /> :
                                                                                                 item.id === 'compras' ? <Compras /> :

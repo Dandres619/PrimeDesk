@@ -59,7 +59,6 @@ export function Productos() {
         brand: p.Marca,
         categoryId: p.ID_Categoria,
         categoryName: p.NombreCategoria,
-        quantity: p.Cantidad,
         status: p.Estado ? 'Activo' : 'Inactivo'
       })));
     } catch (error: any) {
@@ -82,7 +81,6 @@ export function Productos() {
         id_categoria: parseInt(data.categoryId),
         nombre: data.name,
         marca: data.brand,
-        cantidad: parseInt(data.quantity),
         descripcion: data.description,
         estado: editingProduct ? (data.status === 'Activo' ? 1 : 0) : 1
       };
@@ -136,7 +134,6 @@ export function Productos() {
           id_categoria: product.categoryId,
           nombre: product.name,
           marca: product.brand,
-          cantidad: product.quantity,
           descripcion: product.description,
           estado: product.status !== 'Activo'
         })
@@ -198,14 +195,13 @@ export function Productos() {
         <CardHeader><CardTitle className="flex items-center gap-2"><Package className="w-5 h-5 text-blue-600" /> Lista de Productos ({filtered.length})</CardTitle></CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>Producto</TableHead><TableHead>Marca</TableHead><TableHead>Categoría</TableHead><TableHead>Cantidad</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Producto</TableHead><TableHead>Marca</TableHead><TableHead>Categoría</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow></TableHeader>
             <TableBody>
               {paginated.length > 0 ? paginated.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell><p>{p.name}</p></TableCell>
                   <TableCell><p>{p.brand}</p></TableCell>
                   <TableCell><p>{p.categoryName}</p></TableCell>
-                  <TableCell><p>{p.quantity} unidades</p></TableCell>
 
                   <TableCell><div className="flex items-center gap-2"><Switch checked={p.status === 'Activo'} onCheckedChange={() => toggleStatus(p)} /><span className="text-sm">{p.status}</span></div></TableCell>
                   <TableCell className="text-right"><div className="flex justify-end gap-1">
@@ -223,7 +219,7 @@ export function Productos() {
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                     No se encontraron productos.
                   </TableCell>
                 </TableRow>
@@ -257,8 +253,6 @@ export function Productos() {
                 <div><Label>Nombre</Label><p className="font-medium">{viewingProduct.name}</p></div>
                 <div><Label>Marca</Label><p className="font-medium">{viewingProduct.brand}</p></div>
                 <div><Label>Categoría</Label><p>{viewingProduct.categoryName}</p></div>
-                <div><Label>Cantidad</Label><p>{viewingProduct.quantity} unidades</p></div>
-
                 <div><Label>Estado</Label><Badge className={viewingProduct.status === 'Activo' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}>{viewingProduct.status}</Badge></div>
               </div>
               <div><Label>Descripción</Label><p className="mt-1 p-3 bg-muted/50 rounded">{viewingProduct.description}</p></div>
@@ -272,7 +266,7 @@ export function Productos() {
 }
 
 function ProductDialog({ product, onSave, categories, brands }: any) {
-  const [form, setForm] = useState({ name: product?.name || '', description: product?.description || '', categoryId: product?.categoryId?.toString() || '', quantity: product?.quantity?.toString() || '', brand: product?.brand || '' });
+  const [form, setForm] = useState({ name: product?.name || '', description: product?.description || '', categoryId: product?.categoryId?.toString() || '', brand: product?.brand || '' });
 
   React.useEffect(() => {
     if (product) {
@@ -280,11 +274,10 @@ function ProductDialog({ product, onSave, categories, brands }: any) {
         name: product.name || '',
         description: product.description || '',
         categoryId: product.categoryId?.toString() || '',
-        quantity: product.quantity?.toString() || '0',
         brand: product.brand || ''
       });
     } else {
-      setForm({ name: '', description: '', categoryId: '', quantity: '0', brand: '' });
+      setForm({ name: '', description: '', categoryId: '', brand: '' });
     }
   }, [product]);
 
@@ -309,7 +302,6 @@ function ProductDialog({ product, onSave, categories, brands }: any) {
           <div><Label>Categoría *</Label><select value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })} className="w-full h-10 px-3 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="" disabled hidden className="bg-background text-foreground">Categoría...</option>{categories.map((c: any) => <option key={c.id} value={c.id} className="bg-background text-foreground">{c.name}</option>)}
           </select></div>
-          <div><Label>Cantidad *</Label><Input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} /></div>
         </div>
         <div><Label>Descripción</Label><Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} /></div>
         <div className="flex justify-end"><Button type="submit" className="bg-blue-600 hover:bg-blue-700">{product ? 'Actualizar' : 'Crear'}</Button></div>

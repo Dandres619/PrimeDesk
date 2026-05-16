@@ -5,7 +5,7 @@ const getAll = async () => {
   return await sql`
         SELECT p.id_producto AS "ID_Producto", p.id_categoria AS "ID_Categoria", 
                p.nombre AS "Nombre", p.marca AS "Marca", 
-               p.cantidad AS "Cantidad", p.descripcion AS "Descripcion", 
+               p.descripcion AS "Descripcion", 
                p.estado AS "Estado",
                c.nombre AS "NombreCategoria"
         FROM productos p
@@ -19,7 +19,7 @@ const getById = async (id) => {
   const rows = await sql`
         SELECT p.id_producto AS "ID_Producto", p.id_categoria AS "ID_Categoria", 
                p.nombre AS "Nombre", p.marca AS "Marca", 
-               p.cantidad AS "Cantidad", p.descripcion AS "Descripcion", 
+               p.descripcion AS "Descripcion", 
                p.estado AS "Estado",
                c.nombre AS "NombreCategoria"
         FROM productos p
@@ -30,20 +30,20 @@ const getById = async (id) => {
   return rows[0];
 };
 
-const create = async ({ id_categoria, nombre, marca, cantidad, descripcion }) => {
+const create = async ({ id_categoria, nombre, marca, descripcion }) => {
   const sql = await getPool();
   const [row] = await sql`
-        INSERT INTO productos (id_categoria, nombre, marca, cantidad, descripcion, estado)
-        VALUES (${id_categoria}, ${nombre}, ${marca}, ${cantidad || 0}, ${descripcion || null}, TRUE)
+        INSERT INTO productos (id_categoria, nombre, marca, descripcion, estado)
+        VALUES (${id_categoria}, ${nombre}, ${marca}, ${descripcion || null}, TRUE)
         RETURNING id_producto AS "ID_Producto", id_categoria AS "ID_Categoria", 
                   nombre AS "Nombre", marca AS "Marca", 
-                  cantidad AS "Cantidad", descripcion AS "Descripcion", 
+                  descripcion AS "Descripcion", 
                   estado AS "Estado"
     `;
   return row;
 };
 
-const update = async (id, { id_categoria, nombre, marca, cantidad, descripcion, estado }) => {
+const update = async (id, { id_categoria, nombre, marca, descripcion, estado }) => {
   const sql = await getPool();
   // Ensure estado is boolean
   const boolEstado = estado === true || estado === 1 || estado === '1' || estado === 'Activo';
@@ -51,29 +51,19 @@ const update = async (id, { id_categoria, nombre, marca, cantidad, descripcion, 
   const [row] = await sql`
         UPDATE productos 
         SET id_categoria = ${id_categoria}, nombre = ${nombre}, marca = ${marca},
-            cantidad = ${cantidad}, descripcion = ${descripcion || null}, 
+            descripcion = ${descripcion || null}, 
             estado = ${boolEstado}
         WHERE id_producto = ${id}
         RETURNING id_producto AS "ID_Producto", id_categoria AS "ID_Categoria", 
                   nombre AS "Nombre", marca AS "Marca", 
-                  cantidad AS "Cantidad", descripcion AS "Descripcion", 
+                  descripcion AS "Descripcion", 
                   estado AS "Estado"
     `;
   if (!row) throw { status: 404, message: 'Producto no encontrado.' };
   return row;
 };
 
-const updateStock = async (id, cantidad) => {
-  const sql = await getPool();
-  const [row] = await sql`
-        UPDATE productos 
-        SET cantidad = ${cantidad} 
-        WHERE id_producto = ${id}
-        RETURNING id_producto AS "ID_Producto", cantidad AS "Cantidad"
-    `;
-  if (!row) throw { status: 404, message: 'Producto no encontrado.' };
-  return row;
-};
+
 
 const remove = async (id) => {
   const sql = await getPool();
@@ -105,4 +95,4 @@ const remove = async (id) => {
   return { message: 'Producto eliminado correctamente.' };
 };
 
-module.exports = { getAll, getById, create, update, updateStock, remove };
+module.exports = { getAll, getById, create, update, remove };
