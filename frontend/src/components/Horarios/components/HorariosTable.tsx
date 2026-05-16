@@ -31,7 +31,7 @@ export function HorariosTable({
   onToggleEstado,
   getEnabledDays
 }: HorariosTableProps) {
-  
+
   return (
     <Card data-slot="card">
       <CardHeader>
@@ -45,7 +45,6 @@ export function HorariosTable({
             <TableRow>
               <TableHead className="text-left">Mecánico</TableHead>
               <TableHead className="text-left">Días Laborales</TableHead>
-              <TableHead className="text-left">Horarios</TableHead>
               <TableHead className="text-left">Estado</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
@@ -60,19 +59,6 @@ export function HorariosTable({
                   </TableCell>
                   <TableCell className="text-left">
                     {enabledDays.length} días laborales
-                  </TableCell>
-                  <TableCell className="text-left">
-                    <div className="flex flex-col space-y-1">
-                      {enabledDays.slice(0, 2).map(day => {
-                        const ds = s.daySchedules[day];
-                        return (
-                          <span key={day} className="text-xs text-muted-foreground">
-                            <span className="font-medium text-slate-900 dark:text-slate-200">{day}:</span> {ds.startTime} - {ds.endTime}
-                          </span>
-                        );
-                      })}
-                      {enabledDays.length > 2 && <span className="text-xs text-muted-foreground">+{enabledDays.length - 2} más</span>}
-                    </div>
                   </TableCell>
                   <TableCell className="text-left">
                     <div className="flex items-center gap-2">

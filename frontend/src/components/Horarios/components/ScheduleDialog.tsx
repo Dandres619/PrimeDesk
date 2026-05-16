@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Button } from '../../ui/button';
 import { Label } from '../../ui/label';
@@ -180,8 +180,8 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
                   <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent 
-                className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto" 
+              <PopoverContent
+                className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto"
                 align="start"
                 onCloseAutoFocus={(e) => e.preventDefault()}
               >
@@ -196,7 +196,7 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
                     />
                   </div>
                 </div>
-                <div 
+                <div
                   className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
                   onWheel={(e) => e.stopPropagation()}
                 >
@@ -266,22 +266,18 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
                       <div className="grid grid-cols-2 gap-4 pl-7 mt-4">
                         <div>
                           <Label htmlFor={`start-${day}`} className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hora de Entrada</Label>
-                          <Input
+                          <TimePickerInput
                             id={`start-${day}`}
-                            type="time"
                             value={ds.startTime}
-                            onChange={(e) => updateDayTime(day, 'startTime', e.target.value)}
-                            className="mt-1 h-10 rounded-lg bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                            onChange={(value) => updateDayTime(day, 'startTime', value)}
                           />
                         </div>
                         <div>
                           <Label htmlFor={`end-${day}`} className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hora de Salida</Label>
-                          <Input
+                          <TimePickerInput
                             id={`end-${day}`}
-                            type="time"
                             value={ds.endTime}
-                            onChange={(e) => updateDayTime(day, 'endTime', e.target.value)}
-                            className="mt-1 h-10 rounded-lg bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                            onChange={(value) => updateDayTime(day, 'endTime', value)}
                           />
                         </div>
                         {ds.startTime && ds.endTime && (
@@ -354,5 +350,131 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
         </div>
       </form>
     </DialogContent>
+  );
+}
+
+function TimePickerInput({
+  id,
+  value,
+  onChange,
+  className
+}: {
+  id: string;
+  value: string;
+  onChange: (val: string) => void;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<'mañana' | 'tarde' | 'noche'>('mañana');
+
+  useEffect(() => {
+    if (value) {
+      const hour = parseInt(value.split(':')[0]);
+      if (hour >= 6 && hour < 12) {
+        setSelectedSection('mañana');
+      } else if (hour >= 12 && hour < 18) {
+        setSelectedSection('tarde');
+      } else if (hour >= 18 && hour < 24) {
+        setSelectedSection('noche');
+      }
+    }
+  }, [value]);
+
+  const timesList = useMemo(() => {
+    const times: string[] = [];
+    for (let h = 6; h < 24; h++) {
+      for (let m = 0; m < 60; m += 10) {
+        times.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+      }
+    }
+    return times;
+  }, []);
+
+  const filteredTimes = useMemo(() => {
+    return timesList.filter(slot => {
+      const hour = parseInt(slot.split(':')[0]);
+      if (selectedSection === 'mañana') return hour >= 6 && hour < 12;
+      if (selectedSection === 'tarde') return hour >= 12 && hour < 18;
+      return hour >= 18 && hour < 24;
+    });
+  }, [selectedSection, timesList]);
+
+  const formatTime12h = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [hStr, mStr] = timeStr.split(':');
+    if (!hStr || !mStr) return timeStr;
+    const h = parseInt(hStr);
+    const m = parseInt(mStr);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 === 0 ? 12 : h % 12;
+    return `${displayH}:${m.toString().padStart(2, '0')} ${period}`;
+  };
+
+  return (
+    <div className="relative mt-1 flex items-center w-full">
+      <Input
+        id={id}
+        type="time"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn("pr-10 rounded-lg bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 w-full h-10 text-sm", className)}
+      />
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 pointer-events-auto"
+          >
+            <AlarmClock className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-56 p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto flex flex-col"
+          align="end"
+        >
+          <div className="flex border-b border-slate-100 dark:border-slate-800 p-1 gap-1 bg-slate-50 dark:bg-slate-900 shrink-0">
+            {(['mañana', 'tarde', 'noche'] as const).map((section) => (
+              <button
+                key={section}
+                type="button"
+                className={cn(
+                  "flex-1 py-1 px-1 text-[10px] font-black rounded-lg transition-all capitalize",
+                  selectedSection === section
+                    ? "bg-white dark:bg-slate-950 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/50 dark:border-slate-800/50"
+                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                )}
+                onClick={() => setSelectedSection(section)}
+              >
+                {section}
+              </button>
+            ))}
+          </div>
+          <div
+            className="max-h-[160px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar flex-1"
+            onWheel={(e) => e.stopPropagation()}
+          >
+            {filteredTimes.map(slot => (
+              <div
+                key={slot}
+                className={cn(
+                  "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-1.5 text-xs outline-none transition-colors",
+                  "hover:bg-slate-50 dark:hover:bg-slate-900",
+                  value === slot && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                )}
+                onClick={() => {
+                  onChange(slot);
+                  setIsOpen(false);
+                }}
+              >
+                <Check className={cn("mr-2 h-3.5 w-3.5", value === slot ? "opacity-100" : "opacity-0")} />
+                <span className="uppercase text-[11px] font-bold">{formatTime12h(slot)}</span>
+              </div>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }

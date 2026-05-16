@@ -453,7 +453,7 @@ function AppContent() {
                     <>
                         {mainContent()}
 
-                        <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} toastOptions={{ style: { zIndex: 99999 } }} />
+                        <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} toastOptions={{ className: 'pointer-events-auto', style: { zIndex: 99999 } }} />
 
                         {/* Transition Overlay for Login/Logout - PERSISTENT AT TOP LEVEL */}
                         {(isLoggingOut || isLoggingIn) && (
