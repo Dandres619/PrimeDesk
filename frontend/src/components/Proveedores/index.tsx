@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
-import { Truck, Search, MapPin, Mail, Phone, Globe, FileText } from 'lucide-react';
+import { Truck, Search } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 
@@ -66,7 +66,7 @@ export function Proveedores() {
   return (
     <div className="proveedores-root space-y-6">
       <ProveedoresStyles />
-      
+
       <div className="proveedores-content-animate space-y-6">
         <ConfirmDialog
           open={confirmDialog.open}
@@ -93,7 +93,7 @@ export function Proveedores() {
               placeholder="Buscar proveedores..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="pl-10"
+              className="pl-10 h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 transition-all"
             />
           </div>
         </div>
@@ -119,7 +119,7 @@ export function Proveedores() {
 
         {/* View Details Modal */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent 
+          <DialogContent
             className="p-0 overflow-hidden border-none shadow-2xl rounded-2xl flex flex-col animate-modal max-w-2xl w-[95vw] bg-white dark:bg-slate-950"
             onOpenAutoFocus={(e) => e.preventDefault()}
           >
@@ -136,8 +136,8 @@ export function Proveedores() {
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-semibold">Información corporativa y de contacto</p>
               </div>
               {viewingSupplier && (
-                <Badge className={viewingSupplier.status === 'Activo' 
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-bold" 
+                <Badge className={viewingSupplier.status === 'Activo'
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 font-bold"
                   : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 font-bold"
                 }>
                   {viewingSupplier.status}
@@ -149,52 +149,62 @@ export function Proveedores() {
               <div className="p-8 space-y-8 text-left overflow-y-auto max-h-[60vh] custom-scrollbar">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div className="space-y-6">
+                    <h3 className="text-sm font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800/50 pb-2 mb-2">
+                      Información General
+                    </h3>
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Nombre Empresa</Label>
-                      <p className="text-lg font-black text-slate-900 dark:text-white">{viewingSupplier.name}</p>
+                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                        {viewingSupplier.personType === 'Natural' ? 'Nombre' : 'Nombre Empresa'}
+                      </Label>
+                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.name}</p>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">NIT</Label>
+                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Tipo de Persona</Label>
+                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.personType || "Natural"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                        {viewingSupplier.personType === 'Natural' ? 'Documento' : 'NIT'}
+                      </Label>
                       <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.taxId || "N/A"}</p>
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Especialidad</Label>
-                      <p className="text-md font-bold text-blue-600 dark:text-blue-400">{viewingSupplier.specialty || "N/A"}</p>
+                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.specialty || "N/A"}</p>
                     </div>
                   </div>
 
                   <div className="space-y-6">
+                    <h3 className="text-sm font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800/50 pb-2 mb-2">
+                      Datos de Contacto
+                    </h3>
                     <div className="space-y-1">
                       <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Contacto</Label>
-                      <p className="text-lg font-black text-slate-900 dark:text-white">{viewingSupplier.contact}</p>
+                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.contact}</p>
                     </div>
-                    <div className="space-y-3 pt-2">
-                      <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                        <Phone className="w-4 h-4 text-blue-500" />
-                        <span className="font-semibold">{viewingSupplier.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                        <Mail className="w-4 h-4 text-blue-500" />
-                        <span className="font-semibold">{viewingSupplier.email}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                        <MapPin className="w-4 h-4 text-blue-500" />
-                        <span className="font-semibold">{viewingSupplier.address}, {viewingSupplier.city}</span>
-                      </div>
-                      {viewingSupplier.website && (
-                        <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
-                          <Globe className="w-4 h-4 text-blue-500" />
-                          <span className="font-semibold">{viewingSupplier.website}</span>
-                        </div>
-                      )}
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Teléfono</Label>
+                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.phone}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Correo Electrónico</Label>
+                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.email}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Dirección</Label>
+                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.address}, {viewingSupplier.city}, {viewingSupplier.country}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Sitio Web</Label>
+                      <p className="text-md font-bold text-slate-700 dark:text-slate-300">{viewingSupplier.website || "No registra"}</p>
                     </div>
                   </div>
                 </div>
 
                 {viewingSupplier.notes && (
                   <div className="space-y-2 pt-6 border-t border-slate-100 dark:border-slate-800/50">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                      <FileText className="w-3 h-3" /> Notas Adicionales
+                    <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                      Notas Adicionales
                     </Label>
                     <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium leading-relaxed">
                       {viewingSupplier.notes}

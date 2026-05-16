@@ -16,7 +16,9 @@ export function useProveedores() {
   };
 
   const fetchSuppliers = useCallback(async () => {
-    setIsLoading(true);
+    if (suppliers.length === 0) {
+      setIsLoading(true);
+    }
     try {
       const res = await fetch(`${API_URL}/proveedores`, { headers });
       if (!res.ok) throw new Error('Error al cargar proveedores');
@@ -24,7 +26,7 @@ export function useProveedores() {
       setSuppliers(data.map((s: any) => ({
         id: s.ID_Proveedor,
         name: s.NombreEmpresa,
-        taxId: s.NIT,
+        taxId: s.Documento,
         contact: s.PersonaContacto,
         specialty: s.Especialidad,
         phone: s.Telefono,
@@ -34,14 +36,15 @@ export function useProveedores() {
         country: s.Pais,
         website: s.SitioWeb,
         notes: s.Notas,
-        status: s.Estado ? 'Activo' : 'Inactivo'
-      })));
+        status: s.Estado ? 'Activo' : 'Inactivo',
+        personType: s.TipoPersona || 'Natural'
+      })).sort((a: any, b: any) => a.name.localeCompare(b.name)));
     } catch (error: any) {
       toast.error(error.message);
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  }, [token, suppliers.length]);
 
   useEffect(() => {
     fetchSuppliers();
@@ -54,7 +57,7 @@ export function useProveedores() {
 
       const payload = {
         nombre_empresa: data.name,
-        nit: data.taxId || null,
+        documento: data.taxId,
         persona_contacto: data.contact,
         especialidad: data.specialty || null,
         telefono: data.phone,
@@ -64,7 +67,8 @@ export function useProveedores() {
         pais: data.country,
         sitio_web: data.website || null,
         notas: data.notes || null,
-        estado: editingSupplier ? data.status === 'Activo' : true
+        estado: editingSupplier ? editingSupplier.status === 'Activo' : true,
+        tipo_persona: data.personType
       };
 
       const res = await fetch(url, {
@@ -118,7 +122,7 @@ export function useProveedores() {
         headers,
         body: JSON.stringify({
           nombre_empresa: supplier.name,
-          nit: supplier.taxId,
+          documento: supplier.taxId,
           persona_contacto: supplier.contact,
           especialidad: supplier.specialty,
           telefono: supplier.phone,
@@ -128,7 +132,8 @@ export function useProveedores() {
           pais: supplier.country,
           sitio_web: supplier.website,
           notas: supplier.notes,
-          estado: supplier.status !== 'Activo'
+          estado: supplier.status !== 'Activo',
+          tipo_persona: supplier.personType
         })
       });
       if (!res.ok) {

@@ -48,7 +48,8 @@ export function ProveedoresTable({
           <TableHeader>
             <TableRow>
               <TableHead>Proveedor</TableHead>
-              <TableHead>NIT</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Doc / NIT</TableHead>
               <TableHead>Contacto</TableHead>
               <TableHead>Teléfono</TableHead>
               <TableHead>Especialidad</TableHead>
@@ -59,18 +60,19 @@ export function ProveedoresTable({
           <TableBody>
             {paginatedSuppliers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                   No se encontraron proveedores.
                 </TableCell>
               </TableRow>
             ) : (
               paginatedSuppliers.map(s => (
                 <TableRow key={s.id}>
-                  <TableCell><p className="font-medium">{s.name}</p></TableCell>
-                  <TableCell><p>{s.taxId || "N/A"}</p></TableCell>
-                  <TableCell><p>{s.contact}</p></TableCell>
-                  <TableCell><p>{s.phone}</p></TableCell>
-                  <TableCell><p>{s.specialty || "N/A"}</p></TableCell>
+                  <TableCell>{s.name}</TableCell>
+                  <TableCell>{s.personType || "Natural"}</TableCell>
+                  <TableCell>{s.taxId || "N/A"}</TableCell>
+                  <TableCell>{s.contact}</TableCell>
+                  <TableCell>{s.phone}</TableCell>
+                  <TableCell>{s.specialty || "N/A"}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Switch checked={s.status === 'Activo'} onCheckedChange={() => onToggleStatus(s)} />
