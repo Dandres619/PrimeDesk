@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { CalendarClock, Clock, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { format, subMonths, addMonths, isSameMonth, isToday, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -58,7 +58,7 @@ export function Agendamientos() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center transition-transform hover:scale-105">
-              <CalendarIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <CalendarClock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Agendamientos</h1>

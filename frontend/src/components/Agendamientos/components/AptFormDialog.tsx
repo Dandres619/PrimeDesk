@@ -3,7 +3,8 @@ import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Button } from '../../ui/button';
-import { CalendarIcon, Clock, Loader2, User, Wrench, CalendarDays } from 'lucide-react';
+import { CalendarClock, Clock, Loader2, User, Wrench, Search, Check, ChevronsUpDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { format, parseISO, isBefore, startOfDay, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -21,6 +22,16 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
     notes: apt?.notes || ''
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [popovers, setPopovers] = useState({
+    client: false,
+    motorcycle: false,
+    mechanic: false
+  });
+  const [search, setSearch] = useState({
+    client: '',
+    motorcycle: '',
+    mechanic: ''
+  });
 
   const daysMap: Record<number, string> = {
     1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo'
@@ -102,8 +113,25 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
   }, [form.mechanicId, form.date, horarios, existingAppointments, apt]);
 
   const clientMotorcycles = motorcycles.filter((m: any) =>
-    !form.clientId || m.ID_Cliente === parseInt(form.clientId)
+    (!form.clientId || m.ID_Cliente === parseInt(form.clientId)) &&
+    (m.Placa.toLowerCase().includes(search.motorcycle.toLowerCase()) ||
+      m.Marca.toLowerCase().includes(search.motorcycle.toLowerCase()) ||
+      m.Modelo.toLowerCase().includes(search.motorcycle.toLowerCase()))
   );
+
+  const filteredClients = clients.filter((c: any) =>
+    `${c.Nombre} ${c.Apellido}`.toLowerCase().includes(search.client.toLowerCase()) ||
+    c.Documento.toString().includes(search.client)
+  );
+
+  const filteredMechanics = mechanics.filter((m: any) =>
+    `${m.Nombre} ${m.Apellido}`.toLowerCase().includes(search.mechanic.toLowerCase()) ||
+    m.Documento?.toString().includes(search.mechanic)
+  );
+
+  const selectedClient = clients.find((c: any) => c.ID_Cliente === parseInt(form.clientId));
+  const selectedMoto = motorcycles.find((m: any) => m.ID_Motocicleta === parseInt(form.motorcycleId));
+  const selectedMechanic = mechanics.find((m: any) => m.ID_Empleado === parseInt(form.mechanicId));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +161,7 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
   };
 
   return (
-    <DialogContent 
+    <DialogContent
       className={cn(
         "p-0 overflow-hidden border-none shadow-2xl rounded-2xl flex flex-col animate-modal",
         "max-w-2xl w-[95vw] bg-white dark:bg-slate-950"
@@ -143,7 +171,7 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
       <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[90vh]">
         <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex items-center gap-4 shrink-0">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none shrink-0">
-            <CalendarDays className="w-6 h-6 text-white" />
+            <CalendarClock className="w-6 h-6 text-white" />
           </div>
           <div className="text-left">
             <DialogHeader>
@@ -157,8 +185,8 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
 
         <div className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar text-left">
           <div className="space-y-2">
-            <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4 text-blue-600" /> Fecha Seleccionada
+            <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+              <CalendarClock className="w-3.5 h-3.5 text-blue-500" /> Fecha
             </Label>
             <div className="w-full h-11 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white flex items-center shadow-sm">
               <span className="font-semibold capitalize">{form.date ? format(parseISO(form.date), 'EEEE, d MMMM yyyy', { locale: es }) : 'No seleccionada'}</span>
@@ -170,52 +198,194 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
               <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                 <User className="w-4 h-4" /> Cliente *
               </Label>
-              <select
-                value={form.clientId}
-                onChange={e => setForm({ ...form, clientId: e.target.value, motorcycleId: '' })}
-                className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[position:right_1rem_center] bg-[size:1.1rem_1.1rem] bg-no-repeat"
-                required
-              >
-                <option value="">Seleccionar cliente...</option>
-                {clients.map((c: any) => (
-                  <option key={c.ID_Cliente} value={c.ID_Cliente}>{c.Nombre} {c.Apellido || ''}</option>
-                ))}
-              </select>
+              <Popover open={popovers.client} onOpenChange={(open) => setPopovers({ ...popovers, client: open })}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className={cn(
+                      "w-full justify-between font-medium h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl",
+                      !form.clientId && "text-slate-500"
+                    )}
+                  >
+                    <span className="truncate">
+                      {selectedClient ? `${selectedClient.Nombre} ${selectedClient.Apellido}` : "Seleccionar cliente..."}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden" align="start">
+                  <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                    <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                      <input
+                        className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-slate-500"
+                        placeholder="Buscar cliente..."
+                        value={search.client}
+                        onChange={(e) => setSearch({ ...search, client: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar">
+                    {filteredClients.length === 0 ? (
+                      <div className="py-6 px-2 text-center">
+                        <p className="text-sm text-slate-500">No se encontraron clientes.</p>
+                      </div>
+                    ) : (
+                      filteredClients.map((c: any) => (
+                        <div
+                          key={c.ID_Cliente}
+                          className={cn(
+                            "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                            "hover:bg-slate-50 dark:hover:bg-slate-900",
+                            form.clientId === c.ID_Cliente.toString() && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                          )}
+                          onClick={() => {
+                            setForm({ ...form, clientId: c.ID_Cliente.toString(), motorcycleId: '' });
+                            setPopovers({ ...popovers, client: false });
+                            setSearch({ ...search, client: '' });
+                          }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", form.clientId === c.ID_Cliente.toString() ? "opacity-100" : "opacity-0")} />
+                          <div className="flex flex-col">
+                            <span>{c.Nombre} {c.Apellido}</span>
+                            <span className="text-[10px] opacity-60">CC: {c.Documento}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
               <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Motocicleta *</Label>
-              <select
-                value={form.motorcycleId}
-                onChange={e => setForm({ ...form, motorcycleId: e.target.value })}
-                className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[position:right_1rem_center] bg-[size:1.1rem_1.1rem] bg-no-repeat disabled:opacity-50"
-                required
-                disabled={!form.clientId}
-              >
-                <option value="">Seleccionar motocicleta...</option>
-                {clientMotorcycles.map((m: any) => (
-                  <option key={m.ID_Motocicleta} value={m.ID_Motocicleta}>
-                    {m.Marca} {m.Modelo} — {m.Placa}
-                  </option>
-                ))}
-              </select>
+              <Popover open={popovers.motorcycle} onOpenChange={(open) => setPopovers({ ...popovers, motorcycle: open })}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className={cn(
+                      "w-full justify-between font-medium h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl",
+                      !form.motorcycleId && "text-slate-500"
+                    )}
+                    disabled={!form.clientId}
+                  >
+                    <span className="truncate">
+                      {selectedMoto ? `${selectedMoto.Marca} ${selectedMoto.Modelo} — ${selectedMoto.Placa}` : "Seleccionar motocicleta..."}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden" align="start">
+                  <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                    <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                      <input
+                        className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-slate-500"
+                        placeholder="Buscar placa o modelo..."
+                        value={search.motorcycle}
+                        onChange={(e) => setSearch({ ...search, motorcycle: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar">
+                    {clientMotorcycles.length === 0 ? (
+                      <div className="py-6 px-2 text-center">
+                        <p className="text-sm text-slate-500">No se encontraron motocicletas.</p>
+                      </div>
+                    ) : (
+                      clientMotorcycles.map((m: any) => (
+                        <div
+                          key={m.ID_Motocicleta}
+                          className={cn(
+                            "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                            "hover:bg-slate-50 dark:hover:bg-slate-900",
+                            form.motorcycleId === m.ID_Motocicleta.toString() && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                          )}
+                          onClick={() => {
+                            setForm({ ...form, motorcycleId: m.ID_Motocicleta.toString() });
+                            setPopovers({ ...popovers, motorcycle: false });
+                            setSearch({ ...search, motorcycle: '' });
+                          }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", form.motorcycleId === m.ID_Motocicleta.toString() ? "opacity-100" : "opacity-0")} />
+                          <div className="flex flex-col">
+                            <span>{m.Marca} {m.Modelo}</span>
+                            <span className="text-[10px] opacity-60">Placa: {m.Placa}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
           <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800/50">
             <div className="space-y-2">
               <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Mecánico *</Label>
-              <select
-                value={form.mechanicId}
-                onChange={e => setForm({ ...form, mechanicId: e.target.value, startTime: '' })}
-                className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[position:right_1rem_center] bg-[size:1.1rem_1.1rem] bg-no-repeat"
-                required
-              >
-                <option value="">Seleccionar mecánico...</option>
-                {mechanics.map((m: any) => (
-                  <option key={m.ID_Empleado} value={m.ID_Empleado}>{m.Nombre} {m.Apellido}</option>
-                ))}
-              </select>
+              <Popover open={popovers.mechanic} onOpenChange={(open) => setPopovers({ ...popovers, mechanic: open })}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className={cn(
+                      "w-full justify-between font-medium h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl",
+                      !form.mechanicId && "text-slate-500"
+                    )}
+                  >
+                    <span className="truncate">
+                      {selectedMechanic ? `${selectedMechanic.Nombre} ${selectedMechanic.Apellido}` : "Seleccionar mecánico..."}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden" align="start">
+                  <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                    <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                      <input
+                        className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-slate-500"
+                        placeholder="Buscar mecánico..."
+                        value={search.mechanic}
+                        onChange={(e) => setSearch({ ...search, mechanic: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar">
+                    {filteredMechanics.length === 0 ? (
+                      <div className="py-6 px-2 text-center">
+                        <p className="text-sm text-slate-500">No se encontraron mecánicos.</p>
+                      </div>
+                    ) : (
+                      filteredMechanics.map((m: any) => (
+                        <div
+                          key={m.ID_Empleado}
+                          className={cn(
+                            "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                            "hover:bg-slate-50 dark:hover:bg-slate-900",
+                            form.mechanicId === m.ID_Empleado.toString() && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                          )}
+                          onClick={() => {
+                            setForm({ ...form, mechanicId: m.ID_Empleado.toString(), startTime: '' });
+                            setPopovers({ ...popovers, mechanic: false });
+                            setSearch({ ...search, mechanic: '' });
+                          }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", form.mechanicId === m.ID_Empleado.toString() ? "opacity-100" : "opacity-0")} />
+                          <div className="flex flex-col text-left">
+                            <span className="font-bold">{m.Nombre} {m.Apellido}</span>
+                            <span className="text-[10px] opacity-60 font-black uppercase">CC: {m.Documento || 'S/N'}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-3">
@@ -259,12 +429,12 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                 {services.map((s: any) => {
                   const isSelected = form.serviceIds.includes(s.ID_Servicio);
                   return (
-                    <label 
-                      key={s.ID_Servicio} 
+                    <label
+                      key={s.ID_Servicio}
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer",
-                        isSelected 
-                          ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/10" 
+                        isSelected
+                          ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/10"
                           : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-blue-400"
                       )}
                     >

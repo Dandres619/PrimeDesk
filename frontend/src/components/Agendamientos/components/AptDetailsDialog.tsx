@@ -2,7 +2,7 @@ import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
-import { CalendarIcon, Clock, User, Wrench, Edit, Trash2, CalendarDays } from 'lucide-react';
+import { CalendarClock, Clock, User, Wrench, Edit, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function AptDetailsDialog({ selectedApt, onEdit, onDelete, onOpenChange }: any) {
@@ -17,7 +17,7 @@ export function AptDetailsDialog({ selectedApt, onEdit, onDelete, onOpenChange }
     >
       <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex items-center gap-4 shrink-0">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none shrink-0">
-          <CalendarDays className="w-6 h-6 text-white" />
+          <CalendarClock className="w-6 h-6 text-white" />
         </div>
         <div className="text-left w-full flex justify-between items-center">
           <div>
@@ -50,7 +50,7 @@ export function AptDetailsDialog({ selectedApt, onEdit, onDelete, onOpenChange }
         <div className="grid grid-cols-2 gap-6">
           <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
             <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-              <CalendarIcon className="w-3.5 h-3.5 text-blue-500" /> Fecha
+              <CalendarClock className="w-3.5 h-3.5 text-blue-500" /> Fecha
             </Label>
             <p className="font-bold text-slate-900 dark:text-white mt-2 text-base">{selectedApt.date}</p>
           </div>
