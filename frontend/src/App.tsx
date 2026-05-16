@@ -9,7 +9,7 @@ import { Motos } from '@/components/Motos';
 import { Agendamientos } from '@/components/Agendamientos/index';
 import { Proveedores } from '@/components/Proveedores/index';
 import { Compras } from '@/components/Compras/index';
-import { Ventas } from '@/components/Ventas';
+import { Ventas } from '@/components/Ventas/index';
 import { Servicios } from '@/components/Servicios/index';
 import { Horarios } from '@/components/Horarios/index';
 import { Categorias } from '@/components/Categorias/index';
