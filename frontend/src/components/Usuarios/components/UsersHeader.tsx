@@ -9,7 +9,7 @@ export function UsersHeader() {
         </div>
         <div>
           <h1 className="text-2xl font-semibold">Usuarios</h1>
-          <p className="text-muted-foreground">Gestión de acceso al sistema</p>
+          <p className="text-sm text-muted-foreground">Gestión de acceso al sistema</p>
         </div>
       </div>
       <div className="flex-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-4 rounded-xl flex items-center gap-4">

@@ -28,7 +28,7 @@ export function ClientsHeader({
         </div>
         <div>
           <h1 className="text-2xl font-semibold">Clientes</h1>
-          <p className="text-muted-foreground">Gestión de la base de datos de clientes</p>
+          <p className="text-sm text-muted-foreground">Gestión de la base de datos de clientes</p>
         </div>
       </div>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

@@ -28,7 +28,7 @@ export function EmployeesHeader({
         </div>
         <div>
           <h1 className="text-2xl font-semibold">Empleados</h1>
-          <p className="text-muted-foreground">Gestión del personal del taller</p>
+          <p className="text-sm text-muted-foreground">Gestión del personal del taller</p>
         </div>
       </div>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -38,12 +38,12 @@ export function EmployeesHeader({
             Nuevo Empleado
           </Button>
         </DialogTrigger>
-        <EmployeeDialog 
-          employee={editingEmployee} 
-          onSave={handleSave} 
-          isSaving={isSaving} 
-          onOpenChange={setIsDialogOpen} 
-          open={isDialogOpen} 
+        <EmployeeDialog
+          employee={editingEmployee}
+          onSave={handleSave}
+          isSaving={isSaving}
+          onOpenChange={setIsDialogOpen}
+          open={isDialogOpen}
         />
       </Dialog>
     </div>

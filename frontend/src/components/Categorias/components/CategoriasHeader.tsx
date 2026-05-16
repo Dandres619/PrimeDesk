@@ -26,7 +26,7 @@ export function CategoriasHeader({
         </div>
         <div className="text-left">
           <h1 className="text-2xl font-semibold">Categorías de Productos</h1>
-          <p className="text-muted-foreground">Gestión y clasificación del inventario</p>
+          <p className="text-sm text-muted-foreground">Clasificación de las categorías de productos</p>
         </div>
       </div>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

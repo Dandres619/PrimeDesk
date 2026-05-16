@@ -30,7 +30,7 @@ export function RolesHeader({
         </div>
         <div>
           <h1 className="text-2xl font-semibold">Roles</h1>
-          <p className="text-muted-foreground">Gestión de permisos y acceso</p>
+          <p className="text-sm text-muted-foreground">Gestión de permisos y acceso</p>
         </div>
       </div>
       <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
