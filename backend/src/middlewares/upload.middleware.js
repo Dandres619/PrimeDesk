@@ -2,11 +2,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Asegurar que el directorio de subida existe
-const uploadDir = path.join(__dirname, '../../uploads/profiles');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Directorio de subida (comentado o eliminado para evitar creación automática)
+// const uploadDir = path.join(__dirname, '../../uploads/profiles');
+
 
 // Configuración de almacenamiento en memoria para procesar con Supabase
 const storage = multer.memoryStorage();

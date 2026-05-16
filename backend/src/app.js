@@ -34,8 +34,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ── Archivos estáticos (fotos de empleados / clientes) ─────────────────────
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+// app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // ── Rutas de la API ─────────────────────────────────────────────────────────
 app.use('/api', routes);
