@@ -214,7 +214,11 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                     <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden" align="start">
+                <PopoverContent 
+                  className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto" 
+                  align="start"
+                  onCloseAutoFocus={(e) => e.preventDefault()}
+                >
                   <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
                     <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
                       <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -226,7 +230,10 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                       />
                     </div>
                   </div>
-                  <div className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar">
+                  <div 
+                    className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
+                    onWheel={(e) => e.stopPropagation()}
+                  >
                     {filteredClients.length === 0 ? (
                       <div className="py-6 px-2 text-center">
                         <p className="text-sm text-slate-500">No se encontraron clientes.</p>
@@ -278,7 +285,11 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                     <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden" align="start">
+                <PopoverContent 
+                  className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto" 
+                  align="start"
+                  onCloseAutoFocus={(e) => e.preventDefault()}
+                >
                   <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
                     <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
                       <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -290,7 +301,10 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                       />
                     </div>
                   </div>
-                  <div className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar">
+                  <div 
+                    className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
+                    onWheel={(e) => e.stopPropagation()}
+                  >
                     {clientMotorcycles.length === 0 ? (
                       <div className="py-6 px-2 text-center">
                         <p className="text-sm text-slate-500">No se encontraron motocicletas.</p>
@@ -343,7 +357,11 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                     <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden" align="start">
+                <PopoverContent 
+                  className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto" 
+                  align="start"
+                  onCloseAutoFocus={(e) => e.preventDefault()}
+                >
                   <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
                     <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
                       <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -355,7 +373,10 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                       />
                     </div>
                   </div>
-                  <div className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar">
+                  <div 
+                    className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
+                    onWheel={(e) => e.stopPropagation()}
+                  >
                     {filteredMechanics.length === 0 ? (
                       <div className="py-6 px-2 text-center">
                         <p className="text-sm text-slate-500">No se encontraron mecánicos.</p>

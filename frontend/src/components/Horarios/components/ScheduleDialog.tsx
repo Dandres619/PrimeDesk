@@ -180,7 +180,11 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
                   <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden" align="start">
+              <PopoverContent 
+                className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto" 
+                align="start"
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
                 <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
                   <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
                     <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -192,7 +196,10 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
                     />
                   </div>
                 </div>
-                <div className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar">
+                <div 
+                  className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
+                  onWheel={(e) => e.stopPropagation()}
+                >
                   {filteredEmployees.length === 0 ? (
                     <div className="py-6 px-2 text-center">
                       <p className="text-sm text-slate-500">No se encontraron mecánicos.</p>

@@ -4,8 +4,10 @@ import { Button } from '../../ui/button';
 import { Label } from '../../ui/label';
 import { Input } from '../../ui/input';
 import { Textarea } from '../../ui/textarea';
-import { PackageSearch, Loader2 } from 'lucide-react';
+import { PackageSearch, Loader2, Search, Check, ChevronsUpDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface ProductDialogProps {
   product: any;
@@ -23,6 +25,16 @@ export function ProductDialog({ product, categories, brands, onSave, onOpenChang
     brand: ''
   });
   const [isSaving, setIsSaving] = useState(false);
+  
+  const [popovers, setPopovers] = useState({
+    brand: false,
+    category: false
+  });
+  
+  const [search, setSearch] = useState({
+    brand: '',
+    category: ''
+  });
 
   useEffect(() => {
     if (product) {
@@ -41,6 +53,16 @@ export function ProductDialog({ product, categories, brands, onSave, onOpenChang
       });
     }
   }, [product]);
+
+  const filteredBrands = brands.filter(b => 
+    b.toLowerCase().includes(search.brand.toLowerCase())
+  );
+
+  const filteredCategories = categories.filter(c => 
+    c.name.toLowerCase().includes(search.category.toLowerCase())
+  );
+
+  const selectedCategory = categories.find(c => c.id.toString() === form.categoryId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +101,8 @@ export function ProductDialog({ product, categories, brands, onSave, onOpenChang
 
         <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar space-y-6 text-left">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
+            {/* Full width row for Name */}
+            <div className="sm:col-span-2 space-y-2">
               <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nombre del Producto *</Label>
               <Input
                 placeholder="Ej. Filtro de Aceite"
@@ -89,39 +112,151 @@ export function ProductDialog({ product, categories, brands, onSave, onOpenChang
               />
             </div>
 
+            {/* Same row for Brand and Category */}
             <div className="space-y-2">
               <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Marca *</Label>
-              <select
-                value={form.brand}
-                onChange={e => setForm({ ...form, brand: e.target.value })}
-                className="w-full h-11 px-4 border border-input rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              >
-                <option value="">Seleccione una marca...</option>
-                {brands.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
+              <Popover open={popovers.brand} onOpenChange={(open) => setPopovers({ ...popovers, brand: open })}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className={cn(
+                      "w-full justify-between font-medium h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl",
+                      !form.brand && "text-slate-500"
+                    )}
+                  >
+                    <span className="truncate">
+                      {form.brand || "Seleccionar marca..."}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto" 
+                  align="start"
+                  onCloseAutoFocus={(e) => e.preventDefault()}
+                >
+                  <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                    <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                      <input
+                        className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-slate-500"
+                        placeholder="Buscar marca..."
+                        value={search.brand}
+                        onChange={(e) => setSearch({ ...search, brand: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div 
+                    className="max-h-[200px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
+                    onWheel={(e) => e.stopPropagation()}
+                  >
+                    {filteredBrands.length === 0 ? (
+                      <div className="py-6 px-2 text-center text-sm text-slate-500">
+                        No se encontraron marcas.
+                      </div>
+                    ) : (
+                      filteredBrands.map(b => (
+                        <div
+                          key={b}
+                          className={cn(
+                            "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                            "hover:bg-slate-50 dark:hover:bg-slate-900",
+                            form.brand === b && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                          )}
+                          onClick={() => {
+                            setForm({ ...form, brand: b });
+                            setPopovers({ ...popovers, brand: false });
+                            setSearch({ ...search, brand: '' });
+                          }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", form.brand === b ? "opacity-100" : "opacity-0")} />
+                          <span>{b}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
               <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Categoría *</Label>
-              <select
-                value={form.categoryId}
-                onChange={e => setForm({ ...form, categoryId: e.target.value })}
-                className="w-full h-11 px-4 border border-input rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              >
-                <option value="">Seleccione una categoría...</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <Popover open={popovers.category} onOpenChange={(open) => setPopovers({ ...popovers, category: open })}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className={cn(
+                      "w-full justify-between font-medium h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl",
+                      !form.categoryId && "text-slate-500"
+                    )}
+                  >
+                    <span className="truncate">
+                      {selectedCategory ? selectedCategory.name : "Seleccionar categoría..."}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto" 
+                  align="start"
+                  onCloseAutoFocus={(e) => e.preventDefault()}
+                >
+                  <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                    <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                      <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                      <input
+                        className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-slate-500"
+                        placeholder="Buscar categoría..."
+                        value={search.category}
+                        onChange={(e) => setSearch({ ...search, category: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div 
+                    className="max-h-[200px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
+                    onWheel={(e) => e.stopPropagation()}
+                  >
+                    {filteredCategories.length === 0 ? (
+                      <div className="py-6 px-2 text-center text-sm text-slate-500">
+                        No se encontraron categorías.
+                      </div>
+                    ) : (
+                      filteredCategories.map(c => (
+                        <div
+                          key={c.id}
+                          className={cn(
+                            "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                            "hover:bg-slate-50 dark:hover:bg-slate-900",
+                            form.categoryId === c.id.toString() && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                          )}
+                          onClick={() => {
+                            setForm({ ...form, categoryId: c.id.toString() });
+                            setPopovers({ ...popovers, category: false });
+                            setSearch({ ...search, category: '' });
+                          }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", form.categoryId === c.id.toString() ? "opacity-100" : "opacity-0")} />
+                          <span>{c.name}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Descripción</Label>
-            <Textarea
-              placeholder="Detalles del producto, especificaciones, etc."
-              value={form.description}
-              onChange={e => setForm({ ...form, description: e.target.value })}
-              className="min-h-[120px] rounded-xl focus:ring-2 focus:ring-blue-500/20"
-            />
+            {/* Description Row */}
+            <div className="sm:col-span-2 space-y-2">
+              <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Descripción</Label>
+              <Textarea
+                placeholder="Detalles del producto, especificaciones, etc."
+                value={form.description}
+                onChange={e => setForm({ ...form, description: e.target.value })}
+                className="min-h-[120px] rounded-xl focus:ring-2 focus:ring-blue-500/20"
+              />
+            </div>
           </div>
         </div>
 
