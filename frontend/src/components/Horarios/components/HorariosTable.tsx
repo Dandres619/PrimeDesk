@@ -1,42 +1,42 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../ui/pagination';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
-import { Eye, Edit2, Trash2, CalendarDays } from 'lucide-react';
+import { Eye, Edit, Trash2, CalendarDays } from 'lucide-react';
 import { Switch } from '../../ui/switch';
 
 interface HorariosTableProps {
-  schedules: any[];
+  schedulesCount: number;
+  paginatedSchedules: any[];
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  totalPages: number;
   onView: (schedule: any) => void;
   onEdit: (schedule: any) => void;
   onDelete: (schedule: any) => void;
   onToggleEstado: (schedule: any) => void;
   getEnabledDays: (schedule: any) => string[];
-  currentPage: number;
-  onPageChange: (page: number) => void;
 }
 
 export function HorariosTable({
-  schedules,
+  schedulesCount,
+  paginatedSchedules,
+  currentPage,
+  setCurrentPage,
+  totalPages,
   onView,
   onEdit,
   onDelete,
   onToggleEstado,
-  getEnabledDays,
-  currentPage,
-  onPageChange
+  getEnabledDays
 }: HorariosTableProps) {
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil(schedules.length / itemsPerPage) || 1;
-  const paginatedData = schedules.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
+  
   return (
-    <Card>
+    <Card data-slot="card">
       <CardHeader>
-        <CardTitle className="text-left flex items-center gap-2">
-          Horarios de Trabajo ({schedules.length})
+        <CardTitle data-slot="card-title" className="text-left flex items-center gap-2">
+          Horarios de Trabajo ({schedulesCount})
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -51,14 +51,14 @@ export function HorariosTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length > 0 ? paginatedData.map((s) => {
+            {paginatedSchedules.length > 0 ? paginatedSchedules.map((s) => {
               const enabledDays = getEnabledDays(s);
               return (
                 <TableRow key={s.id}>
-                  <TableCell className="text-left font-medium text-blue-600 dark:text-blue-400">
+                  <TableCell className="text-left">
                     {s.mechanicName}
                   </TableCell>
-                  <TableCell className="text-left font-medium">
+                  <TableCell className="text-left">
                     {enabledDays.length} días laborales
                   </TableCell>
                   <TableCell className="text-left">
@@ -80,11 +80,7 @@ export function HorariosTable({
                         checked={s.status === 'Activo'}
                         onCheckedChange={() => onToggleEstado(s)}
                       />
-                      {s.status === 'Activo' ? (
-                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300">{s.status}</Badge>
-                      ) : (
-                        <Badge className="bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300">{s.status}</Badge>
-                      )}
+                      <span className="text-sm">{s.status}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -100,8 +96,14 @@ export function HorariosTable({
 
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button size="sm" variant="ghost" onClick={() => onEdit(s)} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
-                            <Edit2 className="w-4 h-4" />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onEdit(s)}
+                            className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                            disabled={s.status !== 'Activo'}
+                          >
+                            <Edit className="w-4 h-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent><p>Editar horario</p></TooltipContent>
@@ -109,7 +111,13 @@ export function HorariosTable({
 
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button size="sm" variant="ghost" onClick={() => onDelete(s)} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onDelete(s)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            disabled={s.status !== 'Activo'}
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </TooltipTrigger>
@@ -132,37 +140,35 @@ export function HorariosTable({
           </TableBody>
         </Table>
 
-        {totalPages > 1 && (
-          <div className="mt-6 flex justify-center">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  />
+        <div className="mt-6 flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <PaginationItem key={p}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(p)}
+                    isActive={currentPage === p}
+                    className="cursor-pointer"
+                  >
+                    {p}
+                  </PaginationLink>
                 </PaginationItem>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                  <PaginationItem key={p}>
-                    <PaginationLink
-                      onClick={() => onPageChange(p)}
-                      isActive={currentPage === p}
-                      className="cursor-pointer"
-                    >
-                      {p}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-        )}
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       </CardContent>
     </Card>
   );

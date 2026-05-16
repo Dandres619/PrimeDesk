@@ -5,7 +5,8 @@ import { Label } from '../../ui/label';
 import { Input } from '../../ui/input';
 import { Checkbox } from '../../ui/checkbox';
 import { Badge } from '../../ui/badge';
-import { Clock, CalendarDays, Loader2, User } from 'lucide-react';
+import { AlarmClock, CalendarDays, Loader2, User, Search, Check, ChevronsUpDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -19,10 +20,14 @@ interface ScheduleDialogProps {
 
 export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpenChange }: ScheduleDialogProps) {
   const getInitialDaySchedules = () => {
-    if (schedule?.daySchedules) return JSON.parse(JSON.stringify(schedule.daySchedules));
     const initial: any = {};
-    daysOfWeek.forEach((day: string) => { 
-      initial[day] = { enabled: false, startTime: '08:00', endTime: '17:00' }; 
+    daysOfWeek.forEach((day: string) => {
+      const existing = schedule?.daySchedules?.[day];
+      initial[day] = {
+        enabled: existing?.enabled || false,
+        startTime: existing?.startTime || '08:00',
+        endTime: existing?.endTime || '17:00'
+      };
     });
     return initial;
   };
@@ -32,6 +37,8 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
     daySchedules: getInitialDaySchedules()
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isEmployeePopoverOpen, setIsEmployeePopoverOpen] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState('');
 
   useEffect(() => {
     if (schedule) {
@@ -41,51 +48,83 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
       });
     } else {
       const initial: any = {};
-      daysOfWeek.forEach((day: string) => { 
-        initial[day] = { enabled: false, startTime: '08:00', endTime: '17:00' }; 
+      daysOfWeek.forEach((day: string) => {
+        initial[day] = { enabled: false, startTime: '08:00', endTime: '17:00' };
       });
       setFormData({ employeeId: '', daySchedules: initial });
+      setEmployeeSearch('');
     }
   }, [schedule]);
 
+  const filteredEmployees = employees.filter((emp: any) =>
+    `${emp.Nombre} ${emp.Apellido}`.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+    emp.Documento?.toString().includes(employeeSearch)
+  );
+
+  const selectedEmployee = employees.find((emp: any) => emp.ID_Empleado.toString() === formData.employeeId);
+
   const toggleDay = (day: string, enabled: boolean) =>
-    setFormData(prev => ({ 
-      ...prev, 
-      daySchedules: { ...prev.daySchedules, [day]: { ...prev.daySchedules[day], enabled } } 
+    setFormData(prev => ({
+      ...prev,
+      daySchedules: {
+        ...prev.daySchedules,
+        [day]: {
+          startTime: '08:00',
+          endTime: '17:00',
+          ...prev.daySchedules[day],
+          enabled
+        }
+      }
     }));
 
+  const calculateDuration = (startTime: string, endTime: string) => {
+    if (!startTime || !endTime) return 0;
+    const start = new Date(`2024-01-01T${startTime}:00`);
+    let end = new Date(`2024-01-01T${endTime}:00`);
+    if (end <= start) {
+      end = new Date(`2024-01-02T${endTime}:00`);
+    }
+    return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+  };
+
   const updateDayTime = (day: string, field: 'startTime' | 'endTime', value: string) =>
-    setFormData(prev => ({ 
-      ...prev, 
-      daySchedules: { ...prev.daySchedules, [day]: { ...prev.daySchedules[day], [field]: value } } 
+    setFormData(prev => ({
+      ...prev,
+      daySchedules: { ...prev.daySchedules, [day]: { ...prev.daySchedules[day], [field]: value } }
     }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.employeeId) { 
-      toast.error('Por favor seleccione un mecánico'); 
-      return; 
+    if (!formData.employeeId) {
+      toast.error('Por favor seleccione un mecánico');
+      return;
     }
     const hasEnabled = Object.values(formData.daySchedules).some((d: any) => d.enabled);
-    if (!hasEnabled) { 
-      toast.error('Debe habilitar al menos un día de trabajo'); 
-      return; 
+    if (!hasEnabled) {
+      toast.error('Debe habilitar al menos un día de trabajo');
+      return;
     }
-    
+
     for (const [dayName, ds] of Object.entries(formData.daySchedules)) {
       const d = ds as any;
       if (d.enabled) {
-        if (!d.startTime || !d.endTime) { 
-          toast.error(`Complete los horarios para ${dayName}`); 
-          return; 
+        if (!d.startTime || !d.endTime) {
+          toast.error(`Complete los horarios para ${dayName}`);
+          return;
         }
-        if (d.startTime >= d.endTime) { 
-          toast.error(`Hora de inicio debe ser menor que la de fin en ${dayName}`); 
-          return; 
+
+        const duration = calculateDuration(d.startTime, d.endTime);
+        if (duration > 12) {
+          toast.error(`La jornada de ${dayName} no puede superar las 12 horas`);
+          return;
+        }
+        if (duration < 5) {
+          toast.error(`La jornada de ${dayName} debe ser de al menos 5 horas`);
+          return;
         }
       }
     }
-    
+
     setIsSaving(true);
     try {
       await onSave(formData);
@@ -97,7 +136,7 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
   const enabledDaysCount = Object.values(formData.daySchedules).filter((d: any) => d.enabled).length;
 
   return (
-    <DialogContent 
+    <DialogContent
       className={cn(
         "p-0 overflow-hidden border-none shadow-2xl rounded-2xl flex flex-col animate-modal",
         "max-w-2xl w-[95vw] bg-white dark:bg-slate-950"
@@ -107,7 +146,7 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
       <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[90vh]">
         <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex items-center gap-4 shrink-0">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none shrink-0">
-            <CalendarDays className="w-6 h-6 text-white" />
+            <AlarmClock className="w-6 h-6 text-white" />
           </div>
           <div className="text-left">
             <DialogHeader>
@@ -124,26 +163,72 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
             <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
               <User className="w-4 h-4" /> Mecánico
             </Label>
-            <select
-              id="employeeId"
-              value={formData.employeeId}
-              onChange={(e) => setFormData(prev => ({ ...prev, employeeId: e.target.value }))}
-              className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[position:right_1rem_center] bg-[size:1.1rem_1.1rem] bg-no-repeat disabled:opacity-50"
-              disabled={!!schedule}
-            >
-              <option value="">Seleccionar mecánico...</option>
-              {employees.map((emp: any) => (
-                <option key={emp.ID_Empleado} value={emp.ID_Empleado.toString()}>
-                  {emp.Nombre} {emp.Apellido}
-                </option>
-              ))}
-            </select>
+            <Popover open={isEmployeePopoverOpen} onOpenChange={setIsEmployeePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    "w-full justify-between font-medium h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl",
+                    !formData.employeeId && "text-slate-500"
+                  )}
+                  disabled={!!schedule}
+                >
+                  <span className="truncate">
+                    {selectedEmployee ? `${selectedEmployee.Nombre} ${selectedEmployee.Apellido}` : "Seleccionar mecánico..."}
+                  </span>
+                  <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden" align="start">
+                <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                  <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                    <input
+                      className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-slate-500 dark:text-white"
+                      placeholder="Buscar mecánico..."
+                      value={employeeSearch}
+                      onChange={(e) => setEmployeeSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar">
+                  {filteredEmployees.length === 0 ? (
+                    <div className="py-6 px-2 text-center">
+                      <p className="text-sm text-slate-500">No se encontraron mecánicos.</p>
+                    </div>
+                  ) : (
+                    filteredEmployees.map((emp: any) => (
+                      <div
+                        key={emp.ID_Empleado}
+                        className={cn(
+                          "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                          "hover:bg-slate-50 dark:hover:bg-slate-900",
+                          formData.employeeId === emp.ID_Empleado.toString() && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                        )}
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, employeeId: emp.ID_Empleado.toString() }));
+                          setIsEmployeePopoverOpen(false);
+                          setEmployeeSearch('');
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", formData.employeeId === emp.ID_Empleado.toString() ? "opacity-100" : "opacity-0")} />
+                        <div className="flex flex-col text-left">
+                          <span className="font-bold">{emp.Nombre} {emp.Apellido}</span>
+                          <span className="text-[10px] opacity-60">CC: {emp.Documento || 'S/N'}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
             {schedule && <p className="text-xs font-semibold text-slate-500 mt-1">El mecánico no se puede cambiar al editar un horario.</p>}
           </div>
 
           <div className="space-y-3">
             <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-600" /> Horarios por Día de la Semana
+              <AlarmClock className="w-4 h-4 text-blue-600" /> Horarios por Día de la Semana
             </Label>
             <p className="text-sm text-slate-500 dark:text-slate-400 font-semibold mb-4">Seleccione los días laborables y configure el horario específico para cada día.</p>
             <div className="space-y-3">
@@ -153,16 +238,16 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
                 return (
                   <div key={day} className={cn(
                     "border rounded-xl p-4 transition-all",
-                    isEnabled 
-                      ? "bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800 shadow-sm" 
+                    isEnabled
+                      ? "bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800 shadow-sm"
                       : "bg-slate-50/50 dark:bg-slate-900/30 border-slate-100 dark:border-slate-800"
                   )}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <Checkbox 
-                          id={`day-${day}`} 
-                          checked={isEnabled} 
-                          onCheckedChange={(checked) => toggleDay(day, checked as boolean)} 
+                        <Checkbox
+                          id={`day-${day}`}
+                          checked={isEnabled}
+                          onCheckedChange={(checked) => toggleDay(day, checked as boolean)}
                         />
                         <Label htmlFor={`day-${day}`} className={cn("font-bold cursor-pointer text-sm", isEnabled ? "text-blue-700 dark:text-blue-400" : "text-slate-600 dark:text-slate-400")}>
                           {day}
@@ -174,34 +259,53 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
                       <div className="grid grid-cols-2 gap-4 pl-7 mt-4">
                         <div>
                           <Label htmlFor={`start-${day}`} className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hora de Entrada</Label>
-                          <Input 
-                            id={`start-${day}`} 
-                            type="time" 
-                            value={ds.startTime} 
-                            onChange={(e) => updateDayTime(day, 'startTime', e.target.value)} 
-                            className="mt-1 h-10 rounded-lg bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" 
+                          <Input
+                            id={`start-${day}`}
+                            type="time"
+                            value={ds.startTime}
+                            onChange={(e) => updateDayTime(day, 'startTime', e.target.value)}
+                            className="mt-1 h-10 rounded-lg bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                           />
                         </div>
                         <div>
                           <Label htmlFor={`end-${day}`} className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hora de Salida</Label>
-                          <Input 
-                            id={`end-${day}`} 
-                            type="time" 
-                            value={ds.endTime} 
-                            onChange={(e) => updateDayTime(day, 'endTime', e.target.value)} 
-                            className="mt-1 h-10 rounded-lg bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800" 
+                          <Input
+                            id={`end-${day}`}
+                            type="time"
+                            value={ds.endTime}
+                            onChange={(e) => updateDayTime(day, 'endTime', e.target.value)}
+                            className="mt-1 h-10 rounded-lg bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                           />
                         </div>
-                        {ds.startTime && ds.endTime && ds.startTime < ds.endTime && (
+                        {ds.startTime && ds.endTime && (
                           <div className="col-span-2 mt-1">
-                            <p className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              Jornada: {(() => {
-                                const start = new Date(`2024-01-01T${ds.startTime}:00`);
-                                const end = new Date(`2024-01-01T${ds.endTime}:00`);
-                                return `${((end.getTime() - start.getTime()) / (1000 * 60 * 60)).toFixed(1)}h`;
-                              })()}
-                            </p>
+                            {(() => {
+                              const duration = calculateDuration(ds.startTime, ds.endTime);
+                              const isTooLong = duration > 12;
+                              const isTooShort = duration < 5;
+                              const isInvalid = isTooLong || isTooShort;
+                              return (
+                                <>
+                                  {isTooLong && (
+                                    <p className="text-[11px] font-bold text-red-500 mb-1">
+                                      La jornada no puede superar las 12 horas
+                                    </p>
+                                  )}
+                                  {isTooShort && (
+                                    <p className="text-[11px] font-bold text-red-500 mb-1">
+                                      La jornada debe ser de al menos 5 horas
+                                    </p>
+                                  )}
+                                  <p className={cn(
+                                    "text-xs font-bold flex items-center gap-1",
+                                    isInvalid ? "text-red-500" : "text-blue-600 dark:text-blue-400"
+                                  )}>
+                                    <AlarmClock className="w-3 h-3" />
+                                    Jornada: {duration.toFixed(1)}h {ds.startTime >= ds.endTime ? '(Horario nocturno)' : ''}
+                                  </p>
+                                </>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>

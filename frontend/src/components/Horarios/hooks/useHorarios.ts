@@ -40,8 +40,8 @@ export function useHorarios() {
 
   const token = localStorage.getItem('token');
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     const headers = { 'Authorization': `Bearer ${token}` };
     try {
       const [resHor, resEmp] = await Promise.allSettled([
@@ -99,7 +99,7 @@ export function useHorarios() {
       toast.success(`Horario ${isEditing ? 'actualizado' : 'creado'} exitosamente`);
       setIsDialogOpen(false);
       setEditingSchedule(null);
-      fetchData();
+      fetchData(true);
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -115,18 +115,13 @@ export function useHorarios() {
       });
       if (!res.ok) throw new Error('Error al cambiar el estado');
       toast.success('Estado del horario actualizado');
-      fetchData();
+      fetchData(true);
     } catch (err: any) {
       toast.error(err.message);
     }
   };
 
   const handleDelete = async (schedule: any) => {
-    if (schedule.status === 'Activo') {
-      toast.error('No se puede eliminar un horario activo. Primero debe inactivarlo.');
-      return;
-    }
-
     try {
       const res = await fetch(`${API_URL}/horarios/empleado/${schedule.id}`, {
         method: 'DELETE',
@@ -137,7 +132,7 @@ export function useHorarios() {
         throw new Error(err.message || 'Error al eliminar horario');
       }
       toast.success('Horario eliminado exitosamente');
-      fetchData();
+      fetchData(true);
     } catch (err: any) {
       toast.error(err.message);
     }
