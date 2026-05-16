@@ -53,7 +53,7 @@ export function ServiciosTable({
               paginatedServices.map(s => (
                 <TableRow key={s.ID_Servicio}>
                   <TableCell>
-                    <p className="font-medium text-left">{s.Nombre}</p>
+                    <p className="text-left">{s.Nombre}</p>
                   </TableCell>
                   <TableCell>
                     {s.Descripcion && s.Descripcion.length > 45 ? (
@@ -142,21 +142,21 @@ export function ServiciosTable({
         </Table>
 
         <div className="mt-6 flex justify-center">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+              </PaginationItem>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <PaginationItem key={p}>
+                  <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">{p}</PaginationLink>
                 </PaginationItem>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                  <PaginationItem key={p}>
-                    <PaginationLink onClick={() => setCurrentPage(p)} isActive={currentPage === p} className="cursor-pointer">{p}</PaginationLink>
-                  </PaginationItem>
-                ))}
-                <PaginationItem>
-                  <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+              ))}
+              <PaginationItem>
+                <PaginationNext onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"} />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       </CardContent>
     </Card>

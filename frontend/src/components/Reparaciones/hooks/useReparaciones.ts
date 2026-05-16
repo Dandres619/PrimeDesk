@@ -46,7 +46,7 @@ export function useReparaciones() {
 
       setReparaciones(dataRep.map((r: any) => ({
         id: r.ID_Reparacion,
-        orderNumber: `R-${r.ID_Reparacion.toString().padStart(3, '0')}`,
+        orderNumber: r.ID_Reparacion.toString().padStart(3, '0'),
         motorcycleId: r.ID_Motocicleta,
         motorcycleBrand: r.Marca,
         motorcycleModel: r.Modelo,

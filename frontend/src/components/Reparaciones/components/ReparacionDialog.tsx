@@ -4,7 +4,7 @@ import { Label } from '../../ui/label';
 import { Button } from '../../ui/button';
 import { Textarea } from '../../ui/textarea';
 import { Badge } from '../../ui/badge';
-import { Wrench, Check, User, Bike, AlertCircle, FileImage, Plus, Loader2, Info } from 'lucide-react';
+import { ClipboardPen, Check, User, Bike, AlertCircle, FileImage, Plus, Loader2, Info, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
@@ -218,7 +218,7 @@ export function ReparacionDialog({
           <>
             <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex items-center gap-4 shrink-0">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none shrink-0">
-                <Wrench className="w-6 h-6 text-white" />
+                <ClipboardPen className="w-6 h-6 text-white" />
               </div>
               <div className="text-left">
                 <DialogHeader>

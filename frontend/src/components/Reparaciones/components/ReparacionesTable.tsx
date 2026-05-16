@@ -7,28 +7,29 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
 import { Eye, Edit2, XCircle, FileText, ClipboardList } from 'lucide-react';
 
 interface ReparacionesTableProps {
-  reparaciones: any[];
+  reparacionesCount: number;
+  paginatedReparaciones: any[];
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  totalPages: number;
   onView: (order: any) => void;
   onEdit: (order: any) => void;
   onAnular: (id: number) => void;
   onDownload: (order: any) => void;
-  currentPage: number;
-  onPageChange: (page: number) => void;
 }
 
 export function ReparacionesTable({
-  reparaciones,
+  reparacionesCount,
+  paginatedReparaciones,
+  currentPage,
+  setCurrentPage,
+  totalPages,
   onView,
   onEdit,
   onAnular,
-  onDownload,
-  currentPage,
-  onPageChange
+  onDownload
 }: ReparacionesTableProps) {
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil(reparaciones.length / itemsPerPage) || 1;
-  const paginatedData = reparaciones.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
+  
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Pendiente de Venta':
@@ -46,10 +47,10 @@ export function ReparacionesTable({
   };
 
   return (
-    <Card>
+    <Card data-slot="card">
       <CardHeader>
-        <CardTitle className="text-left flex items-center gap-2">
-          Lista de Reparaciones ({reparaciones.length})
+        <CardTitle data-slot="card-title" className="text-left flex items-center gap-2">
+          Lista de Reparaciones ({reparacionesCount})
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -64,7 +65,7 @@ export function ReparacionesTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.length > 0 ? paginatedData.map((o) => (
+            {paginatedReparaciones.length > 0 ? paginatedReparaciones.map((o) => (
               <TableRow key={o.id}>
                 <TableCell className="text-left font-medium text-blue-600 dark:text-blue-400">
                   {o.orderNumber}
@@ -138,37 +139,35 @@ export function ReparacionesTable({
           </TableBody>
         </Table>
 
-        {totalPages > 1 && (
-          <div className="mt-6 flex justify-center">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  />
+        <div className="mt-6 flex justify-center">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                <PaginationItem key={p}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(p)}
+                    isActive={currentPage === p}
+                    className="cursor-pointer"
+                  >
+                    {p}
+                  </PaginationLink>
                 </PaginationItem>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                  <PaginationItem key={p}>
-                    <PaginationLink
-                      onClick={() => onPageChange(p)}
-                      isActive={currentPage === p}
-                      className="cursor-pointer"
-                    >
-                      {p}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-        )}
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
       </CardContent>
     </Card>
   );

@@ -3,7 +3,7 @@ import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
-import { Bike, Wrench } from 'lucide-react';
+import { Bike, ClipboardPen, Wrench } from 'lucide-react';
 
 interface ReparacionDetailsProps {
   reparacion: any;
@@ -27,7 +27,7 @@ export function ReparacionDetails({ reparacion, getStatusBadge, onClose }: Repar
         <div className="relative z-10 flex flex-col gap-6 text-left">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none shrink-0 transition-transform hover:scale-105">
-              <Wrench className="w-6 h-6 text-white" />
+              <ClipboardPen className="w-6 h-6 text-white" />
             </div>
             <div>
               <DialogHeader>

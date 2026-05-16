@@ -46,6 +46,10 @@ export function Reparaciones() {
     setPdfPreview({ open: true, data: order, type: 'service-order' });
   };
 
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(reparaciones.length / itemsPerPage) || 1;
+  const paginatedReparaciones = reparaciones.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Pendiente de Venta':
@@ -80,7 +84,11 @@ export function Reparaciones() {
           />
 
           <ReparacionesTable
-            reparaciones={reparaciones}
+            reparacionesCount={reparaciones.length}
+            paginatedReparaciones={paginatedReparaciones}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            totalPages={totalPages}
             onView={handleOpenView}
             onEdit={handleOpenEdit}
             onAnular={(id) => setConfirmDialog({
@@ -92,8 +100,6 @@ export function Reparaciones() {
               onConfirm: () => anularReparacion(id)
             })}
             onDownload={handleDownload}
-            currentPage={currentPage}
-            onPageChange={setCurrentPage}
           />
 
           {/* New/Edit Dialog */}
