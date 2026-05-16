@@ -37,7 +37,7 @@ export function useVentas() {
           invoiceNumber: `VEN-${v.ID_Venta.toString().padStart(3, '0')}`,
           date: v.Fecha,
           clientName: `${v.NombreCliente} ${v.ApellidoCliente}`.trim(),
-          serviceOrderNumber: v.ID_Reparacion ? `R-${v.ID_Reparacion.toString().padStart(3, '0')}` : '',
+          serviceOrderNumber: v.ID_Reparacion ? v.ID_Reparacion.toString() : '',
           total: parseFloat(v.Total),
           anulada: v.Estado === false
         })));
@@ -86,7 +86,7 @@ export function useVentas() {
         const data = await resReparaciones.json();
         setServiceOrders(data.map((r: any) => ({
           id: r.ID_Reparacion,
-          orderNumber: r.id ? `R-${r.id.toString().padStart(3, '0')}` : r.ID_Reparacion,
+          orderNumber: r.id ? r.id.toString() : r.ID_Reparacion,
           clientId: r.ID_Cliente,
           clientName: r.NombreCliente,
           motorcycleId: r.ID_Motocicleta,
@@ -180,7 +180,7 @@ export function useVentas() {
         motorcycleBrand: data.MarcaMoto,
         motorcycleModel: data.ModeloMoto,
         motorcyclePlate: data.Placa,
-        serviceOrderNumber: data.ID_Reparacion ? `R-${data.ID_Reparacion.toString().padStart(3, '0')}` : 'N/A',
+        serviceOrderNumber: data.ID_Reparacion ? data.ID_Reparacion.toString() : 'N/A',
         serviceTypes: data.TiposServicio || [],
         parts: data.Repuestos || [],
         purchaseInvoices: data.FacturasCompras || [],
