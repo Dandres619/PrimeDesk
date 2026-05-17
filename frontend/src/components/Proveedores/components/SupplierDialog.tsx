@@ -205,6 +205,34 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
     setTouched({});
   }, [supplier]);
 
+  const handleCancel = () => {
+    if (supplier) {
+      setForm({
+        name: supplier.name || '',
+        contact: supplier.contact || '',
+        phone: supplier.phone || '',
+        email: supplier.email || '',
+        address: supplier.address || '',
+        city: supplier.city || '',
+        country: supplier.country || 'Colombia',
+        taxId: supplier.taxId || '',
+        website: supplier.website || '',
+        specialty: supplier.specialty || '',
+        notes: supplier.notes || '',
+        personType: supplier.personType || 'Natural'
+      });
+    } else {
+      setForm({
+        name: '', contact: '', phone: '', email: '', address: '', city: '',
+        country: 'Colombia', taxId: '', website: '', specialty: '', notes: '',
+        personType: 'Natural'
+      });
+    }
+    setErrors({});
+    setTouched({});
+    onOpenChange(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -475,7 +503,7 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
           <Button
             type="button"
             variant="ghost"
-            onClick={() => onOpenChange(false)}
+            onClick={handleCancel}
             className="h-11 px-6 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl w-full sm:w-auto"
           >
             Cancelar
