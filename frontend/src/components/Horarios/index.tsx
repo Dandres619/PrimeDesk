@@ -99,7 +99,7 @@ export function Horarios() {
             <ScheduleDialog
               schedule={editDialog.schedule}
               employees={employees}
-              daysOfWeek={DAYS_OF_WEEK.filter(d => d !== 'Sábado' && d !== 'Domingo')}
+              daysOfWeek={DAYS_OF_WEEK}
               onSave={(data) => {
                 handleSave(data);
                 setEditDialog(prev => ({ ...prev, open: false }));
