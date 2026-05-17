@@ -1,32 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Button } from '../../ui/button';
 import { Textarea } from '../../ui/textarea';
 import { Badge } from '../../ui/badge';
-import { ClipboardPen, Check, User, Bike, AlertCircle, FileImage, Plus, Loader2, Info, Wrench } from 'lucide-react';
+import { ClipboardPen, Check, User, Bike, AlertCircle, FileImage, Plus, Loader2, Info, Wrench, Search, ChevronsUpDown, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
+import { format, parseISO } from 'date-fns';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
 interface ReparacionDialogProps {
+  isOpen: boolean;
   clients: any[];
   motorcycles: any[];
   mechanics: any[];
   availableServices: any[];
   editingOrder: any;
+  isSaving?: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: any) => void;
   onOrderUpdated?: () => void; // New prop to notify parent of changes
 }
 
 export function ReparacionDialog({
+  isOpen,
   clients,
   motorcycles,
+  mechanics,
   availableServices,
   editingOrder,
+  isSaving = false,
   onOpenChange,
   onSave,
 }: ReparacionDialogProps) {
@@ -35,11 +42,246 @@ export function ReparacionDialog({
     motorcycleId: '',
     selectedServices: [] as number[],
     observations: '',
-    nota_estado: ''
+    nota_estado: '',
+    startTime: '',
+    mechanicId: '',
+    date: format(new Date(), 'yyyy-MM-dd')
   });
+
+  const [popovers, setPopovers] = useState({
+    client: false,
+    motorcycle: false,
+    startTime: false,
+    mechanic: false
+  });
+
+  const [search, setSearch] = useState({
+    client: '',
+    motorcycle: '',
+    mechanic: ''
+  });
+
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+
+  const token = localStorage.getItem('token');
+  const [horarios, setHorarios] = useState<any[]>([]);
+  const [existingAppointments, setExistingAppointments] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!editingOrder) {
+      const fetchAgendas = async () => {
+        try {
+          const headers = { 'Authorization': `Bearer ${token}` };
+          const [resHor, resAge] = await Promise.all([
+            fetch(`${API_URL}/horarios`, { headers }),
+            fetch(`${API_URL}/agendamientos`, { headers })
+          ]);
+          if (resHor.ok) {
+            const dataHor = await resHor.json();
+            setHorarios(dataHor);
+          }
+          if (resAge.ok) {
+            const dataAge = await resAge.json();
+            setExistingAppointments(dataAge.map((a: any) => ({
+              id: a.ID_Agendamiento,
+              date: a.Fecha || a.Dia,
+              startTime: a.HoraInicio || a.Hora_inicio || a.horainicio || '',
+              endTime: a.HoraFin || a.Hora_fin || a.horafin || '',
+              clientId: a.ID_Cliente,
+              motorcycleId: a.ID_Motocicleta,
+              mechanicId: a.ID_Empleado
+            })));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      fetchAgendas();
+    }
+  }, [editingOrder]);
+
+  const filteredClients = clients.filter((c: any) =>
+    `${c.Nombre} ${c.Apellido}`.toLowerCase().includes(search.client.toLowerCase()) ||
+    c.Documento.toString().includes(search.client)
+  );
+
+  const clientMotorcycles = motorcycles.filter((m: any) =>
+    (!formData.clientId || m.ID_Cliente === parseInt(formData.clientId)) &&
+    (m.Placa.toLowerCase().includes(search.motorcycle.toLowerCase()) ||
+      m.Marca.toLowerCase().includes(search.motorcycle.toLowerCase()) ||
+      m.Modelo.toLowerCase().includes(search.motorcycle.toLowerCase()))
+  );
+
+  const selectedClient = clients.find((c: any) => c.ID_Cliente === parseInt(formData.clientId));
+  const selectedMoto = motorcycles.find((m: any) => m.ID_Motocicleta === parseInt(formData.motorcycleId));
+
+  const [selectedSection, setSelectedSection] = useState<'mañana' | 'tarde' | 'noche'>(() => {
+    const currentHour = new Date().getHours();
+    if (currentHour >= 6 && currentHour < 12) return 'mañana';
+    if (currentHour >= 12 && currentHour < 18) return 'tarde';
+    return 'noche';
+  });
+
+  useEffect(() => {
+    if (formData.startTime) {
+      const hour = parseInt(formData.startTime.split(':')[0]);
+      if (hour >= 6 && hour < 12) {
+        setSelectedSection('mañana');
+      } else if (hour >= 12 && hour < 18) {
+        setSelectedSection('tarde');
+      } else if (hour >= 18 && hour < 24) {
+        setSelectedSection('noche');
+      }
+    }
+  }, [formData.startTime]);
+
+  const potentialStartTimes = useMemo(() => {
+    const times: string[] = [];
+    const startHour = 6;
+    const endHour = 24;
+    for (let h = startHour; h < endHour; h++) {
+      for (let m = 0; m < 60; m += 10) {
+        times.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+      }
+    }
+    return times;
+  }, []);
+
+  const durationData = useMemo(() => {
+    if (formData.selectedServices.length === 0) return { minutes: 0, text: '0 min', endTime: formData.startTime };
+
+    const servicesMinutes = formData.selectedServices.reduce((acc: number, id: number) => {
+      const service = availableServices.find((s: any) => s.ID_Servicio === id || s.id_servicio === id);
+      return acc + (service?.Duracion || service?.duracion || 0);
+    }, 0);
+
+    const hours = Math.floor(servicesMinutes / 60);
+    const mins = servicesMinutes % 60;
+
+    let text = '';
+    if (hours > 0) text += `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+    if (mins > 0) text += `${hours > 0 ? ' y ' : ''}${mins} min`;
+    if (text === '') text = '0 min';
+
+    let endTime = '';
+    if (formData.startTime) {
+      const [h, m] = formData.startTime.split(':').map(Number);
+      const totalStartMins = h * 60 + m;
+      const totalEndMins = totalStartMins + servicesMinutes;
+      const endH = Math.floor(totalEndMins / 60) % 24;
+      const endM = totalEndMins % 60;
+      endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+    }
+
+    return { minutes: servicesMinutes, text, endTime };
+  }, [formData.selectedServices, formData.startTime, availableServices]);
+
+  useEffect(() => {
+    if (durationData.endTime && durationData.endTime !== (formData as any).endTime) {
+      setFormData(prev => ({ ...prev, endTime: durationData.endTime }));
+    }
+  }, [durationData.endTime]);
+
+  const daysMap: Record<number, string> = {
+    1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo'
+  };
+
+  const availableMechanicsForTime = useMemo(() => {
+    if (!formData.date || !formData.startTime) return [];
+
+    const selectedDate = parseISO(formData.date);
+    const dayName = daysMap[selectedDate.getDay()];
+
+    const addMinutesToTime = (timeStr: string, mins: number) => {
+      if (!timeStr) return '';
+      const [h, m] = timeStr.split(':').map(Number);
+      const totalMins = h * 60 + m + mins;
+      const endH = Math.floor(totalMins / 60) % 24;
+      const endM = totalMins % 60;
+      return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+    };
+
+    return mechanics.filter((mech: any) => {
+      const hasSchedule = horarios.some((h: any) => {
+        const entrada = (h.HoraEntrada || h.Hora_entrada || '00:00').slice(0, 5);
+        const salida = (h.HoraSalida || h.Hora_salida || '23:59').slice(0, 5);
+        return (
+          h.ID_Empleado === mech.ID_Empleado &&
+          h.Dia === dayName &&
+          h.Estado &&
+          formData.startTime >= entrada &&
+          formData.startTime < salida
+        );
+      });
+
+      if (!hasSchedule) return false;
+
+      const isBusy = existingAppointments.some((a: any) => {
+        if (a.mechanicId !== mech.ID_Empleado || a.date !== formData.date) return false;
+
+        const existStart = (a.startTime || '').slice(0, 5);
+        const existEndBase = (a.endTime || '').slice(0, 5);
+        const existBlockedUntil = addMinutesToTime(existEndBase, 20);
+
+        const newStart = formData.startTime;
+        const newBlockedUntil = addMinutesToTime(formData.startTime, durationData.minutes + 20);
+
+        return newStart < existBlockedUntil && existStart < newBlockedUntil;
+      });
+
+      return !isBusy;
+    });
+  }, [formData.date, formData.startTime, mechanics, horarios, existingAppointments, durationData.minutes]);
+
+  const selectedMechanic = mechanics.find((m: any) => m.ID_Empleado === parseInt(formData.mechanicId));
+
+  const selectedMechanicSchedule = useMemo(() => {
+    if (!formData.mechanicId || !formData.date) return null;
+    const selectedDate = parseISO(formData.date);
+    const dayName = daysMap[selectedDate.getDay()];
+    const schedule = horarios.find((h: any) =>
+      h.ID_Empleado === parseInt(formData.mechanicId) &&
+      h.Dia === dayName &&
+      h.Estado
+    );
+    if (!schedule) return null;
+    return {
+      entrada: (schedule.HoraEntrada || schedule.Hora_entrada || '00:00').slice(0, 5),
+      salida: (schedule.HoraSalida || schedule.Hora_salida || '23:59').slice(0, 5)
+    };
+  }, [formData.mechanicId, formData.date, horarios]);
+
+  const selectedTimeDisplay = useMemo(() => {
+    if (!formData.startTime) return 'Seleccionar hora de inicio...';
+    const [h, m] = formData.startTime.split(':');
+    const d = new Date();
+    d.setHours(parseInt(h), parseInt(m), 0);
+    return format(d, 'hh:mm a');
+  }, [formData.startTime]);
+
+  const errors = useMemo(() => {
+    const errs: Record<string, string> = {};
+    if (!formData.clientId) errs.clientId = 'El cliente responsable es obligatorio.';
+    if (!formData.motorcycleId) errs.motorcycleId = 'El vehículo es obligatorio.';
+    if (!formData.startTime) errs.startTime = 'La hora de inicio es obligatoria.';
+
+    if (!formData.mechanicId) {
+      errs.mechanicId = 'El mecánico disponible es obligatorio.';
+    } else if (selectedMechanicSchedule && durationData.endTime) {
+      if (durationData.endTime > selectedMechanicSchedule.salida) {
+        errs.scheduleExceeded = 'La duración estimada excede la jornada del mecánico.';
+      }
+    }
+
+    if (formData.selectedServices.length === 0) {
+      errs.services = 'Debe seleccionar al menos un servicio requerido.';
+    }
+    return errs;
+  }, [formData, selectedMechanicSchedule, durationData.endTime]);
 
   const [activeTab, setActiveTab] = useState<'servicios' | 'repuestos'>('servicios');
   const [localOrder, setLocalOrder] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
 
   // States for new Repuesto
@@ -52,24 +294,49 @@ export function ReparacionDialog({
   const [confirmDialog, setConfirmDialog] = useState({ open: false, type: 'start' as 'start' | 'finish', title: '', description: '' });
   const [finalizeServiceDialog, setFinalizeServiceDialog] = useState({ open: false, serviceId: null as number | null, obs: '', serviceName: '' });
 
-  const token = localStorage.getItem('token');
-
   useEffect(() => {
-    if (editingOrder) {
-      setLocalOrder(editingOrder);
-      setFormData({
-        clientId: editingOrder.ID_Cliente?.toString() || '',
-        motorcycleId: editingOrder.ID_Motocicleta?.toString() || '',
-        selectedServices: editingOrder.servicios?.map((s: any) => s.ID_Servicio) || [],
-        observations: editingOrder.Observaciones || '',
-        nota_estado: editingOrder.NotaEstado || ''
-      });
-      fetchProducts();
+    setPopovers({ client: false, motorcycle: false, startTime: false, mechanic: false });
+    setSearch({ client: '', motorcycle: '', mechanic: '' });
+    setSubmitAttempted(false);
+
+    if (!isOpen) {
+      // Delay resetting to prevent visual layout jumps/resizes during the exit animation!
+      const timer = setTimeout(() => {
+        setIsEditMode(false);
+        setLocalOrder(null);
+      }, 300);
+      return () => clearTimeout(timer);
     } else {
-      setLocalOrder(null);
-      setFormData({ clientId: '', motorcycleId: '', selectedServices: [], observations: '', nota_estado: '' });
+      if (editingOrder) {
+        setIsEditMode(true);
+        setLocalOrder(editingOrder);
+        setFormData({
+          clientId: editingOrder.ID_Cliente?.toString() || '',
+          motorcycleId: editingOrder.ID_Motocicleta?.toString() || '',
+          selectedServices: editingOrder.servicios?.map((s: any) => s.ID_Servicio) || [],
+          observations: editingOrder.Observaciones || '',
+          nota_estado: editingOrder.NotaEstado || '',
+          startTime: '',
+          mechanicId: '',
+          date: format(new Date(), 'yyyy-MM-dd')
+        });
+        fetchProducts();
+      } else {
+        setIsEditMode(false);
+        setLocalOrder(null);
+        setFormData({
+          clientId: '',
+          motorcycleId: '',
+          selectedServices: [],
+          observations: '',
+          nota_estado: '',
+          startTime: '',
+          mechanicId: '',
+          date: format(new Date(), 'yyyy-MM-dd')
+        });
+      }
     }
-  }, [editingOrder]);
+  }, [isOpen, editingOrder]);
 
   const fetchProducts = async () => {
     try {
@@ -198,6 +465,22 @@ export function ReparacionDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!editingOrder) {
+      setSubmitAttempted(true);
+      const currentErrors = { ...errors };
+
+      if (currentErrors.scheduleExceeded) {
+        toast.error('La duración de los servicios excede la jornada laboral del mecánico.');
+        return;
+      }
+
+      if (Object.keys(currentErrors).length > 0) {
+        toast.error('Por favor, complete todos los campos obligatorios del registro.');
+        return;
+      }
+    }
+
     onSave(formData);
   };
 
@@ -205,16 +488,16 @@ export function ReparacionDialog({
     <DialogContent
       className={cn(
         "p-0 overflow-hidden border-none shadow-2xl rounded-2xl flex flex-col animate-modal",
-        editingOrder
+        isEditMode
           ? "sm:max-w-none w-[98vw] max-w-[1300px] h-[90vh] bg-white dark:bg-slate-950 transition-all duration-500"
-          : "max-w-lg w-[95vw] bg-white dark:bg-slate-950"
+          : "max-w-lg w-[95vw] max-h-[85vh] bg-white dark:bg-slate-950"
       )}
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
-      <form onSubmit={handleSubmit} className="flex flex-col h-full">
+      <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[inherit] overflow-hidden w-full">
 
         {/* LAYOUT PARA NUEVA REPARACIÓN (ESTÁNDAR PRIME DESK) */}
-        {!editingOrder ? (
+        {!isEditMode ? (
           <>
             <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex items-center gap-4 shrink-0">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none shrink-0">
@@ -231,40 +514,358 @@ export function ReparacionDialog({
             </div>
 
             <div className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar text-left">
+              <div className="p-4 rounded-xl bg-blue-50/80 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-left flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-blue-800 dark:text-blue-300">
+                    Registro Rápido Presencial (Solo Hoy)
+                  </p>
+                  <p className="text-[11px] font-medium text-blue-600/95 dark:text-blue-400/80 leading-relaxed">
+                    Esta reparación se creará únicamente para el día de hoy si el cliente acude sin agendamiento previo y hay mecánicos con disponibilidad. Si requiere programar para otra fecha, diríjase al módulo de <strong>Agendamientos</strong>.
+                  </p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <User className="w-4 h-4" /> Cliente Responsable
+                    <User className="w-4 h-4 text-blue-500" /> Cliente Responsable *
                   </Label>
-                  <select
-                    value={formData.clientId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientId: e.target.value, motorcycleId: '' }))}
-                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[position:right_1rem_center] bg-[size:1.1rem_1.1rem] bg-no-repeat"
-                  >
-                    <option value="">Seleccionar cliente...</option>
-                    {clients.map((c: any) => (
-                      <option key={c.ID_Cliente} value={c.ID_Cliente}>{c.Nombre} {c.Apellido}</option>
-                    ))}
-                  </select>
+                  <Popover open={popovers.client} onOpenChange={(open) => setPopovers({ ...popovers, client: open })}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        type="button"
+                        className={cn(
+                          "w-full justify-between font-medium h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl transition-all",
+                          !formData.clientId && "text-slate-500",
+                          submitAttempted && errors.clientId && "border-red-500 dark:border-red-500 focus:ring-red-500/20 bg-red-50/10"
+                        )}
+                      >
+                        <span className="truncate">
+                          {selectedClient ? `${selectedClient.Nombre} ${selectedClient.Apellido}` : "Seleccionar cliente..."}
+                        </span>
+                        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto"
+                      align="start"
+                      onCloseAutoFocus={(e) => e.preventDefault()}
+                    >
+                      <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                        <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                          <input
+                            className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-slate-500"
+                            placeholder="Buscar cliente..."
+                            value={search.client}
+                            onChange={(e) => setSearch({ ...search, client: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div
+                        className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
+                        onWheel={(e) => e.stopPropagation()}
+                      >
+                        {filteredClients.length === 0 ? (
+                          <div className="py-6 px-2 text-center">
+                            <p className="text-sm text-slate-500">No se encontraron clientes.</p>
+                          </div>
+                        ) : (
+                          filteredClients.map((c: any) => (
+                            <div
+                              key={c.ID_Cliente}
+                              className={cn(
+                                "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                                "hover:bg-slate-50 dark:hover:bg-slate-900",
+                                formData.clientId === c.ID_Cliente.toString() && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                              )}
+                              onClick={() => {
+                                setFormData({ ...formData, clientId: c.ID_Cliente.toString(), motorcycleId: '' });
+                                setPopovers({ ...popovers, client: false });
+                                setSearch({ ...search, client: '' });
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", formData.clientId === c.ID_Cliente.toString() ? "opacity-100" : "opacity-0")} />
+                              <div className="flex flex-col text-left">
+                                <span>{c.Nombre} {c.Apellido}</span>
+                                <span className="text-[10px] opacity-60">CC: {c.Documento}</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  {submitAttempted && errors.clientId && (
+                    <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {errors.clientId}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <Bike className="w-4 h-4" /> Vehículo (Placa)
+                    <Bike className="w-4 h-4 text-blue-500" /> Vehículo (Placa) *
                   </Label>
-                  <select
-                    value={formData.motorcycleId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, motorcycleId: e.target.value }))}
-                    className="w-full h-11 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-sm font-medium text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[position:right_1rem_center] bg-[size:1.1rem_1.1rem] bg-no-repeat disabled:opacity-50"
-                    disabled={!formData.clientId}
-                  >
-                    <option value="">Seleccionar moto...</option>
-                    {motorcycles
-                      .filter((m: any) => m.ID_Cliente === parseInt(formData.clientId))
-                      .map((m: any) => (
-                        <option key={m.ID_Motocicleta} value={m.ID_Motocicleta}>{m.Placa} - {m.Marca}</option>
-                      ))}
-                  </select>
+                  <Popover open={popovers.motorcycle} onOpenChange={(open) => setPopovers({ ...popovers, motorcycle: open })}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        type="button"
+                        className={cn(
+                          "w-full justify-between font-medium h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl transition-all",
+                          !formData.motorcycleId && "text-slate-500",
+                          submitAttempted && errors.motorcycleId && "border-red-500 dark:border-red-500 focus:ring-red-500/20 bg-red-50/10"
+                        )}
+                        disabled={!formData.clientId}
+                      >
+                        <span className="truncate">
+                          {selectedMoto ? `${selectedMoto.Placa} — ${selectedMoto.Marca} ${selectedMoto.Modelo}` : "Seleccionar motocicleta..."}
+                        </span>
+                        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto"
+                      align="start"
+                      onCloseAutoFocus={(e) => e.preventDefault()}
+                    >
+                      <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                        <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                          <input
+                            className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-slate-500"
+                            placeholder="Buscar placa o modelo..."
+                            value={search.motorcycle}
+                            onChange={(e) => setSearch({ ...search, motorcycle: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div
+                        className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
+                        onWheel={(e) => e.stopPropagation()}
+                      >
+                        {clientMotorcycles.length === 0 ? (
+                          <div className="py-6 px-2 text-center">
+                            <p className="text-sm text-slate-500">No se encontraron motocicletas.</p>
+                          </div>
+                        ) : (
+                          clientMotorcycles.map((m: any) => (
+                            <div
+                              key={m.ID_Motocicleta}
+                              className={cn(
+                                "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                                "hover:bg-slate-50 dark:hover:bg-slate-900",
+                                formData.motorcycleId === m.ID_Motocicleta.toString() && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                              )}
+                              onClick={() => {
+                                setFormData({ ...formData, motorcycleId: m.ID_Motocicleta.toString() });
+                                setPopovers({ ...popovers, motorcycle: false });
+                                setSearch({ ...search, motorcycle: '' });
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", formData.motorcycleId === m.ID_Motocicleta.toString() ? "opacity-100" : "opacity-0")} />
+                              <div className="flex flex-col text-left">
+                                <span>{m.Placa}</span>
+                                <span className="text-[10px] opacity-60">{m.Marca} {m.Modelo}</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  {submitAttempted && errors.motorcycleId && (
+                    <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {errors.motorcycleId}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                <div className="space-y-2 text-left">
+                  <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-blue-500" /> Hora de Inicio *
+                  </Label>
+                  <Popover open={popovers.startTime} onOpenChange={(open) => setPopovers({ ...popovers, startTime: open })}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        type="button"
+                        className={cn(
+                          "w-full justify-between font-bold h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl transition-all",
+                          !formData.startTime && "text-slate-500 font-medium",
+                          submitAttempted && errors.startTime && "border-red-500 dark:border-red-500 focus:ring-red-500/20 bg-red-50/10"
+                        )}
+                      >
+                        <span className="truncate">{selectedTimeDisplay}</span>
+                        <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto flex flex-col"
+                      align="start"
+                    >
+                      <div className="flex border-b border-slate-100 dark:border-slate-800 p-1 gap-1 bg-slate-50 dark:bg-slate-900 shrink-0">
+                        {(['mañana', 'tarde', 'noche'] as const).map((section) => (
+                          <button
+                            key={section}
+                            type="button"
+                            className={cn(
+                              "flex-1 py-1.5 px-3 text-xs font-black rounded-lg transition-all capitalize",
+                              selectedSection === section
+                                ? "bg-white dark:bg-slate-950 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/50 dark:border-slate-800/50"
+                                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                            )}
+                            onClick={() => setSelectedSection(section)}
+                          >
+                            {section}
+                          </button>
+                        ))}
+                      </div>
+                      <div
+                        className="max-h-[200px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar flex-1"
+                        onWheel={(e) => e.stopPropagation()}
+                      >
+                        {potentialStartTimes
+                          .filter(slot => {
+                            const hour = parseInt(slot.split(':')[0]);
+                            if (selectedSection === 'mañana') return hour >= 6 && hour < 12;
+                            if (selectedSection === 'tarde') return hour >= 12 && hour < 18;
+                            return hour >= 18 && hour < 24;
+                          })
+                          .map(slot => {
+                            const [h, m] = slot.split(':');
+                            const slotDate = new Date();
+                            slotDate.setHours(parseInt(h), parseInt(m), 0);
+                            const formattedSlot = format(slotDate, 'hh:mm a');
+
+                            return (
+                              <div
+                                key={slot}
+                                id={`time-slot-${slot}`}
+                                className={cn(
+                                  "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                                  "hover:bg-slate-50 dark:hover:bg-slate-900",
+                                  formData.startTime === slot && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                                )}
+                                onClick={() => {
+                                  setFormData({ ...formData, startTime: slot, mechanicId: '' });
+                                  setPopovers({ ...popovers, startTime: false });
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", formData.startTime === slot ? "opacity-100" : "opacity-0")} />
+                                <span className="uppercase">{formattedSlot}</span>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  {submitAttempted && errors.startTime && (
+                    <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {errors.startTime}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2 text-left">
+                  <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    <User className="w-4 h-4 text-blue-500" /> Mecánico Disponible *
+                  </Label>
+                  {!formData.startTime ? (
+                    <Button
+                      variant="outline"
+                      disabled
+                      type="button"
+                      className="w-full justify-between font-medium h-11 px-4 text-left bg-slate-100 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/80 rounded-xl text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-70"
+                    >
+                      <span className="truncate">Primero seleccione la hora de inicio...</span>
+                      <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-30 ml-2" />
+                    </Button>
+                  ) : availableMechanicsForTime.length > 0 ? (
+                    <Popover open={popovers.mechanic} onOpenChange={(open) => setPopovers({ ...popovers, mechanic: open })}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          type="button"
+                          className={cn(
+                            "w-full justify-between font-medium h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl transition-all",
+                            !formData.mechanicId && "text-slate-500",
+                            submitAttempted && errors.mechanicId && "border-red-500 dark:border-red-500 focus:ring-red-500/20 bg-red-50/10"
+                          )}
+                        >
+                          <span className="truncate">
+                            {selectedMechanic ? `${selectedMechanic.Nombre} ${selectedMechanic.Apellido}` : "Seleccionar mecánico disponible..."}
+                          </span>
+                          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto"
+                        align="start"
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                      >
+                        <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                          <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                            <input
+                              className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-slate-500"
+                              placeholder="Buscar mecánico..."
+                              value={search.mechanic}
+                              onChange={(e) => setSearch({ ...search, mechanic: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div
+                          className="max-h-[250px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
+                          onWheel={(e) => e.stopPropagation()}
+                        >
+                          {availableMechanicsForTime
+                            .filter((m: any) => `${m.Nombre} ${m.Apellido}`.toLowerCase().includes(search.mechanic.toLowerCase()))
+                            .map((m: any) => (
+                              <div
+                                key={m.ID_Empleado}
+                                className={cn(
+                                  "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                                  "hover:bg-slate-50 dark:hover:bg-slate-900",
+                                  formData.mechanicId === m.ID_Empleado.toString() && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                                )}
+                                onClick={() => {
+                                  setFormData({ ...formData, mechanicId: m.ID_Empleado.toString() });
+                                  setPopovers({ ...popovers, mechanic: false });
+                                  setSearch({ ...search, mechanic: '' });
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", formData.mechanicId === m.ID_Empleado.toString() ? "opacity-100" : "opacity-0")} />
+                                <div className="flex flex-col text-left">
+                                  <span className="font-bold">{m.Nombre} {m.Apellido}</span>
+                                  <span className="text-[10px] opacity-60 font-black uppercase">CC: {m.Documento || 'S/N'}</span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30">
+                      <p className="text-xs font-bold text-red-600 dark:text-red-400">
+                        No hay mecánicos de turno disponibles en este horario.
+                      </p>
+                    </div>
+                  )}
+                  {submitAttempted && errors.mechanicId && (
+                    <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1 text-left">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {errors.mechanicId}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -272,34 +873,75 @@ export function ReparacionDialog({
                 <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 text-blue-600" /> Servicios Requeridos
                 </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-5 bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 max-h-48 overflow-y-auto custom-scrollbar">
+                <div
+                  className={cn(
+                    "grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border max-h-48 overflow-y-auto custom-scrollbar transition-all",
+                    submitAttempted && errors.services ? "border-red-500 bg-red-50/5" : "border-slate-100 dark:border-slate-800"
+                  )}
+                >
                   {availableServices.map((s: any) => {
-                    const isSelected = formData.selectedServices.includes(s.ID_Servicio);
+                    const isSelected = formData.selectedServices.includes(s.ID_Servicio || s.id_servicio);
                     return (
-                      <div
-                        key={s.ID_Servicio}
-                        onClick={() => handleServiceChange(s.ID_Servicio, !isSelected)}
+                      <label
+                        key={s.ID_Servicio || s.id_servicio}
                         className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group",
+                          "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer",
                           isSelected
-                            ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20"
-                            : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-blue-400"
+                            ? "bg-indigo-50 border-indigo-400 dark:bg-indigo-900/20 dark:border-indigo-500 shadow-sm"
+                            : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
                         )}
                       >
-                        <div className={cn(
-                          "w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0",
-                          isSelected ? "bg-white border-white text-blue-600" : "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700"
-                        )}>
-                          {isSelected && <Check className="w-3.5 h-3.5 font-bold" />}
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleServiceChange(s.ID_Servicio || s.id_servicio, !isSelected)}
+                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                        />
+                        <div className="flex flex-col min-w-0 flex-1 text-left">
+                          <span className={cn("font-bold text-sm truncate", isSelected ? "text-indigo-900 dark:text-indigo-100" : "text-slate-700 dark:text-slate-300")}>
+                            {s.Nombre}
+                          </span>
+                          <span className={cn("text-[10px] font-semibold mt-0.5", isSelected ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500")}>
+                            {s.Duracion || s.duracion} min
+                          </span>
                         </div>
-                        <span className={cn("text-sm font-bold truncate", isSelected ? "text-white" : "text-slate-700 dark:text-slate-300")}>
-                          {s.Nombre}
-                        </span>
-                      </div>
+                      </label>
                     );
                   })}
+                  {availableServices.length === 0 && <p className="text-xs text-slate-500 col-span-2">No hay servicios disponibles.</p>}
                 </div>
+                {submitAttempted && errors.services && (
+                  <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {errors.services}
+                  </p>
+                )}
               </div>
+
+              {/* REAL-TIME ESTIMATIONS & ALERTS */}
+              {(formData.selectedServices.length > 0 || formData.startTime) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
+                  <div className="text-left">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Duración Estimada</p>
+                    <p className="text-lg font-black text-slate-700 dark:text-slate-300 mt-1">{durationData.text}</p>
+                  </div>
+                  <div className="text-left border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800/80 pt-3 sm:pt-0 sm:pl-6">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Hora Estimada de finalización</p>
+                    <p className="text-lg font-black text-blue-600 dark:text-blue-400 mt-1">
+                      {formData.startTime && durationData.endTime
+                        ? format(parseISO(`${formData.date}T${durationData.endTime}`), 'hh:mm a')
+                        : 'Defina la hora de inicio...'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {selectedMechanicSchedule && durationData.endTime > selectedMechanicSchedule.salida && (
+                <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/40 text-left">
+                  <p className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                    ⚠️ Atención: El turno del mecánico finaliza a las {format(parseISO(`${formData.date}T${selectedMechanicSchedule.salida}`), 'hh:mm a')}. La duración estimada de los servicios excede su jornada laboral (finalizaría a las {format(parseISO(`${formData.date}T${durationData.endTime}`), 'hh:mm a')}).
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Observaciones</Label>
@@ -317,7 +959,18 @@ export function ReparacionDialog({
                 type="button"
                 variant="ghost"
                 onClick={() => {
-                  setFormData({ clientId: '', motorcycleId: '', selectedServices: [], observations: '', nota_estado: '' });
+                  setFormData({
+                    clientId: '',
+                    motorcycleId: '',
+                    selectedServices: [],
+                    observations: '',
+                    nota_estado: '',
+                    startTime: '',
+                    mechanicId: '',
+                    date: format(new Date(), 'yyyy-MM-dd')
+                  });
+                  setPopovers({ client: false, motorcycle: false, startTime: false, mechanic: false });
+                  setSearch({ client: '', motorcycle: '', mechanic: '' });
                   onOpenChange(false);
                 }}
                 className="h-11 px-8 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl w-full sm:w-auto"
@@ -326,8 +979,10 @@ export function ReparacionDialog({
               </Button>
               <Button
                 type="submit"
-                className="h-12 px-12 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white font-black rounded-xl shadow-xl transition-all hover:scale-[1.02] active:scale-95"
+                disabled={isSaving}
+                className="h-12 px-12 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white font-black rounded-xl shadow-xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
               >
+                {isSaving ? <Loader2 className="w-5 h-5 animate-spin mr-2 inline-block" /> : null}
                 Crear Reparación
               </Button>
             </div>

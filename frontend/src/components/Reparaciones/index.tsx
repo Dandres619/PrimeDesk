@@ -13,33 +13,30 @@ export function Reparaciones() {
   const {
     reparaciones,
     isLoading,
+    isSaving,
     searchTerm,
     setSearchTerm,
+    isDialogOpen,
+    setIsDialogOpen,
+    editingReparacion,
+    setEditingReparacion,
+    viewingReparacion,
+    setViewingReparacion,
     currentPage,
     setCurrentPage,
     clients,
     motorcycles,
     mechanics,
     availableServices,
+    handleOpenEdit,
+    handleOpenView,
     handleSave,
     anularReparacion,
     refreshData
   } = useReparaciones();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingReparacion, setEditingReparacion] = useState<any>(null);
-  const [viewingReparacion, setViewingReparacion] = useState<any>(null);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', description: '', onConfirm: () => { }, confirmText: '', variant: 'default' as any });
   const [pdfPreview, setPdfPreview] = useState({ open: false, data: null as any, type: 'service-order' as any });
-
-  const handleOpenEdit = (reparacion: any) => {
-    setEditingReparacion(reparacion);
-    setIsDialogOpen(true);
-  };
-
-  const handleOpenView = (reparacion: any) => {
-    setViewingReparacion(reparacion);
-  };
 
   const handleDownload = (order: any) => {
     setPdfPreview({ open: true, data: order, type: 'service-order' });
@@ -92,21 +89,22 @@ export function Reparaciones() {
           {/* New/Edit Dialog */}
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingReparacion(null); }}>
             <ReparacionDialog
+              isOpen={isDialogOpen}
               clients={clients}
               motorcycles={motorcycles}
               mechanics={mechanics}
               availableServices={availableServices}
               editingOrder={editingReparacion}
+              isSaving={isSaving}
               onOpenChange={(open) => {
                 setIsDialogOpen(open);
-                if (!open) refreshData();
+                if (!open) setEditingReparacion(null);
               }}
               onOrderUpdated={refreshData}
               onSave={(data) => {
                 if (!data) {
                   setIsDialogOpen(false);
                   setEditingReparacion(null);
-                  refreshData();
                   return;
                 }
                 handleSave(data);
@@ -118,6 +116,8 @@ export function Reparaciones() {
           <Dialog open={!!viewingReparacion} onOpenChange={(open) => { if (!open) setViewingReparacion(null); }}>
             <ReparacionDetails
               reparacion={viewingReparacion}
+              availableServices={availableServices}
+              mechanics={mechanics}
               getStatusBadge={getStatusBadge}
               onClose={() => setViewingReparacion(null)}
             />

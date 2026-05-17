@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Button } from '../../ui/button';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../ui/pagination';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
-import { Eye, Edit2, XCircle, FileText, ClipboardList } from 'lucide-react';
+import { Eye, Edit, XCircle, FileText, ClipboardList } from 'lucide-react';
 
 interface ReparacionesTableProps {
   reparacionesCount: number;
@@ -30,7 +30,31 @@ export function ReparacionesTable({
 }: ReparacionesTableProps) {
 
   const getStatusBadge = (status: string) => {
-    return <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{status}</span>;
+    return <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{status || 'Esperando motocicleta'}</span>;
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'Registro directo (Hoy)';
+    try {
+      const cleanDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+      const [year, month, day] = cleanDate.split('-');
+      return `${day}/${month}/${year}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    try {
+      const [hours, minutes] = timeStr.split(':');
+      const hourNum = parseInt(hours, 10);
+      const ampm = hourNum >= 12 ? 'PM' : 'AM';
+      const displayHour = hourNum % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch {
+      return timeStr;
+    }
   };
 
   return (
@@ -45,28 +69,37 @@ export function ReparacionesTable({
           <TableHeader>
             <TableRow>
               <TableHead className="text-left">Cliente</TableHead>
-              <TableHead className="text-left">Motocicleta</TableHead>
+              <TableHead className="text-left">Vehículo</TableHead>
+              <TableHead className="text-left">Mecánico</TableHead>
+              <TableHead className="text-left">Fecha</TableHead>
+              <TableHead className="text-left">Total</TableHead>
               <TableHead className="text-left">Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+              <TableHead className="text-left">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedReparaciones.length > 0 ? paginatedReparaciones.map((o) => (
-              <TableRow key={o.id}>
-                <TableCell className="text-left font-medium">
+              <TableRow key={o.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30">
+                <TableCell className="text-left font-medium text-slate-800 dark:text-slate-200">
                   {o.clientName}
                 </TableCell>
-                <TableCell className="text-left">
-                  <div className="flex flex-col">
-                    <span className="font-medium text-slate-900 dark:text-slate-200">{o.motorcyclePlate}</span>
-                    <span className="text-xs text-muted-foreground">{o.motorcycleBrand} {o.motorcycleModel}</span>
-                  </div>
+                <TableCell className="text-left font-medium text-slate-800 dark:text-slate-200">
+                  {o.motorcyclePlate}
+                </TableCell>
+                <TableCell className="text-left font-medium text-slate-700 dark:text-slate-300">
+                  {o.mecanico}
+                </TableCell>
+                <TableCell className="text-left font-medium text-slate-700 dark:text-slate-300">
+                  {formatDate(o.diaAgendamiento)}{o.horaInicio ? ` ${formatTime(o.horaInicio)}` : ''}
+                </TableCell>
+                <TableCell className="text-left font-medium text-slate-900 dark:text-slate-100">
+                  {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(o.totalCost || 0)}
                 </TableCell>
                 <TableCell className="text-left">
                   {getStatusBadge(o.estadoBase)}
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
+                <TableCell className="text-left">
+                  <div className="flex justify-left gap-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button size="sm" variant="ghost" onClick={() => onView(o)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
@@ -90,7 +123,7 @@ export function ReparacionesTable({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button size="sm" variant="ghost" onClick={() => onEdit(o)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
-                              <Edit2 className="w-4 h-4" />
+                              <Edit className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent><p>Editar orden</p></TooltipContent>
@@ -111,7 +144,7 @@ export function ReparacionesTable({
               </TableRow>
             )) : (
               <TableRow>
-                <TableCell colSpan={6} className="h-40 text-center text-muted-foreground text-left">
+                <TableCell colSpan={7} className="h-40 text-center text-muted-foreground text-left">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <ClipboardList className="w-8 h-8 opacity-20" />
                     <p>No se encontraron reparaciones registradas.</p>

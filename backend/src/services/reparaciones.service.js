@@ -27,7 +27,10 @@ const getAll = async (filters = {}) => {
                  m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
                  c.id_cliente AS "ID_Cliente", CONCAT(c.nombre, ' ', c.apellido) AS "NombreCliente",
                  a.dia AS "DiaAgendamiento",
+                 a.horainicio AS "HoraInicio",
                  CONCAT(e.nombre, ' ', e.apellido) AS "Mecanico",
+                 e.documento AS "MecanicoDocumento",
+                 e.telefono AS "MecanicoTelefono",
                  v_assoc.id_venta AS "AssociatedSaleId",
                  (
                    SELECT json_agg(json_build_object(
@@ -74,38 +77,40 @@ const getAll = async (filters = {}) => {
 
 const getById = async (id) => {
   const sql = await getPool();
-  const appointments = await sql`
-        SELECT rep.id_reparacion AS "ID_Reparacion", rep.id_motocicleta AS "ID_Motocicleta", 
-               rep.id_agendamiento AS "ID_Agendamiento", 
-               rep.observaciones AS "Observaciones", 
-               rep.estado AS "Estado",
-               rep.nota_estado AS "NotaEstado",
-               m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
-               a.dia AS "DiaAgendamiento"
-        FROM reparaciones rep
-        INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
-        LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
-        WHERE rep.id_reparacion = ${id}
-    `;
+  
+  const [appointments, services, purchases] = await Promise.all([
+    sql`
+      SELECT rep.id_reparacion AS "ID_Reparacion", rep.id_motocicleta AS "ID_Motocicleta", 
+             rep.id_agendamiento AS "ID_Agendamiento", 
+             rep.observaciones AS "Observaciones", 
+             rep.estado AS "Estado",
+             rep.nota_estado AS "NotaEstado",
+             m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
+             a.dia AS "DiaAgendamiento"
+      FROM reparaciones rep
+      INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
+      LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
+      WHERE rep.id_reparacion = ${id}
+    `,
+    sql`
+      SELECT s.id_servicio AS "ID_Servicio", s.nombre AS "Nombre",
+             rs.estado AS "Estado", rs.observaciones AS "Observaciones",
+             rs.fecha_finalizacion AS "FechaFinalizacion"
+      FROM reparaciones_servicios rs
+      INNER JOIN servicios s ON rs.id_servicio = s.id_servicio
+      WHERE rs.id_reparacion = ${id}
+    `,
+    sql`
+      SELECT rc.id_reparacion_compra AS "ID_Reparacion_Compra", rc.id_producto AS "ID_Producto",
+             p.nombre AS "NombreProducto", rc.cantidad AS "Cantidad", rc.precio_unitario AS "PrecioUnitario",
+             rc.subtotal AS "Subtotal", rc.factura AS "Factura", rc.observaciones AS "Observaciones"
+      FROM reparaciones_compras rc
+      LEFT JOIN productos p ON rc.id_producto = p.id_producto
+      WHERE rc.id_reparacion = ${id}
+    `
+  ]);
+
   if (appointments.length === 0) throw { status: 404, message: 'Reparación no encontrada.' };
-
-  const services = await sql`
-        SELECT s.id_servicio AS "ID_Servicio", s.nombre AS "Nombre",
-               rs.estado AS "Estado", rs.observaciones AS "Observaciones",
-               rs.fecha_finalizacion AS "FechaFinalizacion"
-        FROM reparaciones_servicios rs
-        INNER JOIN servicios s ON rs.id_servicio = s.id_servicio
-        WHERE rs.id_reparacion = ${id}
-    `;
-
-  const purchases = await sql`
-        SELECT rc.id_reparacion_compra AS "ID_Reparacion_Compra", rc.id_producto AS "ID_Producto",
-               p.nombre AS "NombreProducto", rc.cantidad AS "Cantidad", rc.precio_unitario AS "PrecioUnitario",
-               rc.subtotal AS "Subtotal", rc.factura AS "Factura", rc.observaciones AS "Observaciones"
-        FROM reparaciones_compras rc
-        LEFT JOIN productos p ON rc.id_producto = p.id_producto
-        WHERE rc.id_reparacion = ${id}
-    `;
 
   return { ...appointments[0], servicios: services, compras: purchases };
 };
