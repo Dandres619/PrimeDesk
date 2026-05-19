@@ -49,9 +49,23 @@ const create = async (data, file) => {
   if (file) {
     try {
       const fileBuffer = file.buffer;
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const ext = path.extname(file.originalname);
-      const fileName = `profile-${uniqueSuffix}${ext}`;
+
+      const nombreClean = (nombre || 'nombre').toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, '_')
+        .replace(/__+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+      const apellidoClean = (apellido || 'apellido').toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, '_')
+        .replace(/__+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+      const fileName = `foto_perfil_${nombreClean}_${apellidoClean}${ext}`;
 
       const { data: uploadData, error } = await supabase.storage
         .from('profiles')
@@ -115,9 +129,23 @@ const update = async (id, data, file) => {
   if (file) {
     try {
       const fileBuffer = file.buffer;
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const ext = path.extname(file.originalname);
-      const fileName = `profile-${uniqueSuffix}${ext}`;
+
+      const nombreClean = (nombre || 'nombre').toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, '_')
+        .replace(/__+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+      const apellidoClean = (apellido || 'apellido').toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, '_')
+        .replace(/__+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+      const fileName = `foto_perfil_${nombreClean}_${apellidoClean}${ext}`;
 
       const { data: uploadData, error } = await supabase.storage
         .from('profiles')
