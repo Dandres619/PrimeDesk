@@ -1,4 +1,4 @@
-import { Eye, FileText, XCircle } from 'lucide-react';
+import { Eye, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { Button } from '../../ui/button';
@@ -26,18 +26,20 @@ export function ComprasTable({
   setCurrentPage,
   totalPages,
   onView,
-  onPDF,
-  onCancel
+  onPDF
 }: ComprasTableProps) {
-  
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Pendiente de venta':
         return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-none font-bold">Pendiente</Badge>;
       case 'Anulada':
+      case 'Anulado':
         return <Badge variant="destructive" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-none font-bold">Anulada</Badge>;
       case 'Con Venta':
         return <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-none font-bold">Con Venta</Badge>;
+      case 'Activa':
+        return <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 border-none font-bold">Activa</Badge>;
       default:
         return <Badge variant="outline" className="font-bold">{status}</Badge>;
     }
@@ -72,7 +74,7 @@ export function ComprasTable({
             ) : (
               paginatedPurchases.map(p => (
                 <TableRow key={p.ID_Compra}>
-                  <TableCell><p className="font-bold text-blue-600 dark:text-blue-400">COMP-{p.ID_Compra}</p></TableCell>
+                  <TableCell><p className="font-bold text-blue-600 dark:text-blue-400">#{p.ID_Compra}</p></TableCell>
                   <TableCell><p className="font-medium">{p.NombreEmpresa}</p></TableCell>
                   <TableCell><p>{format(new Date(p.FechaCompra), 'PPP', { locale: es })}</p></TableCell>
                   <TableCell><p className="font-bold">${parseFloat(p.Total).toLocaleString()}</p></TableCell>
@@ -90,23 +92,12 @@ export function ComprasTable({
 
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" onClick={() => onPDF(p)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                          <Button variant="ghost" size="sm" onClick={() => onPDF(p)} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                             <FileText className="w-4 h-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>Descargar PDF</p></TooltipContent>
+                        <TooltipContent><p>Generar PDF</p></TooltipContent>
                       </Tooltip>
-
-                      {p.Estado === 'Pendiente de venta' && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={() => onCancel(p)} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20">
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Anular compra</p></TooltipContent>
-                        </Tooltip>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>

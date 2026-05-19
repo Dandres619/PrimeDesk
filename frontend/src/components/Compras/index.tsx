@@ -13,7 +13,6 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Badge } from '../ui/badge';
 
 export function Compras() {
   const {
@@ -48,7 +47,7 @@ export function Compras() {
     if (!fullPurchase) return;
 
     setPdfData({
-      invoiceNumber: `COMP-${fullPurchase.ID_Compra}`,
+      invoiceNumber: `#${fullPurchase.ID_Compra}`,
       date: fullPurchase.FechaCompra,
       status: fullPurchase.Estado,
       supplier: fullPurchase.NombreEmpresa,
@@ -143,7 +142,7 @@ export function Compras() {
               <div className="text-left flex-1">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                    Detalles de Compra COMP-{viewingPurchase?.ID_Compra}
+                    Detalles de la compra #{viewingPurchase?.ID_Compra}
                   </DialogTitle>
                 </DialogHeader>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-semibold">Resumen detallado de la transacción</p>
@@ -152,32 +151,42 @@ export function Compras() {
 
             {viewingPurchase && (
               <div className="p-8 space-y-8 text-left overflow-y-auto max-h-[60vh] custom-scrollbar">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  <div className="p-6 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Fecha de Compra</Label>
-                        <p className="font-bold text-slate-900 dark:text-white">{format(new Date(viewingPurchase.FechaCompra), 'PPP', { locale: es })}</p>
-                      </div>
+                <div className="p-6 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col gap-5 w-full">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                      <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Truck className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Proveedor</Label>
-                        <p className="font-bold text-slate-900 dark:text-white">{viewingPurchase.NombreEmpresa}</p>
-                      </div>
+                    <div>
+                      <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Fecha de Compra</Label>
+                      <p className="font-bold text-slate-900 dark:text-white text-sm">{format(new Date(viewingPurchase.FechaCompra), 'PPP', { locale: es })}</p>
                     </div>
                   </div>
 
-                  <div className="flex flex-col justify-center items-end">
-                    <Label className="text-xs uppercase font-bold text-slate-500 mb-2">Estado de la Transacción</Label>
-                    <Badge className={`px-4 py-1.5 rounded-xl font-black text-xs uppercase tracking-widest ${viewingPurchase.Estado === 'Pendiente de venta' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' :
-                        viewingPurchase.Estado === 'Anulada' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400' :
-                          'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
-                      }`}>
-                      {viewingPurchase.Estado}
-                    </Badge>
+                  <div className="flex items-center gap-3 border-t border-slate-100/50 dark:border-slate-800/50 pt-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                      <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Proveedor</Label>
+                      <p className="font-bold text-slate-900 dark:text-white text-sm">{viewingPurchase.NombreEmpresa}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 border-t border-slate-100/50 dark:border-slate-800/50 pt-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                      <ShoppingBag className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Estado de la compra</Label>
+                      <div className="mt-0.5">
+                        <span className={`text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg inline-block ${viewingPurchase.Estado === 'Activa' || viewingPurchase.Estado === 'Pendiente de venta' ? 'bg-blue-600/10 text-blue-500 dark:text-blue-400' :
+                          viewingPurchase.Estado === 'Anulada' || viewingPurchase.Estado === 'Anulado' ? 'bg-rose-500/10 text-rose-500 dark:text-rose-400' :
+                            'bg-slate-500/10 text-slate-500 dark:text-slate-400'
+                          }`}>
+                          {viewingPurchase.Estado}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -207,18 +216,21 @@ export function Compras() {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex-1 space-y-2">
+                <div className="space-y-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="w-full space-y-2 text-left">
                     <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                      <FileText className="w-3.5 h-3.5" /> Notas Adicionales
+                      <FileText className="w-3.5 h-3.5 text-blue-500" /> Notas Adicionales
                     </Label>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 min-h-[60px]">
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 min-h-[60px] w-full">
                       {viewingPurchase.Notas || "Sin observaciones."}
                     </p>
                   </div>
-                  <div className="w-full sm:w-64 p-6 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 flex flex-col items-center justify-center text-white">
-                    <span className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-80 mb-1">Total de la Compra</span>
-                    <span className="text-3xl font-black">${parseFloat(viewingPurchase.Total).toLocaleString()}</span>
+
+                  <div className="flex flex-col items-center justify-center w-full py-4">
+                    <div className="px-10 py-6 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-xl shadow-blue-500/10 flex flex-col items-center text-white min-w-[280px]">
+                      <span className="text-[10px] uppercase font-bold tracking-[0.25em] opacity-80 mb-1">Total de la Compra</span>
+                      <span className="text-3xl font-black">${parseFloat(viewingPurchase.Total).toLocaleString()}</span>
+                    </div>
                   </div>
                 </div>
               </div>

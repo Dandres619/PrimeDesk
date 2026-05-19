@@ -77,15 +77,6 @@ const create = async ({ id_proveedor, id_motocicleta, fechacompra, total, notas,
         }));
 
         await tx`INSERT INTO detalle_compras ${sql(itemInserts, 'id_compra', 'id_producto', 'cantidad', 'preciounitario', 'subtotal')}`;
-
-        // Actualizar stock de los productos a 0 según requerimiento especial
-        for (const item of detalle) {
-          await tx`
-                        UPDATE productos 
-                        SET cantidad = 0 
-                        WHERE id_producto = ${item.id_producto}
-                    `;
-        }
       }
 
       return compra;
