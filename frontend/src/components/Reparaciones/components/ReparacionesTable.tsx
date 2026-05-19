@@ -29,10 +29,6 @@ export function ReparacionesTable({
   onDownload
 }: ReparacionesTableProps) {
 
-  const getStatusBadge = (status: string) => {
-    return <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{status || 'Esperando motocicleta'}</span>;
-  };
-
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'Registro directo (Hoy)';
     try {
@@ -80,26 +76,37 @@ export function ReparacionesTable({
           <TableBody>
             {paginatedReparaciones.length > 0 ? paginatedReparaciones.map((o) => (
               <TableRow key={o.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30">
-                <TableCell className="text-left font-medium text-slate-800 dark:text-slate-200">
+                <TableCell className="text-left">
                   {o.clientName}
                 </TableCell>
-                <TableCell className="text-left font-medium text-slate-800 dark:text-slate-200">
+                <TableCell className="text-left">
                   {o.motorcyclePlate}
                 </TableCell>
-                <TableCell className="text-left font-medium text-slate-700 dark:text-slate-300">
+                <TableCell className="text-left">
                   {o.mecanico}
                 </TableCell>
-                <TableCell className="text-left font-medium text-slate-700 dark:text-slate-300">
+                <TableCell className="text-left">
                   {formatDate(o.diaAgendamiento)}{o.horaInicio ? ` ${formatTime(o.horaInicio)}` : ''}
                 </TableCell>
-                <TableCell className="text-left font-medium text-slate-900 dark:text-slate-100">
+                <TableCell className="text-left">
                   {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(o.totalCost || 0)}
                 </TableCell>
                 <TableCell className="text-left">
-                  {getStatusBadge(o.estadoBase)}
+                  {o.estadoBase}
                 </TableCell>
                 <TableCell className="text-left">
                   <div className="flex justify-left gap-1">
+                    {!(o.anulada || o.estadoBase === 'Reparación finalizada' || o.associatedSaleId) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" onClick={() => onEdit(o)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Editar reparación</p></TooltipContent>
+                      </Tooltip>
+                    )}
+
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button size="sm" variant="ghost" onClick={() => onView(o)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
@@ -119,25 +126,14 @@ export function ReparacionesTable({
                     </Tooltip>
 
                     {!(o.anulada || o.estadoBase === 'Reparación finalizada' || o.associatedSaleId) && (
-                      <>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" onClick={() => onEdit(o)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Editar orden</p></TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" onClick={() => onAnular(o.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Anular orden</p></TooltipContent>
-                        </Tooltip>
-                      </>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" onClick={() => onAnular(o.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Anular orden</p></TooltipContent>
+                      </Tooltip>
                     )}
                   </div>
                 </TableCell>

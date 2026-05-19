@@ -2,7 +2,7 @@ import React from 'react';
 import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Button } from '../../ui/button';
-import { ClipboardPen, Wrench, User, FileText, Info, Calendar, Clock, Phone } from 'lucide-react';
+import { ClipboardPen, Wrench, User, FileText, Info, Calendar, Clock, Phone, FileImage, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ReparacionDetailsProps {
@@ -79,6 +79,22 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
   };
   const formattedTime = formatTime(data.horaInicio);
 
+  // Format completion hour from ISO string
+  const formatCompletionTime = (dateTimeStr: string) => {
+    if (!dateTimeStr) return '';
+    try {
+      const date = new Date(dateTimeStr);
+      if (isNaN(date.getTime())) return '';
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      return `${hours}:${minutes} ${ampm}`;
+    } catch {
+      return '';
+    }
+  };
+
   return (
     <DialogContent
       className="sm:max-w-5xl w-[95vw] h-[85vh] max-h-[800px] animate-modal p-0 overflow-hidden bg-white dark:bg-slate-950 border-none shadow-2xl rounded-2xl flex flex-col"
@@ -95,13 +111,13 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
             <div>
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  Detalles de la reparación
+                  Detalles de la reparación #{data.ID_Reparacion || data.id}
                 </DialogTitle>
               </DialogHeader>
               <div className="flex flex-wrap items-center gap-3 mt-1.5 text-sm text-slate-500 dark:text-slate-400 font-bold">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-                  <span>Recibida el {formattedDate} a las {formattedTime}</span>
+                  <span>Agendada para el {formattedDate} a las {formattedTime}</span>
                 </span>
                 <span className="text-slate-300 dark:text-slate-700">•</span>
                 <span className="flex items-center gap-1.5">
@@ -122,53 +138,90 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
           <div className="lg:col-span-5 space-y-6 lg:border-r lg:border-slate-100 lg:dark:border-slate-800/80 lg:pr-8">
 
             {/* Colombian Plate Styled Banner */}
-            <div className="relative bg-gradient-to-b from-yellow-300 to-yellow-400 dark:from-yellow-400 dark:to-yellow-500 text-slate-950 p-6 rounded-2xl border border-slate-950/20 shadow-lg flex flex-col items-center justify-center gap-2 transition-transform duration-300 hover:scale-[1.02]">
-              <div className="absolute top-2 left-0 right-0 text-center text-[7px] font-black tracking-[0.2em] text-slate-800 uppercase">REPUBLICA DE COLOMBIA</div>
-              <span className="text-4xl font-extrabold tracking-widest uppercase font-mono px-5 py-1.5 bg-white/40 dark:bg-white/20 rounded-xl border border-slate-950/20">
+            <div className="relative bg-gradient-to-b from-yellow-300 to-yellow-400 dark:from-slate-900 dark:to-slate-950 text-slate-950 dark:text-white py-3.5 px-5 rounded-2xl border border-slate-950/20 dark:border-slate-800/80 shadow-lg flex flex-col items-center justify-center gap-1.5 transition-transform duration-300 hover:scale-[1.02]">
+              <span className="text-[9px] font-black text-slate-950 dark:text-slate-400 uppercase tracking-widest text-center">Datos de la motocicleta</span>
+              <span className="text-3xl font-extrabold tracking-widest uppercase font-mono px-4 py-1 bg-white/40 dark:bg-slate-900/50 rounded-xl border border-slate-950/20 dark:border-slate-800/60">
                 {data.motorcyclePlate}
               </span>
-              <div className="text-[10px] font-black tracking-[0.2em] text-slate-950 uppercase mt-0.5 text-center">
+              <div className="text-[9px] font-black tracking-[0.2em] text-slate-950 dark:text-slate-400 uppercase mt-0.5 text-center">
                 {data.motorcycleBrand} {data.motorcycleModel} · {data.motorcycleYear}
               </div>
             </div>
 
-            {/* Client Info Card */}
-            <div className="p-5 bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/80 rounded-2xl space-y-4">
-              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block text-left">Cliente Responsable</Label>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
-                  <User className="w-5 h-5" />
-                </div>
-                <div className="text-left min-w-0">
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{data.clientName}</p>
-                  <p className="text-xs text-slate-400 font-medium">CC · {data.clientDocument}</p>
-                </div>
-              </div>
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                <span className="flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  <span>{data.clientPhone || 'Sin teléfono'}</span>
-                </span>
-              </div>
-            </div>
+            {/* Unified technical card container */}
+            <div className="space-y-3.5 text-left">
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block">Datos generales</Label>
+              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/80 space-y-5">
 
-            {/* Mechanic & Date Card */}
-            <div className="p-5 bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/80 rounded-2xl space-y-4">
-              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block text-left">Mecánico Asignado</Label>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 shrink-0">
-                  <Wrench className="w-5 h-5" />
+                {/* Client Section */}
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Cliente Responsable</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
+                      <User className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 truncate leading-none">{data.clientName}</p>
+                      <p className="text-[11px] text-slate-400 font-bold mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span>CC · {data.clientDocument}</span>
+                        {data.clientPhone && (
+                          <>
+                            <span className="text-slate-300 dark:text-slate-700">•</span>
+                            <span className="flex items-center gap-1.5 font-bold">
+                              <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                              <span>{data.clientPhone}</span>
+                            </span>
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-left min-w-0">
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{data.mecanico}</p>
-                  <p className="text-xs text-slate-400 font-medium">CC · {resolvedMecanicoDoc || 'Sin documento'}</p>
+
+                <div className="border-t border-slate-100 dark:border-slate-800/60" />
+
+                {/* Mechanic Section */}
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Mecánico Asignado</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 shrink-0">
+                      <Wrench className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 truncate leading-none">{data.mecanico || 'Sin asignar'}</p>
+                      <p className="text-[11px] text-slate-400 font-bold mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span>CC · {resolvedMecanicoDoc || '---'}</span>
+                        {resolvedMecanicoPhone && (
+                          <>
+                            <span className="text-slate-300 dark:text-slate-700">•</span>
+                            <span className="flex items-center gap-1.5 font-bold">
+                              <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                              <span>{resolvedMecanicoPhone}</span>
+                            </span>
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                <span className="flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  <span>{resolvedMecanicoPhone || 'Sin teléfono'}</span>
-                </span>
+
+                <div className="border-t border-slate-100 dark:border-slate-800/60" />
+
+                {/* Date and Time Section */}
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Programación</p>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4.5 h-4.5 text-slate-400" />
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{formattedDate}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4.5 h-4.5 text-slate-400" />
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{formattedTime || '---'}</span>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
 
@@ -199,7 +252,9 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
                   mappedServices.map((s: any) => (
                     <div key={s.ID_Servicio || s.NombreServicio} className="flex justify-between items-center p-3.5 bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/80 rounded-xl transition-all hover:bg-slate-100/50 dark:hover:bg-slate-900/60">
                       <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
+                        {s.Estado !== 'Finalizado' && (
+                          <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                        )}
                         <div className="text-left">
                           <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{s.NombreServicio || s.Nombre}</p>
                           <p className="text-xs text-slate-400 font-medium flex items-center gap-1 mt-0.5">
@@ -213,14 +268,18 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
                           {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(s.Precio || 0)}
                         </p>
                         <span className={cn(
-                          "inline-block text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full mt-1",
+                          "inline-block text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full mt-1.5",
                           s.Estado === 'Finalizado'
                             ? "bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400"
                             : s.Estado === 'En progreso'
                               ? "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-400"
                               : "bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-400"
                         )}>
-                          {s.Estado || 'Pendiente'}
+                          {s.Estado === 'Finalizado'
+                            ? s.FechaFinalizacion
+                              ? `Finalizado a las ${formatCompletionTime(s.FechaFinalizacion)}`
+                              : 'Finalizado'
+                            : (s.Estado || 'Pendiente')}
                         </span>
                       </div>
                     </div>
@@ -232,7 +291,7 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
             {/* Purchases / Repuestos List */}
             <div className="space-y-3">
               <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2 text-left">
-                <FileText className="w-3.5 h-3.5 text-indigo-600" /> Repuestos y Materiales ({data.compras?.length || 0})
+                <FileText className="w-3.5 h-3.5 text-indigo-600" /> Repuestos ({data.compras?.length || 0})
               </Label>
               <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
                 {!data.compras || data.compras.length === 0 ? (
@@ -241,18 +300,81 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
                   </div>
                 ) : (
                   data.compras.map((c: any) => (
-                    <div key={c.ID_Reparacion_Compra} className="flex justify-between items-center p-3.5 bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/80 rounded-xl">
-                      <div className="text-left">
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{c.NombreProducto || c.Nombre || 'Repuesto'}</p>
-                        <p className="text-xs text-slate-400 font-medium">Cant: {c.Cantidad} · Unit: {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(c.PrecioUnitario || 0)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
-                          {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(c.Subtotal || 0)}
-                        </p>
-                        {c.Factura && (
-                          <span className="inline-block text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Fac. #{c.Factura}</span>
+                    <div
+                      key={c.ID_Reparacion_Compra}
+                      className="group flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/80 rounded-2xl transition-all duration-300 hover:bg-slate-100/50 dark:hover:bg-slate-900/60 gap-4"
+                    >
+                      <div className="flex items-start gap-3 min-w-0">
+                        {/* Image Preview Icon Column */}
+                        {c.Factura ? (
+                          <a
+                            href={c.Factura}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-800 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-700 shrink-0 transition-transform duration-300 hover:scale-105 active:scale-95 group/img"
+                            title="Ver factura de compra"
+                          >
+                            <img
+                              src={c.Factura}
+                              alt="Factura"
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const parent = e.currentTarget.parentElement;
+                                if (parent) {
+                                  const icon = parent.querySelector('.fallback-icon');
+                                  if (icon) icon.classList.remove('hidden');
+                                }
+                              }}
+                            />
+                            <div className="fallback-icon hidden w-full h-full flex items-center justify-center text-blue-500">
+                              <FileImage className="w-5 h-5" />
+                            </div>
+                            {/* Overlay hover effect */}
+                            <div className="absolute inset-0 bg-black/45 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                              <ExternalLink className="w-4 h-4 text-white" />
+                            </div>
+                          </a>
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-900/60 flex items-center justify-center text-slate-400 dark:text-slate-600 shrink-0 border border-slate-200/50 dark:border-slate-800/50">
+                            <Wrench className="w-5 h-5" />
+                          </div>
                         )}
+
+                        <div className="text-left min-w-0">
+                          <p className="text-sm font-extrabold text-slate-800 dark:text-slate-200 truncate leading-snug">
+                            {c.NombreProducto || c.Nombre || 'Repuesto'}
+                          </p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-1">
+                            {c.Cantidad} {c.Cantidad === 1 ? 'unidad' : 'unidades'} x{' '}
+                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(c.PrecioUnitario || 0)}
+                          </p>
+                          {c.Observaciones && (
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium italic mt-1 leading-relaxed truncate max-w-[280px]">
+                              "{c.Observaciones}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 dark:border-slate-800/60 shrink-0">
+                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest md:hidden">Subtotal</span>
+                        <div className="text-right">
+                          <p className="text-base font-black text-indigo-600 dark:text-indigo-400">
+                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(c.Subtotal || 0)}
+                          </p>
+                          {c.Factura && (
+                            <a
+                              href={c.Factura}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[9px] font-black text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 uppercase tracking-widest mt-1.5 transition-colors"
+                            >
+                              <FileImage className="w-3.5 h-3.5" />
+                              <span>Ver Factura</span>
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -271,14 +393,14 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
                 </div>
                 <div className="hidden sm:block w-px h-8 bg-slate-800" />
                 <div>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Repuestos (Materiales)</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Repuestos</span>
                   <p className="text-sm font-black text-indigo-200">
                     {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalPurchases)}
                   </p>
                 </div>
               </div>
               <div className="text-right w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-800 flex sm:flex-col justify-between sm:justify-start items-center sm:items-end">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Total Orden de Reparación</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Total de la Reparación</span>
                 <p className="text-2xl font-black text-blue-400 tracking-tight">
                   {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(grandTotal)}
                 </p>
@@ -305,7 +427,7 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
           onClick={onClose}
           className="h-11 px-8 bg-slate-900 hover:bg-black text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95"
         >
-          Cerrar Vista
+          Cerrar detalles
         </Button>
       </div>
     </DialogContent>

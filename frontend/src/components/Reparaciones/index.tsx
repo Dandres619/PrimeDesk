@@ -85,63 +85,63 @@ export function Reparaciones() {
             })}
             onDownload={handleDownload}
           />
-
-          {/* New/Edit Dialog */}
-          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingReparacion(null); }}>
-            <ReparacionDialog
-              isOpen={isDialogOpen}
-              clients={clients}
-              motorcycles={motorcycles}
-              mechanics={mechanics}
-              availableServices={availableServices}
-              editingOrder={editingReparacion}
-              isSaving={isSaving}
-              onOpenChange={(open) => {
-                setIsDialogOpen(open);
-                if (!open) setEditingReparacion(null);
-              }}
-              onOrderUpdated={refreshData}
-              onSave={(data) => {
-                if (!data) {
-                  setIsDialogOpen(false);
-                  setEditingReparacion(null);
-                  return;
-                }
-                handleSave(data);
-              }}
-            />
-          </Dialog>
-
-          {/* View Details Dialog */}
-          <Dialog open={!!viewingReparacion} onOpenChange={(open) => { if (!open) setViewingReparacion(null); }}>
-            <ReparacionDetails
-              reparacion={viewingReparacion}
-              availableServices={availableServices}
-              mechanics={mechanics}
-              getStatusBadge={getStatusBadge}
-              onClose={() => setViewingReparacion(null)}
-            />
-          </Dialog>
-
-          <ConfirmDialog
-            open={confirmDialog.open}
-            onOpenChange={(open: boolean) => setConfirmDialog(prev => ({ ...prev, open }))}
-            title={confirmDialog.title}
-            description={confirmDialog.description}
-            confirmText={confirmDialog.confirmText}
-            variant={confirmDialog.variant}
-            onConfirm={confirmDialog.onConfirm}
-          />
-
-          <PDFPreviewDialog
-            open={pdfPreview.open}
-            onOpenChange={(open) => setPdfPreview(prev => ({ ...prev, open }))}
-            data={pdfPreview.data}
-            type={pdfPreview.type}
-            onGenerate={() => { }}
-          />
         </div>
       )}
+
+      {/* New/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setEditingReparacion(null); }}>
+        <ReparacionDialog
+          isOpen={isDialogOpen}
+          clients={clients}
+          motorcycles={motorcycles}
+          mechanics={mechanics}
+          availableServices={availableServices}
+          editingOrder={editingReparacion}
+          isSaving={isSaving}
+          onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) setEditingReparacion(null);
+          }}
+          onOrderUpdated={() => refreshData(true)}
+          onSave={(data) => {
+            if (!data) {
+              setIsDialogOpen(false);
+              setEditingReparacion(null);
+              return;
+            }
+            handleSave(data);
+          }}
+        />
+      </Dialog>
+
+      {/* View Details Dialog */}
+      <Dialog open={!!viewingReparacion} onOpenChange={(open) => { if (!open) setViewingReparacion(null); }}>
+        <ReparacionDetails
+          reparacion={viewingReparacion}
+          availableServices={availableServices}
+          mechanics={mechanics}
+          getStatusBadge={getStatusBadge}
+          onClose={() => setViewingReparacion(null)}
+        />
+      </Dialog>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open: boolean) => setConfirmDialog(prev => ({ ...prev, open }))}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText={confirmDialog.confirmText}
+        variant={confirmDialog.variant}
+        onConfirm={confirmDialog.onConfirm}
+      />
+
+      <PDFPreviewDialog
+        open={pdfPreview.open}
+        onOpenChange={(open) => setPdfPreview(prev => ({ ...prev, open }))}
+        data={pdfPreview.data}
+        type={pdfPreview.type}
+        onGenerate={() => { }}
+      />
     </div>
   );
 }

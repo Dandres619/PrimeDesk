@@ -4,12 +4,13 @@ import { Label } from '../../ui/label';
 import { Button } from '../../ui/button';
 import { Textarea } from '../../ui/textarea';
 import { Badge } from '../../ui/badge';
-import { ClipboardPen, Check, User, Bike, AlertCircle, FileImage, Plus, Loader2, Info, Wrench, Search, ChevronsUpDown, Clock } from 'lucide-react';
+import { ClipboardPen, Check, User, Bike, AlertCircle, FileImage, Plus, Loader2, Info, Wrench, Search, ChevronsUpDown, Clock, ExternalLink, Gauge } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { format, parseISO } from 'date-fns';
+
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -23,7 +24,7 @@ interface ReparacionDialogProps {
   isSaving?: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (data: any) => void;
-  onOrderUpdated?: () => void; // New prop to notify parent of changes
+  onOrderUpdated?: () => void;
 }
 
 export function ReparacionDialog({
@@ -36,6 +37,7 @@ export function ReparacionDialog({
   isSaving = false,
   onOpenChange,
   onSave,
+  onOrderUpdated,
 }: ReparacionDialogProps) {
   const [formData, setFormData] = useState({
     clientId: '',
@@ -52,13 +54,17 @@ export function ReparacionDialog({
     client: false,
     motorcycle: false,
     startTime: false,
-    mechanic: false
+    mechanic: false,
+    product: false,
+    proveedor: false
   });
 
   const [search, setSearch] = useState({
     client: '',
     motorcycle: '',
-    mechanic: ''
+    mechanic: '',
+    product: '',
+    proveedor: ''
   });
 
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -284,20 +290,152 @@ export function ReparacionDialog({
   const [isEditMode, setIsEditMode] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
 
+  const allServicesFinalized = useMemo(() => {
+    if (!localOrder?.servicios || localOrder.servicios.length === 0) return false;
+    return localOrder.servicios.every((s: any) => s.Estado === 'Finalizado');
+  }, [localOrder?.servicios]);
+
+  const isRepuestosLocked = useMemo(() => {
+    if (!localOrder) return true;
+    const currentEstado = localOrder.Estado || localOrder.estadoBase || 'Esperando motocicleta';
+    if (currentEstado === 'Esperando motocicleta') return true;
+    if (currentEstado === 'En reparación') {
+      return !allServicesFinalized;
+    }
+    return false;
+  }, [localOrder, allServicesFinalized]);
+
+  const formattedFecha = useMemo(() => {
+    const f = localOrder?.DiaAgendamiento ||
+      localOrder?.diaAgendamiento ||
+      localOrder?.Fecha ||
+      localOrder?.fecha ||
+      localOrder?.date ||
+      localOrder?.Dia ||
+      localOrder?.dia;
+    if (!f) return '---';
+    try {
+      const cleanDate = f.includes('T') ? f.split('T')[0] : f;
+      return format(parseISO(cleanDate), 'dd/MM/yyyy');
+    } catch (e) {
+      return '---';
+    }
+  }, [localOrder]);
+
+  const formattedHora = useMemo(() => {
+    const h = localOrder?.HoraInicio ||
+      localOrder?.horaInicio ||
+      localOrder?.Hora_inicio ||
+      localOrder?.hora_inicio ||
+      localOrder?.startTime;
+    if (!h) return '';
+    try {
+      const cleanTime = h.slice(0, 5); // get HH:MM
+      return format(parseISO(`2026-01-01T${cleanTime}`), 'hh:mm a');
+    } catch (e) {
+      return '';
+    }
+  }, [localOrder]);
+
+
+
   // States for new Repuesto
-  const [newRepuesto, setNewRepuesto] = useState({ id_producto: '', cantidad: 1, precio_unitario: '', observaciones: '' });
+  const [newRepuesto, setNewRepuesto] = useState({ id_producto: '', cantidad: '1', precio_unitario: '', observaciones: '', id_proveedor: '' });
   const [facturaFile, setFacturaFile] = useState<File | null>(null);
   const [isSubmittingRepuesto, setIsSubmittingRepuesto] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [touchedRepuesto, setTouchedRepuesto] = useState({ cantidad: false, precio_unitario: false, id_proveedor: false });
+  const [proveedores, setProveedores] = useState<any[]>([]);
+
+  const handleNumberKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow navigation keys: backspace, delete, tab, escape, enter
+    if ([46, 8, 9, 27, 13].indexOf(e.keyCode) !== -1 ||
+      // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+      (e.keyCode === 65 && e.ctrlKey === true) ||
+      (e.keyCode === 67 && e.ctrlKey === true) ||
+      (e.keyCode === 86 && e.ctrlKey === true) ||
+      (e.keyCode === 88 && e.ctrlKey === true) ||
+      // Allow: home, end, left, right
+      (e.keyCode >= 35 && e.keyCode <= 39)) {
+      return;
+    }
+    // Ensure that it is a number and stop the keypress if it isn't
+    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+      e.preventDefault();
+    }
+  };
+
+  const repuestoErrors = useMemo(() => {
+    const errs: Record<string, string> = {};
+
+    // Validate quantity
+    const qty = Number(newRepuesto.cantidad);
+    if (!newRepuesto.cantidad || newRepuesto.cantidad === '') {
+      errs.cantidad = 'La cantidad es obligatoria.';
+    } else if (qty <= 0) {
+      errs.cantidad = 'Debe ser mayor a 0.';
+    } else if (newRepuesto.cantidad.length > 2) {
+      errs.cantidad = 'Máximo 2 dígitos.';
+    }
+
+    // Validate price
+    const price = Number(newRepuesto.precio_unitario);
+    if (!newRepuesto.precio_unitario || newRepuesto.precio_unitario === '') {
+      errs.precio_unitario = 'El precio es obligatorio.';
+    } else if (price < 5000) {
+      errs.precio_unitario = 'Mínimo $5.000.';
+    } else if (newRepuesto.precio_unitario.length > 7) {
+      errs.precio_unitario = 'Máximo 7 dígitos.';
+    }
+
+    // Validate supplier
+    if (!newRepuesto.id_proveedor || newRepuesto.id_proveedor === '') {
+      errs.id_proveedor = 'El proveedor es obligatorio.';
+    }
+
+    // Validate observations
+    if (newRepuesto.observaciones && newRepuesto.observaciones.length > 50) {
+      errs.observaciones = 'Máximo 50 caracteres.';
+    }
+
+    return errs;
+  }, [newRepuesto]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((p: any) =>
+      p.Nombre.toLowerCase().includes((search.product || '').toLowerCase()) ||
+      p.ID_Producto.toString().includes(search.product || '')
+    );
+  }, [products, search.product]);
+
+  const selectedProduct = products.find(p => p.ID_Producto.toString() === newRepuesto.id_producto);
+
+  const filteredProveedores = useMemo(() => {
+    return proveedores.filter((p: any) =>
+      (p.nombreempresa || p.NombreEmpresa || p.nombre || '').toLowerCase().includes((search.proveedor || '').toLowerCase()) ||
+      (p.ID_Proveedor || p.id_proveedor || '').toString().includes(search.proveedor || '')
+    );
+  }, [proveedores, search.proveedor]);
+
+  const selectedProveedor = proveedores.find(p => (p.ID_Proveedor || p.id_proveedor || '').toString() === newRepuesto.id_proveedor);
 
   // Modals state
   const [confirmDialog, setConfirmDialog] = useState({ open: false, type: 'start' as 'start' | 'finish', title: '', description: '' });
   const [finalizeServiceDialog, setFinalizeServiceDialog] = useState({ open: false, serviceId: null as number | null, obs: '', serviceName: '' });
 
+  const fetchProveedores = async () => {
+    try {
+      const res = await fetch(`${API_URL}/proveedores`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      setProveedores(data.filter((p: any) => p.estado !== false && p.estado !== 'Inactivo' && p.Estado !== false && p.Estado !== 'Inactivo'));
+    } catch (e) { }
+  };
+
   useEffect(() => {
-    setPopovers({ client: false, motorcycle: false, startTime: false, mechanic: false });
-    setSearch({ client: '', motorcycle: '', mechanic: '' });
+    setPopovers({ client: false, motorcycle: false, startTime: false, mechanic: false, product: false, proveedor: false });
+    setSearch({ client: '', motorcycle: '', mechanic: '', product: '', proveedor: '' });
     setSubmitAttempted(false);
+    setTouchedRepuesto({ cantidad: false, precio_unitario: false, id_proveedor: false });
 
     if (!isOpen) {
       // Delay resetting to prevent visual layout jumps/resizes during the exit animation!
@@ -321,6 +459,7 @@ export function ReparacionDialog({
           date: format(new Date(), 'yyyy-MM-dd')
         });
         fetchProducts();
+        fetchProveedores();
       } else {
         setIsEditMode(false);
         setLocalOrder(null);
@@ -354,6 +493,7 @@ export function ReparacionDialog({
       });
       const data = await res.json();
       setLocalOrder({ ...localOrder, ...data });
+      onOrderUpdated?.();
       return { ...localOrder, ...data };
     } catch (e) {
       return null;
@@ -370,7 +510,14 @@ export function ReparacionDialog({
         body: JSON.stringify({ estado: nuevoEstado })
       });
       if (!res.ok) throw new Error('Error al actualizar estado');
-      toast.success(`Estado actualizado a: ${nuevoEstado}`);
+
+      if (nuevoEstado === 'Reparación finalizada') {
+        toast.success('¡La reparación ha sido finalizada con éxito!');
+        onOpenChange(false);
+      } else {
+        toast.success(`Estado actualizado a "${nuevoEstado}"`);
+      }
+
       await reloadLocalOrder();
     } catch (e: any) {
       toast.error(e.message);
@@ -408,7 +555,7 @@ export function ReparacionDialog({
   };
 
   const handleAddRepuesto = async () => {
-    if (!localOrder || !newRepuesto.id_producto || !newRepuesto.cantidad || !newRepuesto.precio_unitario) {
+    if (!localOrder || !newRepuesto.id_producto || !newRepuesto.cantidad || !newRepuesto.precio_unitario || !newRepuesto.id_proveedor) {
       return toast.error('Complete los campos obligatorios del repuesto.');
     }
     setIsSubmittingRepuesto(true);
@@ -418,6 +565,7 @@ export function ReparacionDialog({
       formDataObj.append('cantidad', newRepuesto.cantidad.toString());
       formDataObj.append('precio_unitario', newRepuesto.precio_unitario.toString());
       formDataObj.append('observaciones', newRepuesto.observaciones);
+      formDataObj.append('id_proveedor', newRepuesto.id_proveedor.toString());
       if (facturaFile) {
         formDataObj.append('facturaFile', facturaFile);
       }
@@ -433,8 +581,9 @@ export function ReparacionDialog({
         throw new Error(errData.message || 'Error al registrar repuesto');
       }
 
-      toast.success('Repuesto/Insumo agregado a la reparación.');
-      setNewRepuesto({ id_producto: '', cantidad: 1, precio_unitario: '', observaciones: '' });
+      toast.success('Repuesto agregado a la reparación.');
+      setNewRepuesto({ id_producto: '', cantidad: '1', precio_unitario: '', observaciones: '', id_proveedor: '' });
+      setTouchedRepuesto({ cantidad: false, precio_unitario: false, id_proveedor: false });
       setFacturaFile(null);
       await reloadLocalOrder();
     } catch (e: any) {
@@ -608,7 +757,7 @@ export function ReparacionDialog({
 
                 <div className="space-y-2">
                   <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <Bike className="w-4 h-4 text-blue-500" /> Vehículo (Placa) *
+                    <Bike className="w-4 h-4 text-blue-500" /> Motocicleta (Placa) *
                   </Label>
                   <Popover open={popovers.motorcycle} onOpenChange={(open) => setPopovers({ ...popovers, motorcycle: open })}>
                     <PopoverTrigger asChild>
@@ -836,7 +985,7 @@ export function ReparacionDialog({
                                 className={cn(
                                   "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
                                   "hover:bg-slate-50 dark:hover:bg-slate-900",
-                                  formData.mechanicId === m.ID_Empleado.toString() && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                                  formData.mechanicId === m.ID_Empleado.toString() && "bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 font-bold"
                                 )}
                                 onClick={() => {
                                   setFormData({ ...formData, mechanicId: m.ID_Empleado.toString() });
@@ -969,8 +1118,8 @@ export function ReparacionDialog({
                     mechanicId: '',
                     date: format(new Date(), 'yyyy-MM-dd')
                   });
-                  setPopovers({ client: false, motorcycle: false, startTime: false, mechanic: false });
-                  setSearch({ client: '', motorcycle: '', mechanic: '' });
+                  setPopovers({ client: false, motorcycle: false, startTime: false, mechanic: false, product: false, proveedor: false });
+                  setSearch({ client: '', motorcycle: '', mechanic: '', product: '', proveedor: '' });
                   onOpenChange(false);
                 }}
                 className="h-11 px-8 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl w-full sm:w-auto"
@@ -1011,7 +1160,7 @@ export function ReparacionDialog({
 
               <div className="flex items-center gap-4">
                 <div className="text-right mr-6 border-r border-slate-800 pr-8">
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Inversión Repuestos</p>
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Repuestos</p>
                   <p className="text-2xl font-black text-blue-500 tracking-tighter">
                     ${localOrder?.compras?.reduce((acc: number, cur: any) => acc + Number(cur.Subtotal || 0), 0).toLocaleString() || '0.00'}
                   </p>
@@ -1059,11 +1208,18 @@ export function ReparacionDialog({
                       <p className="text-[10px] font-bold text-slate-500 uppercase">Motocicleta</p>
                       <p className="text-xs font-bold text-slate-400 truncate max-w-[150px]">{localOrder?.motorcycleBrand || localOrder?.Marca} {localOrder?.motorcycleModel || localOrder?.Modelo || '---'} • {localOrder?.motorcyclePlate || localOrder?.Placa || '---'}</p>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center border-b border-slate-800 pb-3">
                       <p className="text-[10px] font-bold text-slate-500 uppercase">Cliente</p>
                       <p className="text-xs font-bold text-slate-400 truncate max-w-[150px]">{localOrder?.clientName || localOrder?.NombreCliente || localOrder?.cliente_nombre || '---'}</p>
                     </div>
+                    <div className="flex justify-between items-center">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Programación</p>
+                      <p className="text-xs font-bold text-slate-400">
+                        {formattedFecha}{formattedHora ? ` · ${formattedHora}` : ''}
+                      </p>
+                    </div>
                   </div>
+
                   <div className="space-y-3">
                     <Label className="text-[9px] font-black uppercase text-slate-600">Observaciones Globales</Label>
                     <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl min-h-[100px] text-xs text-slate-400">
@@ -1076,20 +1232,26 @@ export function ReparacionDialog({
               {/* MAIN WORKSPACE */}
               <div className="flex-1 flex flex-col bg-slate-900/20 overflow-hidden">
                 <div className="shrink-0 flex px-10 gap-10 border-b border-slate-800 bg-slate-950/40">
-                  {['servicios', 'repuestos'].map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => setActiveTab(tab as any)}
-                      className={cn(
-                        "h-16 border-b-2 text-[11px] font-black uppercase tracking-[0.25em] transition-all relative",
-                        activeTab === tab ? "border-blue-600 text-blue-500" : "border-transparent text-slate-600 hover:text-slate-400"
-                      )}
-                    >
-                      {tab === 'servicios' ? 'Servicios' : 'Compras de Repuestos'}
-                    </button>
-                  ))}
+                  {['servicios', 'repuestos'].map((tab) => {
+                    const isTabDisabled = tab === 'repuestos' && isRepuestosLocked;
+                    return (
+                      <button
+                        key={tab}
+                        type="button"
+                        disabled={isTabDisabled}
+                        onClick={() => setActiveTab(tab as any)}
+                        className={cn(
+                          "h-16 border-b-2 text-[11px] font-black uppercase tracking-[0.25em] transition-all relative flex items-center gap-2",
+                          activeTab === tab ? "border-blue-600 text-blue-500" : "border-transparent text-slate-600 hover:text-slate-400",
+                          isTabDisabled && "opacity-40 cursor-not-allowed hover:text-slate-600"
+                        )}
+                      >
+                        {tab === 'servicios' ? 'Servicios' : 'Compras de Repuestos'}
+                      </button>
+                    );
+                  })}
                 </div>
+
 
                 <div className="flex-1 overflow-y-auto p-12 custom-scrollbar text-left relative">
                   {activeTab === 'servicios' ? (() => {
@@ -1098,8 +1260,17 @@ export function ReparacionDialog({
                     if (currentEstado === 'Esperando motocicleta') {
                       return (
                         <div className="flex flex-col items-center justify-center py-20 text-center space-y-6 h-full">
-                          <div className="w-20 h-20 rounded-3xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center shadow-inner">
-                            <Bike className="w-10 h-10 text-blue-500" />
+                          <div className="relative flex items-center justify-center w-24 h-24 mb-2">
+                            {/* Inner soft glow ring */}
+                            <div className="absolute inset-0 rounded-full bg-blue-500/10 blur-xl animate-pulse" />
+                            {/* Pulsing ring */}
+                            <div className="absolute -inset-2 rounded-[2rem] border border-blue-500/20 opacity-70 animate-ping" />
+
+                            {/* Main premium glassmorphic badge */}
+                            <div className="relative w-20 h-20 rounded-[2rem] bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-800 flex items-center justify-center shadow-2xl">
+                              <div className="absolute inset-px rounded-[1.95rem] bg-gradient-to-br from-blue-500/10 to-transparent opacity-60" />
+                              <Gauge className="w-10 h-10 text-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] animate-pulse" />
+                            </div>
                           </div>
                           <div className="max-w-sm space-y-2">
                             <h3 className="text-xl font-black text-white tracking-tight">Esperando ingreso</h3>
@@ -1120,49 +1291,80 @@ export function ReparacionDialog({
 
                     return (
                       <div className="max-w-4xl mx-auto space-y-4">
-                        {localOrder?.servicios?.map((s: any) => (
-                          <div key={s.ID_Servicio} className="bg-slate-950 border border-slate-800 rounded-[1.2rem] overflow-hidden group hover:border-blue-500/40 transition-all text-left">
-                            <div className="p-6 flex items-center justify-between">
-                              <div className="flex items-center gap-6">
-                                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center border border-slate-800", s.Estado === 'Finalizado' ? "bg-green-600/20 text-green-500" : "bg-slate-900 text-slate-600")}>
-                                  <Check className="w-6 h-6" />
+                        {localOrder?.servicios?.map((s: any) => {
+                          const matchService = availableServices.find((as: any) =>
+                            Number(as.ID_Servicio || as.id_servicio) === Number(s.ID_Servicio || s.id_servicio)
+                          );
+                          const servicePrice = parseFloat(s.Precio || matchService?.Precio || matchService?.precio || 0);
+
+                          return (
+                            <div key={s.ID_Servicio} className="bg-slate-950 border border-slate-800 rounded-[1.2rem] overflow-hidden group hover:border-blue-500/40 transition-all text-left">
+                              <div className="p-6 flex items-center justify-between">
+                                <div className="flex items-center gap-6">
+                                  <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center border border-slate-800", s.Estado === 'Finalizado' ? "bg-green-600/20 text-green-500" : "bg-slate-900 text-slate-600")}>
+                                    <Check className="w-6 h-6" />
+                                  </div>
+                                  <div className="text-left">
+                                    <h4 className="text-base font-black text-white tracking-tight uppercase">{s.NombreServicio || s.Nombre}</h4>
+                                    <div className="flex items-center gap-3 mt-1">
+                                      <p className="text-[9px] font-black text-slate-500 uppercase">{s.Estado || 'PENDIENTE'}</p>
+                                      <span className="text-slate-800">•</span>
+                                      <p className="text-xs font-bold text-blue-400/90">
+                                        {!isNaN(servicePrice) && servicePrice > 0 ? `$${servicePrice.toLocaleString()}` : 'Sin costo'}
+                                      </p>
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="text-left">
-                                  <h4 className="text-base font-black text-white tracking-tight uppercase">{s.NombreServicio || s.Nombre}</h4>
-                                  <p className="text-[9px] font-black text-slate-500 uppercase mt-1">{s.Estado || 'PENDIENTE'}</p>
-                                </div>
+                                {s.Estado !== 'Finalizado' && currentEstado === 'En reparación' && (
+                                  <Button
+                                    type="button"
+                                    onClick={() => setFinalizeServiceDialog({ open: true, serviceId: s.ID_Servicio, obs: '', serviceName: s.NombreServicio || s.Nombre })}
+                                    disabled={loadingAction === `servicio-${s.ID_Servicio}`}
+                                    size="sm"
+                                    variant="outline"
+                                    className="rounded-lg h-10 border-slate-800 font-black text-[10px] uppercase text-blue-400 hover:text-blue-300 hover:bg-slate-900"
+                                  >
+                                    {loadingAction === `servicio-${s.ID_Servicio}` ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Finalizar servicio'}
+                                  </Button>
+                                )}
                               </div>
-                              {s.Estado !== 'Finalizado' && currentEstado === 'En reparación' && (
-                                <Button
-                                  type="button"
-                                  onClick={() => setFinalizeServiceDialog({ open: true, serviceId: s.ID_Servicio, obs: '', serviceName: s.NombreServicio || s.Nombre })}
-                                  disabled={loadingAction === `servicio-${s.ID_Servicio}`}
-                                  size="sm"
-                                  variant="outline"
-                                  className="rounded-lg h-10 border-slate-800 font-black text-[10px] uppercase text-blue-400 hover:text-blue-300 hover:bg-slate-900"
-                                >
-                                  {loadingAction === `servicio-${s.ID_Servicio}` ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Finalizar servicio'}
-                                </Button>
+                              {s.Observaciones && s.Estado === 'Finalizado' && (
+                                <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/30">
+                                  <p className="text-xs font-medium text-slate-400"><span className="font-bold text-slate-500 mr-2">OBSERVACIÓN:</span>{s.Observaciones}</p>
+                                </div>
                               )}
                             </div>
-                            {s.Observaciones && s.Estado === 'Finalizado' && (
-                              <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/30">
-                                <p className="text-xs font-medium text-slate-400"><span className="font-bold text-slate-500 mr-2">OBSERVACIÓN:</span>{s.Observaciones}</p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
 
                         {currentEstado === 'En reparación' && (
-                          <div className="mt-10 p-6 rounded-2xl border border-blue-500/10 bg-blue-500/5 text-center flex items-center justify-center gap-4">
-                            <Info className="w-5 h-5 text-blue-500 shrink-0" />
-                            <p className="text-xs font-bold text-blue-400/80 leading-relaxed text-left">
-                              Cuando todos los servicios estén finalizados y las compras de repuestos estén registradas, <br />podrá pasar a "Reparación finalizada" desde la sección de Compras.
-                            </p>
+                          <div className="space-y-6 mt-8">
+                            <div className="p-6 rounded-2xl border border-blue-500/10 bg-blue-500/5 flex items-start gap-4">
+                              <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                              <div className="space-y-1.5 text-left">
+                                <p className="text-xs font-black text-blue-300 uppercase tracking-wider">Pasos para completar la orden</p>
+                                <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+                                  Para completar la reparación, primero finaliza todos los servicios de esta lista. Una vez completados, podrás acceder a la pestaña de <strong>"Compras de repuestos"</strong> para registrar los repuestos utilizados y terminar la reparación.
+                                </p>
+                              </div>
+                            </div>
+
+                            {allServicesFinalized && (
+                              <div className="flex justify-center pt-2">
+                                <Button
+                                  type="button"
+                                  onClick={() => setActiveTab('repuestos')}
+                                  className="h-14 px-10 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
+                                >
+                                  Continuar a registrar Repuestos ➜
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
                     );
+
                   })() : (() => {
                     return (
                       <div className="max-w-5xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-10">
@@ -1173,29 +1375,70 @@ export function ReparacionDialog({
                           </h3>
                           <div className="space-y-4">
                             {localOrder?.compras?.length > 0 ? localOrder.compras.map((compra: any) => (
-                              <div key={compra.ID_Reparacion_Compra} className="bg-slate-950 border border-slate-800 rounded-[1.5rem] p-6 flex flex-col sm:flex-row gap-6">
-                                <div className="w-16 h-16 rounded-xl bg-slate-900 flex items-center justify-center shrink-0 border border-slate-800">
-                                  <Wrench className="w-8 h-8 text-slate-600" />
-                                </div>
-                                <div className="flex-1 space-y-2">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <h4 className="text-base font-black text-white">{compra.NombreProducto || 'Producto ID ' + compra.ID_Producto}</h4>
-                                      <p className="text-xs text-slate-500">{compra.Cantidad} unid. x ${parseFloat(compra.PrecioUnitario).toLocaleString()}</p>
+                              <div key={compra.ID_Reparacion_Compra} className="bg-slate-950 border border-slate-800 rounded-[1.5rem] p-6 flex flex-col sm:flex-row items-center gap-6">
+                                {/* Left Column: Image preview thumbnail / Wrench fallback */}
+                                {compra.Factura ? (
+                                  <a
+                                    href={compra.Factura}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="relative w-16 h-16 rounded-xl bg-slate-900 overflow-hidden flex items-center justify-center border border-slate-800 shrink-0 transition-transform duration-300 hover:scale-105 active:scale-95 group/img"
+                                    title="Ver factura de compra"
+                                  >
+                                    <img
+                                      src={compra.Factura}
+                                      alt="Factura"
+                                      className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        const parent = e.currentTarget.parentElement;
+                                        if (parent) {
+                                          const icon = parent.querySelector('.fallback-icon');
+                                          if (icon) icon.classList.remove('hidden');
+                                        }
+                                      }}
+                                    />
+                                    <div className="fallback-icon hidden w-full h-full flex items-center justify-center text-blue-500">
+                                      <FileImage className="w-6 h-6" />
                                     </div>
-                                    <div className="text-right">
-                                      <p className="text-lg font-black text-blue-400">${parseFloat(compra.Subtotal).toLocaleString()}</p>
+                                    {/* Overlay hover effect */}
+                                    <div className="absolute inset-0 bg-black/45 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ExternalLink className="w-5 h-5 text-white" />
                                     </div>
-                                  </div>
-                                  {compra.Observaciones && <p className="text-xs text-slate-400 pt-2 border-t border-slate-800/50 mt-2">{compra.Observaciones}</p>}
-                                </div>
-                                {compra.Factura && (
-                                  <div className="shrink-0 flex items-center justify-center">
-                                    <a href={compra.Factura} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center hover:bg-slate-800 transition-colors group">
-                                      <FileImage className="w-5 h-5 text-slate-500 group-hover:text-white" />
-                                    </a>
+                                  </a>
+                                ) : (
+                                  <div className="w-16 h-16 rounded-xl bg-slate-900 flex items-center justify-center shrink-0 border border-slate-800">
+                                    <Wrench className="w-8 h-8 text-slate-600" />
                                   </div>
                                 )}
+
+                                <div className="flex-1 flex flex-row items-center justify-between gap-4 w-full">
+                                  <div className="text-left space-y-1">
+                                    <h4 className="text-base font-black text-white leading-tight">
+                                      {compra.NombreProducto || 'Producto ID ' + compra.ID_Producto}
+                                    </h4>
+                                    <p className="text-xs text-slate-500 font-bold">
+                                      {compra.Cantidad} {compra.Cantidad === 1 ? 'unidad' : 'unidades'} x ${parseFloat(compra.PrecioUnitario).toLocaleString()}
+                                    </p>
+                                    {compra.NombreProveedor && (
+                                      <div className="mt-1">
+                                        <Badge className="bg-slate-900 text-blue-400 border-slate-800 text-[9px] font-black uppercase">
+                                          Proveedor: {compra.NombreProveedor}
+                                        </Badge>
+                                      </div>
+                                    )}
+                                    {compra.Observaciones && (
+                                      <p className="text-xs text-slate-400 font-medium italic mt-2 pt-2 border-t border-slate-800/50">
+                                        "{compra.Observaciones}"
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <p className="text-lg font-black text-blue-400">
+                                      ${parseFloat(compra.Subtotal).toLocaleString()}
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
                             )) : (
                               <div className="text-center p-12 border border-dashed border-slate-800 rounded-3xl bg-slate-900/20">
@@ -1207,7 +1450,7 @@ export function ReparacionDialog({
                               <div className="pt-10 border-t border-slate-800 flex justify-end">
                                 <Button
                                   type="button"
-                                  onClick={() => setConfirmDialog({ open: true, type: 'finish', title: 'Finalizar Reparación', description: '¿Está seguro de finalizar la reparación? Verifique que ya haya subido todas las fotos de recibos y facturas necesarias.' })}
+                                  onClick={() => setConfirmDialog({ open: true, type: 'finish', title: 'Finalizar Reparación', description: '¿Está seguro de finalizar? Verifique los repuestos y facturas registradas. Una vez finalizada, esta reparación quedará cerrada y no podrá modificarse.' })}
                                   className="h-14 px-12 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95"
                                 >
                                   Finalizar reparación
@@ -1224,50 +1467,220 @@ export function ReparacionDialog({
                               <Plus className="w-4 h-4 text-blue-500" /> Agregar repuesto
                             </h3>
                             <div className="space-y-4">
-                              <div className="space-y-2">
+                              <div className="space-y-2 text-left">
                                 <Label className="text-[10px] font-black text-slate-500 uppercase">Producto/Repuesto</Label>
-                                <select
-                                  value={newRepuesto.id_producto}
-                                  onChange={(e) => handleProductSelect(e.target.value)}
-                                  className="w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl text-xs font-black text-white focus:ring-1 focus:ring-blue-500 outline-none"
-                                >
-                                  <option value="">Seleccione...</option>
-                                  {products.map(p => (
-                                    <option key={p.ID_Producto} value={p.ID_Producto}>{p.Nombre}</option>
-                                  ))}
-                                </select>
+                                <Popover open={popovers.product} onOpenChange={(open) => setPopovers({ ...popovers, product: open })}>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      type="button"
+                                      className={cn(
+                                        "w-full justify-between font-black h-11 px-4 text-left overflow-hidden bg-slate-900 border border-slate-800 rounded-xl text-xs text-white hover:bg-slate-850 hover:text-white transition-all",
+                                        !newRepuesto.id_producto && "text-slate-500"
+                                      )}
+                                    >
+                                      <span className="truncate">
+                                        {selectedProduct ? selectedProduct.Nombre : "Seleccionar producto..."}
+                                      </span>
+                                      <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2 text-slate-400" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto bg-slate-950 border border-slate-800"
+                                    align="start"
+                                    onCloseAutoFocus={(e) => e.preventDefault()}
+                                  >
+                                    <div className="p-2 border-b border-slate-850 bg-slate-950">
+                                      <div className="flex items-center px-3 py-2 bg-slate-900 rounded-xl border border-slate-800">
+                                        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50 text-slate-400" />
+                                        <input
+                                          className="flex h-7 w-full rounded-md bg-transparent text-xs outline-none placeholder:text-slate-500 text-white"
+                                          placeholder="Buscar producto/repuesto..."
+                                          value={search.product || ''}
+                                          onChange={(e) => setSearch({ ...search, product: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div
+                                      className="max-h-[200px] overflow-y-auto p-1 bg-slate-950 custom-scrollbar"
+                                      onWheel={(e) => e.stopPropagation()}
+                                    >
+                                      {filteredProducts.length === 0 ? (
+                                        <div className="py-6 px-2 text-center">
+                                          <p className="text-xs text-slate-500">No se encontraron productos.</p>
+                                        </div>
+                                      ) : (
+                                        filteredProducts.map((p: any) => (
+                                          <div
+                                            key={p.ID_Producto}
+                                            className={cn(
+                                              "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-xs outline-none transition-colors text-slate-300",
+                                              "hover:bg-slate-900 hover:text-white",
+                                              newRepuesto.id_producto === p.ID_Producto.toString() && "bg-blue-600/10 text-blue-400 font-bold"
+                                            )}
+                                            onClick={() => {
+                                              handleProductSelect(p.ID_Producto.toString());
+                                              setPopovers({ ...popovers, product: false });
+                                              setSearch({ ...search, product: '' });
+                                            }}
+                                          >
+                                            <Check className={cn("mr-2 h-4 w-4 text-blue-500", newRepuesto.id_producto === p.ID_Producto.toString() ? "opacity-100" : "opacity-0")} />
+                                            <div className="flex flex-col text-left">
+                                              <span>{p.Nombre}</span>
+                                            </div>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                              <div className="space-y-2 text-left">
+                                <Label className="text-[10px] font-black text-slate-500 uppercase">Proveedor</Label>
+                                <Popover open={popovers.proveedor} onOpenChange={(open) => setPopovers({ ...popovers, proveedor: open })}>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      type="button"
+                                      className={cn(
+                                        "w-full justify-between font-black h-11 px-4 text-left overflow-hidden bg-slate-900 border border-slate-800 rounded-xl text-xs text-white hover:bg-slate-850 hover:text-white transition-all",
+                                        !newRepuesto.id_proveedor && "text-slate-500",
+                                        touchedRepuesto.id_proveedor && repuestoErrors.id_proveedor && "border-red-500 focus:ring-red-500/20 bg-red-500/5"
+                                      )}
+                                      onFocus={() => setTouchedRepuesto(prev => ({ ...prev, id_proveedor: true }))}
+                                    >
+                                      <span className="truncate">
+                                        {selectedProveedor ? (selectedProveedor.nombreempresa || selectedProveedor.NombreEmpresa || selectedProveedor.nombre) : "Seleccionar proveedor..."}
+                                      </span>
+                                      <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2 text-slate-400" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto bg-slate-950 border border-slate-800"
+                                    align="start"
+                                    onCloseAutoFocus={(e) => e.preventDefault()}
+                                  >
+                                    <div className="p-2 border-b border-slate-850 bg-slate-950">
+                                      <div className="flex items-center px-3 py-2 bg-slate-900 rounded-xl border border-slate-800">
+                                        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50 text-slate-400" />
+                                        <input
+                                          className="flex h-7 w-full rounded-md bg-transparent text-xs outline-none placeholder:text-slate-500 text-white"
+                                          placeholder="Buscar proveedor..."
+                                          value={search.proveedor || ''}
+                                          onChange={(e) => setSearch({ ...search, proveedor: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div
+                                      className="max-h-[200px] overflow-y-auto p-1 bg-slate-950 custom-scrollbar"
+                                      onWheel={(e) => e.stopPropagation()}
+                                    >
+                                      {filteredProveedores.length === 0 ? (
+                                        <div className="py-6 px-2 text-center">
+                                          <p className="text-xs text-slate-500">No se encontraron proveedores.</p>
+                                        </div>
+                                      ) : (
+                                        filteredProveedores.map((prov: any) => (
+                                          <div
+                                            key={prov.ID_Proveedor || prov.id_proveedor}
+                                            className={cn(
+                                              "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-xs outline-none transition-colors text-slate-300",
+                                              "hover:bg-slate-900 hover:text-white",
+                                              newRepuesto.id_proveedor === (prov.ID_Proveedor || prov.id_proveedor || '').toString() && "bg-blue-600/10 text-blue-400 font-bold"
+                                            )}
+                                            onClick={() => {
+                                              setNewRepuesto({ ...newRepuesto, id_proveedor: (prov.ID_Proveedor || prov.id_proveedor).toString() });
+                                              setPopovers({ ...popovers, proveedor: false });
+                                              setSearch({ ...search, proveedor: '' });
+                                            }}
+                                          >
+                                            <Check className={cn("mr-2 h-4 w-4 text-blue-500", newRepuesto.id_proveedor === (prov.ID_Proveedor || prov.id_proveedor || '').toString() ? "opacity-100" : "opacity-0")} />
+                                            <div className="flex flex-col text-left">
+                                              <span>{prov.nombreempresa || prov.NombreEmpresa || prov.nombre}</span>
+                                            </div>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                                {touchedRepuesto.id_proveedor && repuestoErrors.id_proveedor && (
+                                  <p className="text-[10px] font-bold text-red-500 mt-1">{repuestoErrors.id_proveedor}</p>
+                                )}
                               </div>
                               <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
+                                <div className="space-y-2 text-left">
                                   <Label className="text-[10px] font-black text-slate-500 uppercase">Cantidad</Label>
                                   <input
-                                    type="number"
-                                    min="1"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     value={newRepuesto.cantidad}
-                                    onChange={(e) => setNewRepuesto({ ...newRepuesto, cantidad: parseInt(e.target.value) || 0 })}
-                                    className="w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl text-xs font-black text-white outline-none focus:ring-1 focus:ring-blue-500"
+                                    onKeyDown={handleNumberKeyDown}
+                                    onFocus={() => setTouchedRepuesto(prev => ({ ...prev, cantidad: true }))}
+                                    onChange={(e) => {
+                                      const cleaned = e.target.value.replace(/\D/g, '').slice(0, 2);
+                                      setNewRepuesto({ ...newRepuesto, cantidad: cleaned });
+                                    }}
+                                    className={cn(
+                                      "w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl text-xs font-black text-white outline-none focus:ring-1 focus:ring-blue-500 transition-all duration-200",
+                                      touchedRepuesto.cantidad && repuestoErrors.cantidad && "border-red-500 focus:ring-red-500/20 bg-red-500/5"
+                                    )}
                                   />
+                                  {touchedRepuesto.cantidad && repuestoErrors.cantidad && (
+                                    <p className="text-[10px] font-bold text-red-500 mt-1">{repuestoErrors.cantidad}</p>
+                                  )}
                                 </div>
-                                <div className="space-y-2">
-                                  <Label className="text-[10px] font-black text-slate-500 uppercase">Precio Un.</Label>
+                                <div className="space-y-2 text-left">
+                                  <Label className="text-[10px] font-black text-slate-500 uppercase">Precio Unitario</Label>
                                   <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     value={newRepuesto.precio_unitario}
-                                    onChange={(e) => setNewRepuesto({ ...newRepuesto, precio_unitario: e.target.value })}
-                                    className="w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl text-xs font-black text-white outline-none focus:ring-1 focus:ring-blue-500"
+                                    onKeyDown={handleNumberKeyDown}
+                                    onFocus={() => setTouchedRepuesto(prev => ({ ...prev, precio_unitario: true }))}
+                                    onChange={(e) => {
+                                      const cleaned = e.target.value.replace(/\D/g, '').slice(0, 7);
+                                      setNewRepuesto({ ...newRepuesto, precio_unitario: cleaned });
+                                    }}
+                                    className={cn(
+                                      "w-full h-11 px-4 bg-slate-900 border border-slate-800 rounded-xl text-xs font-black text-white outline-none focus:ring-1 focus:ring-blue-500 transition-all duration-200",
+                                      touchedRepuesto.precio_unitario && repuestoErrors.precio_unitario && "border-red-500 focus:ring-red-500/20 bg-red-500/5"
+                                    )}
                                   />
+                                  {touchedRepuesto.precio_unitario && repuestoErrors.precio_unitario && (
+                                    <p className="text-[10px] font-bold text-red-500 mt-1">{repuestoErrors.precio_unitario}</p>
+                                  )}
                                 </div>
                               </div>
-                              <div className="space-y-2">
-                                <Label className="text-[10px] font-black text-slate-500 uppercase">Observaciones (opcional)</Label>
+                              <div className="space-y-2 text-left">
+                                <div className="flex justify-between items-center">
+                                  <Label className="text-[10px] font-black text-slate-500 uppercase">Observaciones (opcional)</Label>
+                                  <span className={cn(
+                                    "text-[9px] font-black tracking-wider uppercase",
+                                    (newRepuesto.observaciones?.length || 0) > 50 ? "text-red-500 animate-pulse" : "text-slate-500"
+                                  )}>
+                                    {newRepuesto.observaciones?.length || 0} / 50
+                                  </span>
+                                </div>
                                 <Textarea
                                   value={newRepuesto.observaciones}
-                                  onChange={(e) => setNewRepuesto({ ...newRepuesto, observaciones: e.target.value })}
-                                  placeholder="Razón de uso..."
-                                  className="bg-slate-900 border-slate-800 rounded-xl text-xs resize-none h-16 text-white outline-none focus:ring-1 focus:ring-blue-500"
+                                  onChange={(e) => setNewRepuesto({ ...newRepuesto, observaciones: e.target.value.slice(0, 50) })}
+                                  placeholder="Razón de compra..."
+                                  maxLength={50}
+                                  className={cn(
+                                    "bg-slate-900 border-slate-800 rounded-xl text-xs resize-none h-16 text-white outline-none focus:ring-1 focus:ring-blue-500 transition-all duration-200",
+                                    (newRepuesto.observaciones?.length || 0) > 50 && "border-red-500 focus:ring-red-500/20 bg-red-500/5"
+                                  )}
                                 />
+                                {repuestoErrors.observaciones && (
+                                  <p className="text-[10px] font-bold text-red-500 mt-1">{repuestoErrors.observaciones}</p>
+                                )}
                               </div>
-                              <div className="space-y-2">
+                              <div className="space-y-2 text-left">
                                 <Label className="text-[10px] font-black text-slate-500 uppercase">Foto Factura/Recibo (Opcional)</Label>
                                 <input
                                   type="file"
@@ -1279,13 +1692,20 @@ export function ReparacionDialog({
                               <div className="pt-4 border-t border-slate-800">
                                 <div className="flex justify-between items-center mb-4">
                                   <span className="text-[10px] font-black text-slate-500 uppercase">Subtotal</span>
-                                  <span className="text-lg font-black text-blue-500">${((newRepuesto.cantidad || 0) * (parseFloat(newRepuesto.precio_unitario) || 0)).toLocaleString()}</span>
+                                  <span className="text-lg font-black text-blue-500">${((Number(newRepuesto.cantidad) || 0) * (parseFloat(newRepuesto.precio_unitario) || 0)).toLocaleString()}</span>
                                 </div>
                                 <Button
                                   type="button"
                                   onClick={handleAddRepuesto}
-                                  disabled={isSubmittingRepuesto || !newRepuesto.id_producto || !newRepuesto.cantidad || !newRepuesto.precio_unitario}
-                                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl disabled:opacity-50"
+                                  disabled={
+                                    isSubmittingRepuesto ||
+                                    !newRepuesto.id_producto ||
+                                    Object.keys(repuestoErrors).length > 0 ||
+                                    !newRepuesto.cantidad ||
+                                    !newRepuesto.precio_unitario ||
+                                    !newRepuesto.id_proveedor
+                                  }
+                                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl disabled:opacity-50 transition-all duration-200"
                                 >
                                   {isSubmittingRepuesto ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Registrar repuesto'}
                                 </Button>
@@ -1310,11 +1730,14 @@ export function ReparacionDialog({
         title={confirmDialog.title}
         description={confirmDialog.description}
         confirmText={confirmDialog.type === 'start' ? 'Iniciar' : 'Finalizar'}
+        loadingText={confirmDialog.type === 'start' ? 'Iniciando...' : 'Finalizando...'}
         variant={confirmDialog.type === 'finish' ? 'default' : 'default'} // Assuming default is blue, but finish can also be default or constructive if available
-        onConfirm={() => {
-          if (confirmDialog.type === 'start') handleUpdateEstado('En reparación');
-          else if (confirmDialog.type === 'finish') handleUpdateEstado('Reparación finalizada');
-          setConfirmDialog(prev => ({ ...prev, open: false }));
+        onConfirm={async () => {
+          if (confirmDialog.type === 'start') {
+            await handleUpdateEstado('En reparación');
+          } else if (confirmDialog.type === 'finish') {
+            await handleUpdateEstado('Reparación finalizada');
+          }
         }}
       />
 

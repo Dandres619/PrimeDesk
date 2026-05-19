@@ -53,10 +53,13 @@ const getAll = async (filters = {}) => {
                      'PrecioUnitario', rc.precio_unitario,
                      'Subtotal', rc.subtotal,
                      'Factura', rc.factura,
-                     'Observaciones', rc.observaciones
+                     'Observaciones', rc.observaciones,
+                     'ID_Proveedor', rc.id_proveedor,
+                     'NombreProveedor', prov.nombreempresa
                    ))
                    FROM reparaciones_compras rc
                    LEFT JOIN productos p ON rc.id_producto = p.id_producto
+                   LEFT JOIN proveedores prov ON rc.id_proveedor = prov.id_proveedor
                    WHERE rc.id_reparacion = rep.id_reparacion
                  ) AS "compras"
           FROM reparaciones rep
@@ -86,7 +89,8 @@ const getById = async (id) => {
              rep.estado AS "Estado",
              rep.nota_estado AS "NotaEstado",
              m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
-             a.dia AS "DiaAgendamiento"
+             a.dia AS "DiaAgendamiento",
+             a.horainicio AS "HoraInicio"
       FROM reparaciones rep
       INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
       LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
@@ -103,9 +107,11 @@ const getById = async (id) => {
     sql`
       SELECT rc.id_reparacion_compra AS "ID_Reparacion_Compra", rc.id_producto AS "ID_Producto",
              p.nombre AS "NombreProducto", rc.cantidad AS "Cantidad", rc.precio_unitario AS "PrecioUnitario",
-             rc.subtotal AS "Subtotal", rc.factura AS "Factura", rc.observaciones AS "Observaciones"
+             rc.subtotal AS "Subtotal", rc.factura AS "Factura", rc.observaciones AS "Observaciones",
+             rc.id_proveedor AS "ID_Proveedor", prov.nombreempresa AS "NombreProveedor"
       FROM reparaciones_compras rc
       LEFT JOIN productos p ON rc.id_producto = p.id_producto
+      LEFT JOIN proveedores prov ON rc.id_proveedor = prov.id_proveedor
       WHERE rc.id_reparacion = ${id}
     `
   ]);
@@ -147,6 +153,75 @@ const create = async ({ id_motocicleta, id_agendamiento, observaciones, estado, 
   }
 };
 
+const syncComprasForReparacion = async (id_reparacion, estado) => {
+    const sql = await getPool();
+
+    if (estado === 'Reparación finalizada') {
+        const [reparacion] = await sql`SELECT id_motocicleta FROM reparaciones WHERE id_reparacion = ${id_reparacion}`;
+        if (!reparacion) return;
+
+        const purchases = await sql`
+            SELECT id_producto, cantidad, precio_unitario, subtotal, id_proveedor, observaciones
+            FROM reparaciones_compras
+            WHERE id_reparacion = ${id_reparacion}
+        `;
+
+        if (purchases.length === 0) return;
+
+        const grouped = {};
+        for (const p of purchases) {
+            let provId = p.id_proveedor;
+            if (!provId) {
+                const [firstProv] = await sql`SELECT id_proveedor FROM proveedores WHERE estado = true OR estado = 'Activo' LIMIT 1`;
+                provId = firstProv ? firstProv.id_proveedor : null;
+            }
+            if (!provId) continue;
+
+            if (!grouped[provId]) {
+                grouped[provId] = [];
+            }
+            grouped[provId].push(p);
+        }
+
+        for (const [provId, items] of Object.entries(grouped)) {
+            const existing = await sql`
+                SELECT id_compra FROM compras 
+                WHERE id_reparacion = ${id_reparacion} AND id_proveedor = ${provId} AND estado != 'Anulado'
+                LIMIT 1
+            `;
+            if (existing.length > 0) continue;
+
+            const total = items.reduce((acc, cur) => acc + parseFloat(cur.subtotal || 0), 0);
+            
+            await sql.begin(async (tx) => {
+                const [compra] = await tx`
+                    INSERT INTO compras (id_proveedor, id_motocicleta, fechacompra, total, notas, estado, id_reparacion)
+                    VALUES (${provId}, ${reparacion.id_motocicleta}, NOW(), ${total}, ${`Compra registrada automáticamente al finalizar la reparación #${id_reparacion}`}, 'Activa', ${id_reparacion})
+                    RETURNING id_compra
+                `;
+
+                const detailInserts = items.map(item => ({
+                    id_compra: compra.id_compra,
+                    id_producto: item.id_producto,
+                    cantidad: item.cantidad,
+                    preciounitario: item.precio_unitario,
+                    subtotal: item.subtotal
+                }));
+
+                await tx`
+                    INSERT INTO detalle_compras ${sql(detailInserts, 'id_compra', 'id_producto', 'cantidad', 'preciounitario', 'subtotal')}
+                `;
+            });
+        }
+    } else if (estado === 'Anulada') {
+        await sql`
+            UPDATE compras 
+            SET estado = 'Anulado' 
+            WHERE id_reparacion = ${id_reparacion}
+        `;
+    }
+};
+
 const update = async (id, { observaciones, estado, nota_estado }) => {
   const sql = await getPool();
   const [row] = await sql`
@@ -159,6 +234,9 @@ const update = async (id, { observaciones, estado, nota_estado }) => {
     `;
 
   if (!row) throw { status: 404, message: 'Reparación no encontrada.' };
+
+  await syncComprasForReparacion(id, estado);
+
   return row;
 };
 
@@ -186,6 +264,9 @@ const updateEstado = async (id, estado, nota_estado) => {
         RETURNING id_reparacion AS "ID_Reparacion"
     `;
     if (!row) throw { status: 404, message: 'Reparación no encontrada.' };
+
+    await syncComprasForReparacion(id, estado);
+
     return row;
 };
 
@@ -193,7 +274,7 @@ const updateServicioEstado = async (id_reparacion, id_servicio, estado, observac
     const sql = await getPool();
     const [row] = await sql`
         UPDATE reparaciones_servicios 
-        SET estado = ${estado}, observaciones = ${observaciones || null}, fecha_finalizacion = CASE WHEN ${estado} = 'Finalizado' THEN NOW() ELSE NULL END
+        SET estado = ${estado}, observaciones = ${observaciones || null}, fecha_finalizacion = CASE WHEN ${estado} = 'Finalizado' THEN timezone('America/Bogota', NOW()) ELSE NULL END
         WHERE id_reparacion = ${id_reparacion} AND id_servicio = ${id_servicio}
         RETURNING id_reparacion AS "ID_Reparacion"
     `;
@@ -203,16 +284,47 @@ const updateServicioEstado = async (id_reparacion, id_servicio, estado, observac
 
 const addCompra = async (id_reparacion, data, file) => {
     const sql = await getPool();
-    const { id_producto, cantidad, precio_unitario, observaciones } = data;
+    const { id_producto, cantidad, precio_unitario, observaciones, id_proveedor } = data;
     const subtotal = (cantidad || 1) * (precio_unitario || 0);
 
     let finalFoto = null;
     if (file) {
         try {
+            let nombreProductoClean = 'repuesto';
+            let placaClean = 'sin_placa';
+            try {
+                const [prodObj] = await sql`SELECT nombre FROM productos WHERE id_producto = ${id_producto}`;
+                if (prodObj && (prodObj.nombre || prodObj.Nombre)) {
+                    const rawName = prodObj.nombre || prodObj.Nombre;
+                    nombreProductoClean = rawName.toLowerCase()
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .replace(/[^a-z0-9]/g, '_')
+                        .replace(/__+/g, '_')
+                        .replace(/^_+|_+$/g, '');
+                }
+
+                const [repObj] = await sql`
+                    SELECT m.placa 
+                    FROM reparaciones rep
+                    INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
+                    WHERE rep.id_reparacion = ${id_reparacion}
+                `;
+                if (repObj && (repObj.placa || repObj.Placa)) {
+                    const rawPlaca = repObj.placa || repObj.Placa;
+                    placaClean = rawPlaca.toLowerCase()
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .replace(/[^a-z0-9]/g, '')
+                        .trim();
+                }
+            } catch (dbErr) {
+                console.error('❌ Error fetching product name or motorcycle plate for filename:', dbErr);
+            }
+
             const fileBuffer = file.buffer;
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
             const ext = path.extname(file.originalname);
-            const fileName = `factura-${uniqueSuffix}${ext}`;
+            const fileName = `factura_${id_reparacion}_${placaClean}_${nombreProductoClean}${ext}`;
 
             const { data: uploadData, error } = await supabase.storage
                 .from('facturas')
@@ -239,8 +351,8 @@ const addCompra = async (id_reparacion, data, file) => {
     }
 
     const [row] = await sql`
-        INSERT INTO reparaciones_compras (id_reparacion, id_producto, cantidad, precio_unitario, subtotal, factura, observaciones)
-        VALUES (${id_reparacion}, ${id_producto}, ${cantidad || 1}, ${precio_unitario || 0}, ${subtotal}, ${finalFoto}, ${observaciones || null})
+        INSERT INTO reparaciones_compras (id_reparacion, id_producto, cantidad, precio_unitario, subtotal, factura, observaciones, id_proveedor)
+        VALUES (${id_reparacion}, ${id_producto}, ${cantidad || 1}, ${precio_unitario || 0}, ${subtotal}, ${finalFoto}, ${observaciones || null}, ${id_proveedor || null})
         RETURNING id_reparacion_compra AS "ID_Reparacion_Compra"
     `;
 

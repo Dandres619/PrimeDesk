@@ -37,7 +37,8 @@ const addCompra = async (req, res) => {
             id_producto: parseInt(req.body.id_producto),
             cantidad: parseInt(req.body.cantidad),
             precio_unitario: parseFloat(req.body.precio_unitario),
-            observaciones: req.body.observaciones
+            observaciones: req.body.observaciones,
+            id_proveedor: req.body.id_proveedor ? parseInt(req.body.id_proveedor) : null
         };
         const result = await reparacionesService.addCompra(parseInt(req.params.id), data, req.file);
         res.status(201).json(result);
