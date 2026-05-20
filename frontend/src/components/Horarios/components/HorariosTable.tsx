@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Button } from '../../ui/button';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../ui/pagination';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
-import { Eye, Edit, Trash2, CalendarDays } from 'lucide-react';
+import { Eye, Edit, Trash2, CalendarDays, AlertTriangle } from 'lucide-react';
 import { Switch } from '../../ui/switch';
 
 interface HorariosTableProps {
@@ -16,6 +16,7 @@ interface HorariosTableProps {
   onEdit: (schedule: any) => void;
   onDelete: (schedule: any) => void;
   onToggleEstado: (schedule: any) => void;
+  onRegistrarNovedad: (schedule: any) => void;
   getEnabledDays: (schedule: any) => string[];
 }
 
@@ -29,6 +30,7 @@ export function HorariosTable({
   onEdit,
   onDelete,
   onToggleEstado,
+  onRegistrarNovedad,
   getEnabledDays
 }: HorariosTableProps) {
 
@@ -46,7 +48,7 @@ export function HorariosTable({
               <TableHead className="text-left">Mecánico</TableHead>
               <TableHead className="text-left">Días Laborales</TableHead>
               <TableHead className="text-left">Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+              <TableHead className="text-left">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -55,7 +57,7 @@ export function HorariosTable({
               return (
                 <TableRow key={s.id}>
                   <TableCell className="text-left">
-                    {s.mechanicName}
+                     {s.mechanicName}
                   </TableCell>
                   <TableCell className="text-left">
                     {enabledDays.length} días laborales
@@ -69,8 +71,8 @@ export function HorariosTable({
                       <span className="text-sm">{s.status}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
+                  <TableCell className="text-left">
+                    <div className="flex justify-start gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button size="sm" variant="ghost" onClick={() => onView(s)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
@@ -78,6 +80,21 @@ export function HorariosTable({
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent><p>Ver detalles</p></TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onRegistrarNovedad(s)}
+                            className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                            disabled={s.status !== 'Activo'}
+                          >
+                            <AlertTriangle className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Novedades</p></TooltipContent>
                       </Tooltip>
 
                       <Tooltip>
@@ -115,7 +132,7 @@ export function HorariosTable({
               );
             }) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-40 text-center text-muted-foreground text-left">
+                <TableCell colSpan={5} className="h-40 text-muted-foreground text-left">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <CalendarDays className="w-8 h-8 opacity-20" />
                     <p>No se encontraron horarios registrados.</p>

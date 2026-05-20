@@ -3,6 +3,7 @@ import { useHorarios, DAYS_OF_WEEK } from './hooks/useHorarios';
 import { HorariosHeader } from './components/HorariosHeader';
 import { HorariosTable } from './components/HorariosTable';
 import { ScheduleDialog } from './components/ScheduleDialog';
+import { NovedadDialog } from './components/NovedadDialog';
 import { HorariosStyles } from './styles/HorariosStyles';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -23,6 +24,7 @@ export function Horarios() {
     handleSave,
     handleToggleEstado,
     handleDelete,
+    handleRegistrarNovedad,
     getEnabledDays
   } = useHorarios();
   
@@ -32,6 +34,11 @@ export function Horarios() {
   });
 
   const [editDialog, setEditDialog] = useState({
+    open: false,
+    schedule: null as any
+  });
+
+  const [novedadDialog, setNovedadDialog] = useState({
     open: false,
     schedule: null as any
   });
@@ -91,6 +98,7 @@ export function Horarios() {
               onConfirm: () => handleDelete(s)
             })}
             onToggleEstado={handleToggleEstado}
+            onRegistrarNovedad={(s) => setNovedadDialog({ open: true, schedule: s })}
             getEnabledDays={getEnabledDays}
           />
 
@@ -196,6 +204,18 @@ export function Horarios() {
             variant={confirmDialog.variant}
             onConfirm={confirmDialog.onConfirm}
           />
+
+          {/* Novedad Dialog */}
+          <Dialog open={novedadDialog.open} onOpenChange={(open) => setNovedadDialog(prev => ({ ...prev, open }))}>
+            <NovedadDialog
+              schedule={novedadDialog.schedule}
+              onSave={async (data) => {
+                await handleRegistrarNovedad(data);
+                setNovedadDialog(prev => ({ ...prev, open: false }));
+              }}
+              onOpenChange={(open) => setNovedadDialog(prev => ({ ...prev, open }))}
+            />
+          </Dialog>
         </div>
       )}
     </div>

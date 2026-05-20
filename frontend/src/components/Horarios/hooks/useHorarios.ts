@@ -138,6 +138,31 @@ export function useHorarios() {
     }
   };
 
+  const handleRegistrarNovedad = async (novedadData: any) => {
+    try {
+      const res = await fetch(`${API_URL}/novedades`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(novedadData)
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Error al registrar novedad');
+      }
+      const data = await res.json();
+      const count = data.affectedAppointments?.length || 0;
+      if (count > 0) {
+        toast.success(`Novedad registrada exitosamente. ${count} agendamiento(s) y reparación(es) anulados.`);
+      } else {
+        toast.success('Novedad registrada exitosamente.');
+      }
+      fetchData(true);
+    } catch (err: any) {
+      toast.error(err.message);
+      throw err;
+    }
+  };
+
   const getEnabledDays = (s: any) => DAYS_OF_WEEK.filter(d => s.daySchedules[d]?.enabled);
 
   const filteredSchedules = schedules.filter(s =>
@@ -162,6 +187,7 @@ export function useHorarios() {
     handleSave,
     handleToggleEstado,
     handleDelete,
+    handleRegistrarNovedad,
     getEnabledDays
   };
 }

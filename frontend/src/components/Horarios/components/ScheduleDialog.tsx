@@ -411,70 +411,70 @@ function TimePickerInput({
   };
 
   return (
-    <div className="relative mt-1 flex items-center w-full">
-      <Input
-        id={id}
-        type="time"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn("pr-10 rounded-lg bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 w-full h-10 text-sm", className)}
-      />
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <div className="relative mt-1 flex items-center w-full cursor-pointer">
+          <Input
+            id={id}
+            type="text"
+            value={value}
+            readOnly
+            className={cn("pr-10 rounded-lg bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 w-full h-10 text-sm cursor-pointer", className)}
+          />
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 pointer-events-auto"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 pointer-events-none"
           >
             <AlarmClock className="h-4 w-4" />
           </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-56 p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto flex flex-col"
-          align="end"
+        </div>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-56 p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto flex flex-col bg-white dark:bg-slate-950"
+        align="end"
+      >
+        <div className="flex border-b border-slate-100 dark:border-slate-800 p-1 gap-1 bg-slate-50 dark:bg-slate-900 shrink-0">
+          {(['mañana', 'tarde', 'noche'] as const).map((section) => (
+            <button
+              key={section}
+              type="button"
+              className={cn(
+                "flex-1 py-1 px-1 text-[10px] font-black rounded-lg transition-all capitalize",
+                selectedSection === section
+                  ? "bg-white dark:bg-slate-950 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/50 dark:border-slate-800/50"
+                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              )}
+              onClick={() => setSelectedSection(section)}
+            >
+              {section}
+            </button>
+          ))}
+        </div>
+        <div
+          className="max-h-[160px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar flex-1"
+          onWheel={(e) => e.stopPropagation()}
         >
-          <div className="flex border-b border-slate-100 dark:border-slate-800 p-1 gap-1 bg-slate-50 dark:bg-slate-900 shrink-0">
-            {(['mañana', 'tarde', 'noche'] as const).map((section) => (
-              <button
-                key={section}
-                type="button"
-                className={cn(
-                  "flex-1 py-1 px-1 text-[10px] font-black rounded-lg transition-all capitalize",
-                  selectedSection === section
-                    ? "bg-white dark:bg-slate-950 text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200/50 dark:border-slate-800/50"
-                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                )}
-                onClick={() => setSelectedSection(section)}
-              >
-                {section}
-              </button>
-            ))}
-          </div>
-          <div
-            className="max-h-[160px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar flex-1"
-            onWheel={(e) => e.stopPropagation()}
-          >
-            {filteredTimes.map(slot => (
-              <div
-                key={slot}
-                className={cn(
-                  "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-1.5 text-xs outline-none transition-colors",
-                  "hover:bg-slate-50 dark:hover:bg-slate-900",
-                  value === slot && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
-                )}
-                onClick={() => {
-                  onChange(slot);
-                  setIsOpen(false);
-                }}
-              >
-                <Check className={cn("mr-2 h-3.5 w-3.5", value === slot ? "opacity-100" : "opacity-0")} />
-                <span className="uppercase text-[11px] font-bold">{formatTime12h(slot)}</span>
-              </div>
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
+          {filteredTimes.map(slot => (
+            <div
+              key={slot}
+              className={cn(
+                "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-1.5 text-xs outline-none transition-colors",
+                "hover:bg-slate-50 dark:hover:bg-slate-900",
+                value === slot && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+              )}
+              onClick={() => {
+                onChange(slot);
+                setIsOpen(false);
+              }}
+            >
+              <Check className={cn("mr-2 h-3.5 w-3.5", value === slot ? "opacity-100" : "opacity-0")} />
+              <span className="uppercase text-[11px] font-bold">{formatTime12h(slot)}</span>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
