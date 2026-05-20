@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { Clock, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Eye, Search } from 'lucide-react';
+import { Input } from '../ui/input';
 import { format, subMonths, addMonths, isSameMonth, isToday, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -24,10 +25,25 @@ export function Agendamientos() {
     isDetailsOpen, setIsDetailsOpen,
     isMoreOpen, setIsMoreOpen,
     moreApts, setMoreApts,
-    appointments, clients, motorcycles, mechanics, horarios, services,
+    appointments, clients, motorcycles, mechanics, horarios, services, novedades,
     isLoading, enrichedApts, calendarDays,
     handleSave, handleDelete
   } = useAgendamientos();
+
+  const [moreAptsSearch, setMoreAptsSearch] = useState('');
+
+  const filteredMoreApts = useMemo(() => {
+    const q = moreAptsSearch.toLowerCase().trim();
+    if (!q) return moreApts;
+    return moreApts.filter(a =>
+      a.clientName?.toLowerCase().includes(q) ||
+      a.motorcyclePlate?.toLowerCase().includes(q) ||
+      a.mechanicName?.toLowerCase().includes(q) ||
+      a.startTime?.toLowerCase().includes(q) ||
+      a.status?.toLowerCase().includes(q) ||
+      a.notes?.toLowerCase().includes(q)
+    );
+  }, [moreApts, moreAptsSearch]);
 
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
@@ -144,40 +160,39 @@ export function Agendamientos() {
                       )}>
                         {format(day, 'd')}
                       </span>
-                      {dayApts.length > 0 && (
-                        <div className="w-6 h-6 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs flex items-center justify-center font-black shadow-sm">
-                          {dayApts.length}
-                        </div>
-                      )}
                     </div>
                     <div className="space-y-1.5 flex-1">
-                      {dayApts.slice(0, 2).map(a => (
-                        <div
-                          key={a.id}
-                          onClick={(e) => { e.stopPropagation(); setSelectedApt(a); setIsDetailsOpen(true); }}
-                          className={cn(
-                            "text-xs p-2 rounded-lg truncate font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer relative overflow-hidden group/apt text-white bg-gradient-to-r from-blue-500 to-indigo-600",
-                            (a.status === 'Anulado' || a.status === 'Anulada') && "line-through opacity-60"
-                          )}
-                        >
-                          <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/apt:translate-y-0 transition-transform" />
-                          <div className="relative z-10 flex flex-col gap-0.5">
-                            <div className="flex items-center gap-1.5 opacity-90">
-                              <Clock className="w-3 h-3" />
-                              <span className="text-[10px] tracking-wider">{a.startTime}</span>
+                      {dayApts.length === 1 ? (
+                        dayApts.map(a => (
+                          <div
+                            key={a.id}
+                            onClick={(e) => { e.stopPropagation(); setSelectedApt(a); setIsDetailsOpen(true); }}
+                            className={cn(
+                              "text-xs p-2 rounded-lg truncate font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer relative overflow-hidden group/apt",
+                              past
+                                ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60"
+                                : "text-white bg-gradient-to-r from-blue-500 to-indigo-600",
+                              (a.status === 'Anulado' || a.status === 'Anulada') && "line-through opacity-60"
+                            )}
+                          >
+                            {!past && <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/apt:translate-y-0 transition-transform" />}
+                            <div className="relative z-10 flex flex-col gap-0.5 text-left">
+                              <div className="flex items-center gap-1.5 opacity-90">
+                                <Clock className="w-3 h-3" />
+                                <span className="text-[10px] tracking-wider">{a.startTime}</span>
+                              </div>
+                              <div className="truncate">{a.clientName}</div>
                             </div>
-                            <div className="truncate">{a.clientName}</div>
                           </div>
-                        </div>
-                      ))}
-                      {dayApts.length > 2 && (
+                        ))
+                      ) : dayApts.length > 1 ? (
                         <div
-                          className="text-[11px] text-slate-500 dark:text-slate-400 font-bold px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors text-center mt-1"
                           onClick={(e) => { e.stopPropagation(); setMoreApts(dayApts); setIsMoreOpen(true); }}
+                          className="text-xs p-2.5 rounded-xl font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer text-center text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60"
                         >
-                          +{dayApts.length - 2} agendamientos más
+                          <span className="font-bold block tracking-tight leading-snug">{dayApts.length} agendamientos en total</span>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 );
@@ -195,6 +210,7 @@ export function Agendamientos() {
             mechanics={mechanics}
             services={services}
             horarios={horarios}
+            novedades={novedades}
             existingAppointments={appointments}
             onSave={handleSave}
             onOpenChange={setIsModalOpen}
@@ -217,42 +233,59 @@ export function Agendamientos() {
           />
         </Dialog>
 
-        <Dialog open={isMoreOpen} onOpenChange={setIsMoreOpen}>
+        <Dialog open={isMoreOpen} onOpenChange={(open) => { setIsMoreOpen(open); if (!open) setMoreAptsSearch(''); }}>
           <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl animate-modal bg-white dark:bg-slate-950">
             <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
               <DialogHeader>
                 <DialogTitle className="text-lg font-bold">Agendamientos del día</DialogTitle>
               </DialogHeader>
             </div>
+            <div className="px-6 py-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar agendamiento (cliente, placa, mecánico)..."
+                  value={moreAptsSearch}
+                  onChange={(e) => setMoreAptsSearch(e.target.value)}
+                  className="pl-9 h-9 text-xs rounded-xl"
+                />
+              </div>
+            </div>
             <div className="p-6 space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
-              {moreApts.map(a => (
-                <div
-                  key={a.id}
-                  onClick={() => { setSelectedApt(a); setIsMoreOpen(false); setIsDetailsOpen(true); }}
-                  className={cn(
-                    "p-4 border rounded-xl hover:shadow-md cursor-pointer flex justify-between items-center transition-all group border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-blue-400 dark:hover:border-blue-600",
-                    (a.status === 'Anulado' || a.status === 'Anulada') && "opacity-60"
-                  )}
-                >
-                  <div className="space-y-1 text-left">
-                    <p className={cn(
-                      "font-bold text-sm flex items-center gap-2",
-                      (a.status === 'Anulado' || a.status === 'Anulada') ? "text-slate-500 line-through" : "text-slate-900 dark:text-white"
-                    )}>
-                      <Clock className={cn(
-                        "w-3.5 h-3.5",
-                        (a.status === 'Anulado' || a.status === 'Anulada') ? "text-slate-400" : "text-blue-500"
-                      )} /> {a.startTime} <span className="text-slate-300 dark:text-slate-600 px-1">•</span> {a.clientName}
-                    </p>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      Moto: {a.motorcyclePlate} <span className="px-1">•</span> Mecánico: {a.mechanicName}
-                    </p>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 transition-colors">
-                    <Eye className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
-                  </div>
+              {filteredMoreApts.length === 0 ? (
+                <div className="text-center py-6 text-sm text-slate-500 dark:text-slate-400 font-semibold">
+                  No se encontraron agendamientos.
                 </div>
-              ))}
+              ) : (
+                filteredMoreApts.map(a => (
+                  <div
+                    key={a.id}
+                    onClick={() => { setSelectedApt(a); setIsMoreOpen(false); setIsDetailsOpen(true); }}
+                    className={cn(
+                      "p-4 border rounded-xl hover:shadow-md cursor-pointer flex justify-between items-center transition-all group border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-blue-400 dark:hover:border-blue-600",
+                      (a.status === 'Anulado' || a.status === 'Anulada') && "opacity-60"
+                    )}
+                  >
+                    <div className="space-y-1 text-left">
+                      <p className={cn(
+                        "font-bold text-sm flex items-center gap-2",
+                        (a.status === 'Anulado' || a.status === 'Anulada') ? "text-slate-500 line-through" : "text-slate-900 dark:text-white"
+                      )}>
+                        <Clock className={cn(
+                          "w-3.5 h-3.5",
+                          (a.status === 'Anulado' || a.status === 'Anulada') ? "text-slate-400" : "text-blue-500"
+                        )} /> {a.startTime} <span className="text-slate-300 dark:text-slate-600 px-1">•</span> {a.clientName}
+                      </p>
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        Moto: {a.motorcyclePlate} <span className="px-1">•</span> Mecánico: {a.mechanicName}
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 transition-colors">
+                      <Eye className="w-4 h-4 text-slate-400 group-hover:text-blue-500" />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
             <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end">
               <Button

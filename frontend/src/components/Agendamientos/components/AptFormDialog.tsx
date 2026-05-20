@@ -12,12 +12,13 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Badge } from '../../ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../ui/tooltip';
+import { Input } from '../../ui/input';
 
 const daysMap: Record<number, string> = {
   1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo'
 };
 
-export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, services, horarios, existingAppointments, onSave, onOpenChange }: any) {
+export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, services, horarios, novedades = [], existingAppointments, onSave, onOpenChange }: any) {
   const [form, setForm] = useState({
     date: apt?.date || (date ? format(date, 'yyyy-MM-dd') : ''),
     startTime: apt?.startTime || '',
@@ -37,6 +38,16 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
     mechanic: false,
     startTime: false
   });
+  const [servicesSearch, setServicesSearch] = useState('');
+
+  const filteredServices = useMemo(() => {
+    const q = servicesSearch.toLowerCase().trim();
+    if (!q) return services;
+    return services.filter((s: any) =>
+      (s.Nombre || s.nombre)?.toLowerCase().includes(q)
+    );
+  }, [services, servicesSearch]);
+
   const [search, setSearch] = useState({
     client: '',
     motorcycle: '',
@@ -46,6 +57,7 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
 
 
   useEffect(() => {
+    setServicesSearch('');
     if (apt) {
       setForm({
         date: apt.date || '',
@@ -191,9 +203,38 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
         return newStart < existBlockedUntil && existStart < newBlockedUntil;
       });
 
-      return !isBusy;
+      if (isBusy) return false;
+
+      // 3. Check for overlaps with novelties (novedades)
+      const hasNovelty = novedades.some((n: any) => {
+        if (Number(n.ID_Empleado) !== Number(mech.ID_Empleado)) return false;
+
+        let novDateStr = n.Dia;
+        if (n.Dia instanceof Date) {
+          novDateStr = n.Dia.toISOString().split('T')[0];
+        } else if (novDateStr && typeof novDateStr === 'string') {
+          novDateStr = novDateStr.substring(0, 10);
+        }
+
+        if (novDateStr !== form.date) return false;
+
+        const novStart = n.HoraInicio || n.Hora_inicio || n.horainicio;
+        const novEnd = n.HoraFin || n.Hora_fin || n.horafin;
+
+        if (!novStart || !novEnd) return true;
+
+        const ns = novStart.slice(0, 5);
+        const ne = novEnd.slice(0, 5);
+
+        const newStart = form.startTime;
+        const newEnd = addMinutesToTime(form.startTime, durationData.minutes);
+
+        return newStart < ne && ns < newEnd;
+      });
+
+      return !hasNovelty;
     });
-  }, [form.date, form.startTime, mechanics, horarios, existingAppointments, apt, durationData.minutes]);
+  }, [form.date, form.startTime, mechanics, horarios, existingAppointments, apt, durationData.minutes, novedades]);
 
   useEffect(() => {
     if (durationData.endTime) {
@@ -266,13 +307,91 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
     const isDateToday = form.date ? isToday(parseISO(form.date)) : false;
     const nowTime = format(new Date(), 'HH:mm');
 
+    const isMechanicAvailable = (mech: any, dateStr: string, startTime: string) => {
+      const selectedDate = parseISO(dateStr);
+      const dayName = daysMap[selectedDate.getDay()];
+
+      const addMinutesToTime = (timeStr: string, mins: number) => {
+        if (!timeStr) return '';
+        const [h, m] = timeStr.split(':').map(Number);
+        const totalMins = h * 60 + m + mins;
+        const endH = Math.floor(totalMins / 60) % 24;
+        const endM = totalMins % 60;
+        return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+      };
+
+      // 1. Shift
+      const hasSchedule = horarios.some((h: any) => {
+        const entrada = (h.HoraEntrada || h.Hora_entrada || '00:00').slice(0, 5);
+        const salida = (h.HoraSalida || h.Hora_salida || '23:59').slice(0, 5);
+        return (
+          h.ID_Empleado === mech.ID_Empleado &&
+          h.Dia === dayName &&
+          h.Estado &&
+          startTime >= entrada &&
+          startTime < salida
+        );
+      });
+      if (!hasSchedule) return false;
+
+      // 2. Busy
+      const isBusy = existingAppointments.some((a: any) => {
+        if (a.mechanicId !== mech.ID_Empleado || a.date !== dateStr || a.id === apt?.id) return false;
+
+        const existStart = (a.startTime || '').slice(0, 5);
+        const existEndBase = (a.endTime || '').slice(0, 5);
+        const existBlockedUntil = addMinutesToTime(existEndBase, 20);
+
+        const newStart = startTime;
+        const newBlockedUntil = addMinutesToTime(startTime, durationData.minutes + 20);
+
+        return newStart < existBlockedUntil && existStart < newBlockedUntil;
+      });
+      if (isBusy) return false;
+
+      // 3. Novelty
+      const hasNovelty = novedades.some((n: any) => {
+        if (Number(n.ID_Empleado) !== Number(mech.ID_Empleado)) return false;
+
+        let novDateStr = n.Dia;
+        if (n.Dia instanceof Date) {
+          novDateStr = n.Dia.toISOString().split('T')[0];
+        } else if (novDateStr && typeof novDateStr === 'string') {
+          novDateStr = novDateStr.substring(0, 10);
+        }
+
+        if (novDateStr !== dateStr) return false;
+
+        const novStart = n.HoraInicio || n.Hora_inicio || n.horainicio;
+        const novEnd = n.HoraFin || n.Hora_fin || n.horafin;
+
+        if (!novStart || !novEnd) return true;
+
+        const ns = novStart.slice(0, 5);
+        const ne = novEnd.slice(0, 5);
+
+        const newStart = startTime;
+        const newEnd = addMinutesToTime(startTime, durationData.minutes);
+
+        return newStart < ne && ns < newEnd;
+      });
+
+      return !hasNovelty;
+    };
+
     return sectionSlots.filter(slot => {
       if (isDateToday && slot < nowTime) {
         return false;
       }
+
+      if (form.date) {
+        const anyMechAvailable = mechanics.some((m: any) => isMechanicAvailable(m, form.date, slot));
+        if (!anyMechAvailable) return false;
+      }
+
       return true;
     });
-  }, [potentialStartTimes, selectedSection, form.date]);
+  }, [potentialStartTimes, selectedSection, form.date, mechanics, horarios, existingAppointments, apt, durationData.minutes, novedades]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -450,8 +569,8 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                     disabled={!form.clientId}
                   >
                     <span className="truncate">
-                      {selectedMoto 
-                        ? `${selectedMoto.Placa} — ${selectedMoto.Marca} ${selectedMoto.Modelo}` 
+                      {selectedMoto
+                        ? `${selectedMoto.Placa} — ${selectedMoto.Marca} ${selectedMoto.Modelo}`
                         : (form.clientId ? "Seleccionar motocicleta..." : "Primero el cliente...")}
                     </span>
                     <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
@@ -690,23 +809,33 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
               )}
             </div>
           </div>
-
           {!apt && (
             <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800/50">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                   <Wrench className="w-4 h-4 text-blue-500" /> Servicios a realizar *
                   {showErrors && form.serviceIds.length === 0 && <span className="text-[10px] text-red-500 font-bold">(Seleccione al menos uno)</span>}
                 </Label>
-                {form.serviceIds.length > 0 && (
-                  <Badge variant="outline" className="bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800">
-                    Duración: {durationData.text}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  {form.serviceIds.length > 0 && (
+                    <Badge variant="outline" className="bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 shrink-0">
+                      Duración: {durationData.text}
+                    </Badge>
+                  )}
+                  <div className="relative w-full sm:w-44">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar servicio..."
+                      value={servicesSearch}
+                      onChange={(e) => setServicesSearch(e.target.value)}
+                      className="pl-8 h-8 text-xs rounded-xl"
+                    />
+                  </div>
+                </div>
               </div>
               <TooltipProvider>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800 max-h-48 overflow-y-auto custom-scrollbar">
-                  {services.map((s: any) => {
+                  {filteredServices.map((s: any) => {
                     const isSelected = form.serviceIds.includes(s.ID_Servicio);
                     return (
                       <Tooltip key={s.ID_Servicio}>
@@ -746,7 +875,11 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                       </Tooltip>
                     );
                   })}
-                  {services.length === 0 && <p className="text-xs text-slate-500 col-span-2">No hay servicios disponibles.</p>}
+                  {filteredServices.length === 0 && (
+                    <p className="text-xs text-slate-500 col-span-2 text-center py-4">
+                      {services.length === 0 ? "No hay servicios disponibles." : "No se encontraron servicios."}
+                    </p>
+                  )}
                 </div>
               </TooltipProvider>
 

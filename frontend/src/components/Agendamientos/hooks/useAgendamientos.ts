@@ -20,6 +20,7 @@ export function useAgendamientos() {
   const [mechanics, setMechanics] = useState<any[]>([]);
   const [horarios, setHorarios] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
+  const [novedades, setNovedades] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const token = localStorage.getItem('token');
@@ -34,10 +35,11 @@ export function useAgendamientos() {
       fetch(`${API_URL}/empleados`, { headers }),
       fetch(`${API_URL}/servicios`, { headers }),
       fetch(`${API_URL}/horarios`, { headers }),
+      fetch(`${API_URL}/novedades`, { headers }),
     ]);
 
     try {
-      const [resAg, resCli, resMot, resEmp, resSer, resHor] = results;
+      const [resAg, resCli, resMot, resEmp, resSer, resHor, resNov] = results;
 
       if (resAg.status === 'fulfilled' && resAg.value.ok) {
         const data = await resAg.value.json();
@@ -83,6 +85,10 @@ export function useAgendamientos() {
 
       if (resHor.status === 'fulfilled' && resHor.value.ok) {
         setHorarios(await resHor.value.json());
+      }
+
+      if (resNov.status === 'fulfilled' && resNov.value.ok) {
+        setNovedades(await resNov.value.json());
       }
     } catch {
       toast.error('Error al cargar datos');
@@ -215,7 +221,7 @@ export function useAgendamientos() {
     isDetailsOpen, setIsDetailsOpen,
     isMoreOpen, setIsMoreOpen,
     moreApts, setMoreApts,
-    appointments, clients, motorcycles, mechanics, horarios, services,
+    appointments, clients, motorcycles, mechanics, horarios, services, novedades,
     isLoading, enrichedApts, calendarDays,
     handleSave, handleDelete
   };
