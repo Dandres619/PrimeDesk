@@ -6,10 +6,10 @@ const getAll = async (id_cliente = null) => {
   const rows = await sql`
     SELECT a.id_agendamiento AS "ID_Agendamiento", a.id_motocicleta AS "ID_Motocicleta", 
            a.id_empleado AS "ID_Empleado", a.dia AS "Dia", a.horainicio AS "HoraInicio", 
-           a.horafin AS "HoraFin", a.notas AS "Notas",
+           a.horafin AS "HoraFin", a.notas AS "Notas", a.estado AS "Estado",
            m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "Modelo",
            e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado",
-           (SELECT COALESCE(json_agg(s.nombre), '[]'::json) 
+           (SELECT COALESCE(json_agg(json_build_object('Nombre', s.nombre, 'Duracion', s.duracion, 'Precio', s.precio)), '[]'::json) 
             FROM agendamientos_servicios ags 
             JOIN servicios s ON ags.id_servicio = s.id_servicio 
             WHERE ags.id_agendamiento = a.id_agendamiento) AS "Servicios"
@@ -29,7 +29,7 @@ const getById = async (id) => {
   const appointments = await sql`
     SELECT a.id_agendamiento AS "ID_Agendamiento", a.id_motocicleta AS "ID_Motocicleta", 
            a.id_empleado AS "ID_Empleado", a.dia AS "Dia", a.horainicio AS "HoraInicio", 
-           a.horafin AS "HoraFin", a.notas AS "Notas",
+           a.horafin AS "HoraFin", a.notas AS "Notas", a.estado AS "Estado",
            m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "Modelo",
            e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado"
     FROM agendamientos a
@@ -57,11 +57,11 @@ const create = async ({ id_motocicleta, id_empleado, dia, horainicio, horafin, n
     const result = await sql.begin(async (tx) => {
       // 1. Crear el agendamiento
       const [agendamiento] = await tx`
-        INSERT INTO agendamientos (id_motocicleta, id_empleado, dia, horainicio, horafin, notas)
-        VALUES (${id_motocicleta}, ${id_empleado}, ${dia}, ${horainicio}, ${horafin}, ${notas || null})
+        INSERT INTO agendamientos (id_motocicleta, id_empleado, dia, horainicio, horafin, notas, estado)
+        VALUES (${id_motocicleta}, ${id_empleado}, ${dia}, ${horainicio}, ${horafin}, ${notas || null}, 'Esperando motocicleta')
         RETURNING id_agendamiento AS "ID_Agendamiento", id_motocicleta AS "ID_Motocicleta", 
                   id_empleado AS "ID_Empleado", dia AS "Dia", horainicio AS "HoraInicio", 
-                  horafin AS "HoraFin", notas AS "Notas"
+                  horafin AS "HoraFin", notas AS "Notas", estado AS "Estado"
       `;
 
       // 2. Agregar servicios al agendamiento
@@ -124,31 +124,28 @@ const remove = async (id) => {
   const sql = await getPool();
 
   try {
-    await sql.begin(async (tx) => {
-      // 1. Marcar la reparación vinculada como 'Anulado' y desvincularla del agendamiento
-      // para evitar errores de llave foránea al borrar el agendamiento.
+    const [deleted] = await sql.begin(async (tx) => {
+      // 1. Marcar la reparación vinculada como 'Anulado'
       await tx`
         UPDATE reparaciones 
-        SET estado = 'Anulado', id_agendamiento = NULL
+        SET estado = 'Anulado'
         WHERE id_agendamiento = ${id}
       `;
 
-      // 2. Borrar servicios del agendamiento
-      await tx`DELETE FROM agendamientos_servicios WHERE id_agendamiento = ${id}`;
-
-      // 3. Borrar el agendamiento
-      const [deleted] = await tx`
-        DELETE FROM agendamientos 
+      // 2. Marcar el agendamiento como 'Anulado'
+      return await tx`
+        UPDATE agendamientos 
+        SET estado = 'Anulado'
         WHERE id_agendamiento = ${id}
         RETURNING id_agendamiento AS "ID_Agendamiento"
       `;
-      
-      if (!deleted) throw { status: 404, message: 'Agendamiento no encontrado.' };
     });
+      
+    if (!deleted) throw { status: 404, message: 'Agendamiento no encontrado.' };
 
-    return { message: 'Agendamiento eliminado y reparación vinculada anulada.' };
+    return { message: 'Agendamiento y reparación vinculada anulados exitosamente.' };
   } catch (err) {
-    console.error('Error al eliminar agendamiento:', err);
+    console.error('Error al anular agendamiento:', err);
     throw err;
   }
 };

@@ -11,6 +11,11 @@ import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Badge } from '../../ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../ui/tooltip';
+
+const daysMap: Record<number, string> = {
+  1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo'
+};
 
 export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, services, horarios, existingAppointments, onSave, onOpenChange }: any) {
   const [form, setForm] = useState({
@@ -38,9 +43,7 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
     mechanic: ''
   });
 
-  const daysMap: Record<number, string> = {
-    1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo'
-  };
+
 
   useEffect(() => {
     if (apt) {
@@ -135,6 +138,14 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
     return { minutes: servicesMinutes, text, endTime };
   }, [form.serviceIds, form.startTime, services]);
 
+  const totalPrice = useMemo(() => {
+    return form.serviceIds.reduce((acc: number, id: number) => {
+      const service = services.find((s: any) => s.ID_Servicio === id);
+      const val = Number(service?.Precio || service?.precio || 0);
+      return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+  }, [form.serviceIds, services]);
+
   const availableMechanicsForTime = useMemo(() => {
     if (!form.date || !form.startTime) return [];
 
@@ -185,8 +196,13 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
   }, [form.date, form.startTime, mechanics, horarios, existingAppointments, apt, durationData.minutes]);
 
   useEffect(() => {
-    if (durationData.endTime && durationData.endTime !== form.endTime) {
-      setForm(prev => ({ ...prev, endTime: durationData.endTime }));
+    if (durationData.endTime) {
+      setForm(prev => {
+        if (prev.endTime !== durationData.endTime) {
+          return { ...prev, endTime: durationData.endTime };
+        }
+        return prev;
+      });
     }
   }, [durationData.endTime]);
 
@@ -221,7 +237,7 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
       entrada: (schedule.HoraEntrada || schedule.Hora_entrada || '00:00').slice(0, 5),
       salida: (schedule.HoraSalida || schedule.Hora_salida || '23:59').slice(0, 5)
     };
-  }, [form.mechanicId, form.date, horarios, daysMap]);
+  }, [form.mechanicId, form.date, horarios]);
 
   const format12h = (timeStr: string) => {
     if (!timeStr) return '';
@@ -238,6 +254,25 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
     d.setHours(parseInt(h), parseInt(m), 0);
     return format(d, 'hh:mm a');
   }, [form.startTime]);
+
+  const activeSlots = useMemo(() => {
+    const sectionSlots = potentialStartTimes.filter(slot => {
+      const hour = parseInt(slot.split(':')[0]);
+      if (selectedSection === 'mañana') return hour >= 6 && hour < 12;
+      if (selectedSection === 'tarde') return hour >= 12 && hour < 18;
+      return hour >= 18 && hour < 24;
+    });
+
+    const isDateToday = form.date ? isToday(parseISO(form.date)) : false;
+    const nowTime = format(new Date(), 'HH:mm');
+
+    return sectionSlots.filter(slot => {
+      if (isDateToday && slot < nowTime) {
+        return false;
+      }
+      return true;
+    });
+  }, [potentialStartTimes, selectedSection, form.date]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -415,7 +450,9 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                     disabled={!form.clientId}
                   >
                     <span className="truncate">
-                      {selectedMoto ? `${selectedMoto.Placa} — ${selectedMoto.Marca} ${selectedMoto.Modelo}` : "Seleccionar motocicleta..."}
+                      {selectedMoto 
+                        ? `${selectedMoto.Placa} — ${selectedMoto.Marca} ${selectedMoto.Modelo}` 
+                        : (form.clientId ? "Seleccionar motocicleta..." : "Primero el cliente...")}
                     </span>
                     <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
                   </Button>
@@ -521,17 +558,14 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                   className="max-h-[200px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar flex-1"
                   onWheel={(e) => e.stopPropagation()}
                 >
-                  {potentialStartTimes
-                    .filter(slot => {
-                      const hour = parseInt(slot.split(':')[0]);
-                      if (selectedSection === 'mañana') return hour >= 6 && hour < 12;
-                      if (selectedSection === 'tarde') return hour >= 12 && hour < 18;
-                      return hour >= 18 && hour < 24;
-                    })
-                    .map(slot => {
-                      const isPast = isToday(parseISO(form.date)) && slot < format(new Date(), 'HH:mm');
-                      if (isPast) return null;
-
+                  {activeSlots.length === 0 ? (
+                    <div className="py-6 px-4 text-center">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                        La jornada de la {selectedSection === 'mañana' ? 'mañana' : selectedSection === 'tarde' ? 'tarde' : 'noche'} ya transcurrió para el día de hoy.
+                      </p>
+                    </div>
+                  ) : (
+                    activeSlots.map(slot => {
                       const [h, m] = slot.split(':');
                       const slotDate = new Date();
                       slotDate.setHours(parseInt(h), parseInt(m), 0);
@@ -555,7 +589,8 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                           <span className="uppercase">{formattedSlot}</span>
                         </div>
                       );
-                    })}
+                    })
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
@@ -669,48 +704,72 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                   </Badge>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800 max-h-48 overflow-y-auto custom-scrollbar">
-                {services.map((s: any) => {
-                  const isSelected = form.serviceIds.includes(s.ID_Servicio);
-                  return (
-                    <label
-                      key={s.ID_Servicio}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer",
-                        isSelected
-                          ? "bg-indigo-50 border-indigo-400 dark:bg-indigo-900/20 dark:border-indigo-500 shadow-sm"
-                          : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleService(s.ID_Servicio)}
-                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                      />
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className={cn("font-bold text-sm truncate", isSelected ? "text-indigo-900 dark:text-indigo-100" : "text-slate-700 dark:text-slate-300")}>{s.Nombre}</span>
-                        <span className={cn("text-[10px] font-semibold", isSelected ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500")}>
-                          {s.Duracion} min
-                        </span>
-                      </div>
-                    </label>
-                  );
-                })}
-                {services.length === 0 && <p className="text-xs text-slate-500 col-span-2">No hay servicios disponibles.</p>}
-              </div>
+              <TooltipProvider>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800 max-h-48 overflow-y-auto custom-scrollbar">
+                  {services.map((s: any) => {
+                    const isSelected = form.serviceIds.includes(s.ID_Servicio);
+                    return (
+                      <Tooltip key={s.ID_Servicio}>
+                        <TooltipTrigger asChild>
+                          <label
+                            className={cn(
+                              "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer min-w-0",
+                              isSelected
+                                ? "bg-indigo-50 border-indigo-400 dark:bg-indigo-900/20 dark:border-indigo-500 shadow-sm"
+                                : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleService(s.ID_Servicio)}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                            />
+                            <div className="flex items-center justify-between gap-3 min-w-0 flex-1">
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span className={cn("font-bold text-sm truncate", isSelected ? "text-indigo-900 dark:text-indigo-100" : "text-slate-700 dark:text-slate-300")}>
+                                  {s.Nombre || s.nombre}
+                                </span>
+                                <span className={cn("text-[10px] font-semibold", isSelected ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500")}>
+                                  {s.Duracion || s.duracion} min
+                                </span>
+                              </div>
+                              <span className={cn("text-xs font-black shrink-0", isSelected ? "text-indigo-700 dark:text-indigo-300" : "text-slate-500 dark:text-slate-400")}>
+                                ${Number(s.Precio || s.precio || 0).toLocaleString('es-CO')}
+                              </span>
+                            </div>
+                          </label>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{s.Nombre || s.nombre}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                  {services.length === 0 && <p className="text-xs text-slate-500 col-span-2">No hay servicios disponibles.</p>}
+                </div>
+              </TooltipProvider>
 
-              {form.serviceIds.length > 0 && form.startTime && (
-                <div className="p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
-                    <Clock className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
+              {(form.serviceIds.length > 0 || form.startTime) && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 mt-4">
                   <div className="text-left">
-                    <p className="text-sm font-black text-indigo-900 dark:text-indigo-100 uppercase">
-                      Hora de finalización estimada: {durationData.endTime}
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Duración Estimada</p>
+                    <p className="text-lg font-black text-slate-700 dark:text-slate-300 mt-1">
+                      {form.serviceIds.length > 0 ? durationData.text : '0 min'}
                     </p>
-                    <p className="text-[10px] font-semibold text-indigo-700 dark:text-indigo-400 opacity-80">
-                      Hora de finalización estimada según los servicios seleccionados. La hora final puede ser antes o después de lo estimado.
+                  </div>
+                  <div className="text-left border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800/80 pt-3 sm:pt-0 sm:pl-4">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Hora estimada de Finalización</p>
+                    <p className="text-lg font-black text-blue-600 dark:text-blue-400 mt-1">
+                      {form.startTime && durationData.endTime
+                        ? format12h(durationData.endTime)
+                        : 'Defina hora de inicio...'}
+                    </p>
+                  </div>
+                  <div className="text-left border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800/80 pt-3 sm:pt-0 sm:pl-4">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Precio Total</p>
+                    <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                      ${totalPrice.toLocaleString('es-CO')}
                     </p>
                   </div>
                 </div>
@@ -729,12 +788,12 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
           </div>
 
           {!apt && (
-            <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-800/30">
-              <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
-                <Wrench className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <div className="flex items-center gap-3 p-4 bg-blue-50/80 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                <Wrench className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
-                Al crear este agendamiento, el sistema abrirá automáticamente una <strong className="font-bold">Reparación en estado "Esperando motocicleta"</strong> en el módulo de Reparaciones.
+              <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">
+                Al crear este agendamiento, el sistema abrirá automáticamente una <strong className="font-bold text-blue-900 dark:text-blue-100">Reparación</strong> en su módulo correspondiente.
               </p>
             </div>
           )}

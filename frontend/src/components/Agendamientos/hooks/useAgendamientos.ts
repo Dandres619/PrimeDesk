@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -23,11 +23,9 @@ export function useAgendamientos() {
   const [isLoading, setIsLoading] = useState(true);
 
   const token = localStorage.getItem('token');
-  const headers = { 'Authorization': `Bearer ${token}` };
+  const headers = useMemo(() => ({ 'Authorization': `Bearer ${token}` }), [token]);
 
-  useEffect(() => { fetchData(); }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     const results = await Promise.allSettled([
       fetch(`${API_URL}/agendamientos`, { headers }),
@@ -55,6 +53,7 @@ export function useAgendamientos() {
           mechanicId: a.ID_Empleado,
           mechanicName: `${a.NombreEmpleado} ${a.ApellidoEmpleado}`,
           notes: a.Notas || '',
+          status: a.Estado || 'Esperando motocicleta',
           serviceTypes: Array.isArray(a.Servicios) ? a.Servicios : [],
           serviceIds: [],
         })));
@@ -85,23 +84,44 @@ export function useAgendamientos() {
       if (resHor.status === 'fulfilled' && resHor.value.ok) {
         setHorarios(await resHor.value.json());
       }
-    } catch (err: any) {
+    } catch {
       toast.error('Error al cargar datos');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [headers]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const enrichedApts = useMemo(() => appointments.map(a => {
     const moto = motorcycles.find(m => m.ID_Motocicleta === a.motorcycleId);
     const client = clients.find(c => c.ID_Cliente === moto?.ID_Cliente);
+    
+    const detailedServices = a.serviceTypes.map((st: any) => {
+      const name = typeof st === 'object' ? (st.Nombre || st.nombre) : st;
+      const foundSvc = services.find((s: any) => 
+        (s.Nombre || s.nombre)?.toLowerCase() === name?.toLowerCase()
+      );
+      return {
+        Nombre: name,
+        Duracion: foundSvc ? (foundSvc.Duracion || foundSvc.duracion) : (typeof st === 'object' ? (st.Duracion || st.duracion) : null),
+        Precio: foundSvc ? (foundSvc.Precio || foundSvc.precio) : (typeof st === 'object' ? (st.Precio || st.precio) : null)
+      };
+    });
+
     return {
       ...a,
+      motorcyclePlate: moto?.Placa || a.motorcyclePlate,
+      motorcycleBrand: moto?.Marca || a.motorcycleBrand,
+      motorcycleModel: moto?.Modelo || a.motorcycleModel,
       clientId: client?.ID_Cliente,
       clientName: client ? `${client.Nombre} ${client.Apellido || ''}`.trim() : 'Cliente desconocido',
-      clientPhone: client?.Telefono || ''
+      clientPhone: client?.Telefono || '',
+      serviceTypes: detailedServices
     };
-  }), [appointments, motorcycles, clients]);
+  }), [appointments, motorcycles, clients, services]);
 
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 });
@@ -168,7 +188,7 @@ export function useAgendamientos() {
     const diffHours = (aptDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
     if (diffHours < 1) {
-      toast.error('Solo se puede eliminar con al menos una hora de anticipación.');
+      toast.error('Solo se puede anular con al menos una hora de anticipación.');
       return;
     }
 
@@ -177,8 +197,8 @@ export function useAgendamientos() {
         method: 'DELETE',
         headers
       });
-      if (!res.ok) throw new Error('Error al eliminar');
-      toast.success('Agendamiento eliminado y reparación anulada exitosamente');
+      if (!res.ok) throw new Error('Error al anular');
+      toast.success('Agendamiento y reparación vinculada anulados exitosamente');
       setIsDetailsOpen(false);
       fetchData();
     } catch (err: any) {

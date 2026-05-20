@@ -64,7 +64,7 @@ export function Agendamientos() {
               <div className="flex items-center gap-2">
                 <CardTitle className="text-lg">Calendario de Agendamientos</CardTitle>
                 <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-none font-bold">
-                  {enrichedApts.length} agendamientos
+                  {enrichedApts.length === 1 ? '1 agendamiento' : `${enrichedApts.length} agendamientos`}
                 </Badge>
               </div>
               <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -155,7 +155,10 @@ export function Agendamientos() {
                         <div
                           key={a.id}
                           onClick={(e) => { e.stopPropagation(); setSelectedApt(a); setIsDetailsOpen(true); }}
-                          className="text-xs bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-2 rounded-lg truncate font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer relative overflow-hidden group/apt"
+                          className={cn(
+                            "text-xs p-2 rounded-lg truncate font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer relative overflow-hidden group/apt text-white bg-gradient-to-r from-blue-500 to-indigo-600",
+                            (a.status === 'Anulado' || a.status === 'Anulada') && "line-through opacity-60"
+                          )}
                         >
                           <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/apt:translate-y-0 transition-transform" />
                           <div className="relative z-10 flex flex-col gap-0.5">
@@ -204,9 +207,9 @@ export function Agendamientos() {
             onEdit={() => { setEditingApt(selectedApt); setIsDetailsOpen(false); setIsModalOpen(true); }}
             onDelete={() => setConfirmDialog({
               open: true,
-              title: 'Eliminar Agendamiento',
-              description: '¿Está seguro de que desea eliminar este agendamiento? Esto también anulará la reparación vinculada.',
-              confirmText: 'Eliminar',
+              title: 'Anular Agendamiento',
+              description: '¿Está seguro de que desea anular este agendamiento? Esto también anulará la reparación vinculada.',
+              confirmText: 'Anular',
               variant: 'destructive',
               onConfirm: () => handleDelete(selectedApt)
             })}
@@ -226,11 +229,20 @@ export function Agendamientos() {
                 <div
                   key={a.id}
                   onClick={() => { setSelectedApt(a); setIsMoreOpen(false); setIsDetailsOpen(true); }}
-                  className="p-4 border border-slate-100 dark:border-slate-800 rounded-xl hover:border-blue-400 dark:hover:border-blue-600 hover:shadow-md cursor-pointer flex justify-between items-center transition-all bg-white dark:bg-slate-950 group"
+                  className={cn(
+                    "p-4 border rounded-xl hover:shadow-md cursor-pointer flex justify-between items-center transition-all group border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 hover:border-blue-400 dark:hover:border-blue-600",
+                    (a.status === 'Anulado' || a.status === 'Anulada') && "opacity-60"
+                  )}
                 >
                   <div className="space-y-1 text-left">
-                    <p className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-blue-500" /> {a.startTime} <span className="text-slate-300 dark:text-slate-600 px-1">•</span> {a.clientName}
+                    <p className={cn(
+                      "font-bold text-sm flex items-center gap-2",
+                      (a.status === 'Anulado' || a.status === 'Anulada') ? "text-slate-500 line-through" : "text-slate-900 dark:text-white"
+                    )}>
+                      <Clock className={cn(
+                        "w-3.5 h-3.5",
+                        (a.status === 'Anulado' || a.status === 'Anulada') ? "text-slate-400" : "text-blue-500"
+                      )} /> {a.startTime} <span className="text-slate-300 dark:text-slate-600 px-1">•</span> {a.clientName}
                     </p>
                     <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                       Moto: {a.motorcyclePlate} <span className="px-1">•</span> Mecánico: {a.mechanicName}
