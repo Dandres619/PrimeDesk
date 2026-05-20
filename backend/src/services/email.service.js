@@ -194,4 +194,57 @@ const sendVerificationEmail = async (to, token, name, options = {}) => {
     return sendMail({ to, subject, html, ...options });
 };
 
-module.exports = { sendMail, sendWelcomeEmail, sendResetPasswordEmail, sendContactEmail, sendVerificationEmail };
+const sendCancellationEmail = async (to, name, date, time, options = {}) => {
+    const subject = 'Tu agendamiento ha sido cancelado | Rafa Motos';
+    const html = `
+        <!doctype html>
+        <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Agendamiento Cancelado - Rafa Motos</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+                    body { margin: 0; padding: 0; background-color: #020617; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc; }
+                    .wrapper { width: 100%; background-color: #020617; padding-bottom: 40px; }
+                    .container { max-width: 600px; margin: 40px auto; background-color: #0b1426; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+                    .header { padding: 40px 0; text-align: center; background: linear-gradient(135deg, #0b1426, #161e31); }
+                    .logo-box { display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #ef4444, #f97316); border-radius: 14px; line-height: 64px; text-align: center; font-weight: 800; font-size: 24px; color: #fff; margin-bottom: 16px; }
+                    .content { padding: 40px 32px; text-align: center; }
+                    h1 { font-size: 28px; font-weight: 700; margin: 0 0 16px 0; color: #fff; }
+                    p { font-size: 16px; line-height: 1.6; color: #94a3b8; margin: 0 0 24px 0; }
+                    .btn { display: inline-block; padding: 16px 40px; background: linear-gradient(90deg, #ef4444, #f97316); color: #fff !important; text-decoration: none; font-weight: 700; font-size: 16px; border-radius: 12px; }
+                    .footer { padding: 32px; text-align: center; background-color: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); }
+                    .footer p { font-size: 13px; margin: 4px 0; }
+                    .accent { color: #f97316; font-weight: 600; }
+                    @media screen and (max-width: 600px) { .container { margin-top: 20px; border-radius: 0; } }
+                </style>
+            </head>
+            <body>
+                <div class="wrapper">
+                    <div class="container">
+                        <div class="header">
+                            <div class="logo-box">RM</div>
+                            <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px;">RAFA MOTOS</div>
+                        </div>
+                        <div class="content">
+                            <h1>Aviso de Cancelación</h1>
+                            <p>Hola <span class="accent">${name || 'cliente'}</span>,</p>
+                            <p>Te informamos que tu agendamiento programado para el día <strong>${date}</strong> a las <strong>${time}</strong> ha sido cancelado debido a una novedad de fuerza mayor con el mecánico asignado.</p>
+                            <p>Lamentamos los inconvenientes causados. Por favor, ingresa a tu cuenta para programar una nueva cita en el horario que más te convenga.</p>
+                            <a href="${FRONTEND_URL}" class="btn">REAGENDAR CITA</a>
+                        </div>
+                        <div class="footer">
+                            <p><strong>Rafa Motos</strong></p>
+                            <p>Servicio Técnico Profesional para Motocicletas</p>
+                            <p>© 2026 Rafa Motos. Todos los derechos reservados.</p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+        </html>
+    `;
+    return sendMail({ to, subject, html, ...options });
+};
+
+module.exports = { sendMail, sendWelcomeEmail, sendResetPasswordEmail, sendContactEmail, sendVerificationEmail, sendCancellationEmail };

@@ -152,7 +152,7 @@ export function useHorarios() {
       const data = await res.json();
       const count = data.affectedAppointments?.length || 0;
       if (count > 0) {
-        toast.success(`Novedad registrada exitosamente. ${count} agendamiento(s) y reparación(es) anulados.`);
+        toast.success('Novedad registrada exitosamente. Se envió un correo a cada usuario afectado para que reagende su cita.');
       } else {
         toast.success('Novedad registrada exitosamente.');
       }

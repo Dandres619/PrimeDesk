@@ -15,7 +15,7 @@ const getById = async (id) => {
 const create = async (data) => {
     const { nombre, descripcion, duracion, precio } = data;
     console.log('📦 Intentando crear servicio:', { nombre, descripcion, duracion, precio });
-    
+
     const sql = await getPool();
 
     // Validar nombre duplicado
@@ -64,7 +64,7 @@ const update = async (id, data) => {
         const reparaciones = await sql`SELECT 1 FROM reparaciones_servicios WHERE id_servicio = ${id} LIMIT 1`;
         if (agendamientos.length > 0 || reparaciones.length > 0) {
             await sql`UPDATE servicios SET estado = TRUE WHERE id_servicio = ${id}`;
-            throw { status: 400, message: 'No se puede inactivar el servicio porque está siendo utilizado en agendamientos o reparaciones.' };
+            throw { status: 400, message: 'No se puede inactivar el servicio porque está siendo utilizado en agendamientos y/o reparaciones.' };
         }
     }
 
@@ -78,7 +78,7 @@ const remove = async (id) => {
     const reparaciones = await sql`SELECT 1 FROM reparaciones_servicios WHERE id_servicio = ${id} LIMIT 1`;
 
     if (agendamientos.length > 0 || reparaciones.length > 0) {
-        throw { status: 400, message: 'No se puede eliminar el servicio porque tiene historial de uso. Considere inactivarlo.' };
+        throw { status: 400, message: 'No se puede eliminar el servicio porque ya está siendo utilizado por un agendamiento y/o reparación.' };
     }
 
     const [row] = await sql`

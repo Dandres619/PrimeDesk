@@ -1,4 +1,5 @@
 const { getPool } = require('../config/db');
+const emailService = require('./email.service');
 
 const getAll = async () => {
   const sql = await getPool();
@@ -35,20 +36,25 @@ const create = async ({ id_empleado, dia, hora_inicio, hora_fin, tipo, descripci
                   tipo AS "Tipo", descripcion AS "Descripcion"
       `;
 
-      // 2. Identify and cancel overlapping appointments
-      // We will select them first so we know which ones we are canceling (for future email/log purposes)
+      // 2. Identify and cancel overlapping appointments with client/user details
       const overlappingApts = await tx`
-        SELECT id_agendamiento AS "ID_Agendamiento", horainicio AS "HoraInicio", horafin AS "HoraFin"
-        FROM agendamientos
-        WHERE id_empleado = ${id_empleado}
-          AND dia = ${dia}
-          AND estado NOT IN ('Anulado', 'Anulada')
+        SELECT a.id_agendamiento AS "ID_Agendamiento", a.horainicio AS "HoraInicio", a.horafin AS "HoraFin",
+               a.dia AS "Dia",
+               c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente",
+               u.correo AS "CorreoCliente"
+        FROM agendamientos a
+        INNER JOIN motocicletas m ON a.id_motocicleta = m.id_motocicleta
+        INNER JOIN clientes c ON m.id_cliente = c.id_cliente
+        LEFT JOIN usuarios u ON c.id_usuario = u.id_usuario
+        WHERE a.id_empleado = ${id_empleado}
+          AND a.dia = ${dia}
+          AND a.estado NOT IN ('Anulado', 'Anulada')
           AND (
             (${hora_inicio || null}::TIME IS NULL OR ${hora_fin || null}::TIME IS NULL)
             OR
-            (horainicio >= ${hora_inicio} AND horainicio < ${hora_fin}) OR
-            (horafin > ${hora_inicio} AND horafin <= ${hora_fin}) OR
-            (horainicio <= ${hora_inicio} AND horafin >= ${hora_fin})
+            (a.horainicio >= ${hora_inicio} AND a.horainicio < ${hora_fin}) OR
+            (a.horafin > ${hora_inicio} AND a.horafin <= ${hora_fin}) OR
+            (a.horainicio <= ${hora_inicio} AND a.horafin >= ${hora_fin})
           )
       `;
 
@@ -72,6 +78,40 @@ const create = async ({ id_empleado, dia, hora_inicio, hora_fin, tipo, descripci
 
       return { novedad, affectedAppointments: overlappingApts };
     });
+
+    // Send email notifications to affected clients
+    if (result && result.affectedAppointments && result.affectedAppointments.length > 0) {
+      const emailPromises = result.affectedAppointments
+        .filter(apt => apt.CorreoCliente)
+        .map(async (apt) => {
+          try {
+            let dateStr = apt.Dia;
+            if (apt.Dia instanceof Date) {
+              dateStr = apt.Dia.toISOString().split('T')[0];
+            } else if (dateStr && typeof dateStr === 'object') {
+              dateStr = String(dateStr);
+            }
+            
+            let timeStr = apt.HoraInicio;
+            if (timeStr && typeof timeStr === 'string') {
+              const parts = timeStr.split(':');
+              if (parts.length >= 2) {
+                timeStr = `${parts[0]}:${parts[1]}`;
+              }
+            }
+            
+            const fullName = `${apt.NombreCliente} ${apt.ApellidoCliente}`.trim();
+            await emailService.sendCancellationEmail(apt.CorreoCliente, fullName, dateStr, timeStr);
+            console.log(`📧 Novedad: Correo enviado a ${apt.CorreoCliente} por cancelación de agendamiento del ${dateStr} a las ${timeStr}`);
+          } catch (emailErr) {
+            console.error(`❌ Novedad: Error al enviar correo a ${apt.CorreoCliente}:`, emailErr);
+          }
+        });
+      
+      Promise.all(emailPromises).catch(err => {
+        console.error('Error sending novelty cancellation emails:', err);
+      });
+    }
 
     return result;
   } catch (err) {

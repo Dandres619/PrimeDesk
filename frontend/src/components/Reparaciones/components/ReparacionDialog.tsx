@@ -9,6 +9,8 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../../ui/tooltip';
+import { Input } from '../../ui/input';
 import { format, parseISO } from 'date-fns';
 
 
@@ -71,6 +73,16 @@ export function ReparacionDialog({
     product: '',
     proveedor: ''
   });
+
+  const [servicesSearch, setServicesSearch] = useState('');
+
+  const filteredServices = useMemo(() => {
+    const q = servicesSearch.toLowerCase().trim();
+    if (!q) return availableServices;
+    return availableServices.filter((s: any) =>
+      s.Nombre?.toLowerCase().includes(q)
+    );
+  }, [availableServices, servicesSearch]);
 
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
@@ -475,6 +487,7 @@ export function ReparacionDialog({
   useEffect(() => {
     setPopovers({ client: false, motorcycle: false, startTime: false, mechanic: false, product: false, proveedor: false });
     setSearch({ client: '', motorcycle: '', mechanic: '', product: '', proveedor: '' });
+    setServicesSearch('');
     setSubmitAttempted(false);
     setTouchedRepuesto({ cantidad: false, precio_unitario: false, id_proveedor: false });
 
@@ -1055,45 +1068,73 @@ export function ReparacionDialog({
               </div>
 
               <div className="space-y-3">
-                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-blue-600" /> Servicios Requeridos
-                </Label>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-blue-600" /> Servicios Requeridos
+                  </Label>
+                  <div className="relative w-full sm:w-48">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar servicio..."
+                      value={servicesSearch}
+                      onChange={(e) => setServicesSearch(e.target.value)}
+                      className="pl-8 h-8 text-xs rounded-xl"
+                    />
+                  </div>
+                </div>
                 <div
                   className={cn(
                     "grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border max-h-48 overflow-y-auto custom-scrollbar transition-all",
                     submitAttempted && errors.services ? "border-red-500 bg-red-50/5" : "border-slate-100 dark:border-slate-800"
                   )}
                 >
-                  {availableServices.map((s: any) => {
-                    const isSelected = formData.selectedServices.includes(s.ID_Servicio || s.id_servicio);
-                    return (
-                      <label
-                        key={s.ID_Servicio || s.id_servicio}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer",
-                          isSelected
-                            ? "bg-indigo-50 border-indigo-400 dark:bg-indigo-900/20 dark:border-indigo-500 shadow-sm"
-                            : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleServiceChange(s.ID_Servicio || s.id_servicio, !isSelected)}
-                          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                        />
-                        <div className="flex flex-col min-w-0 flex-1 text-left">
-                          <span className={cn("font-bold text-sm truncate", isSelected ? "text-indigo-900 dark:text-indigo-100" : "text-slate-700 dark:text-slate-300")}>
-                            {s.Nombre}
-                          </span>
-                          <span className={cn("text-[10px] font-semibold mt-0.5", isSelected ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500")}>
-                            {s.Duracion || s.duracion} min
-                          </span>
-                        </div>
-                      </label>
-                    );
-                  })}
-                  {availableServices.length === 0 && <p className="text-xs text-slate-500 col-span-2">No hay servicios disponibles.</p>}
+                  <TooltipProvider>
+                    {filteredServices.map((s: any) => {
+                      const isSelected = formData.selectedServices.includes(s.ID_Servicio || s.id_servicio);
+                      return (
+                        <Tooltip key={s.ID_Servicio || s.id_servicio}>
+                          <TooltipTrigger asChild>
+                            <label
+                              className={cn(
+                                "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer min-w-0",
+                                isSelected
+                                  ? "bg-indigo-50 border-indigo-400 dark:bg-indigo-900/20 dark:border-indigo-500 shadow-sm"
+                                  : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-indigo-300"
+                              )}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => handleServiceChange(s.ID_Servicio || s.id_servicio, !isSelected)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                              />
+                              <div className="flex items-center justify-between gap-3 min-w-0 flex-1">
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className={cn("font-bold text-sm truncate", isSelected ? "text-indigo-900 dark:text-indigo-100" : "text-slate-700 dark:text-slate-300")}>
+                                    {s.Nombre}
+                                  </span>
+                                  <span className={cn("text-[10px] font-semibold mt-0.5", isSelected ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500")}>
+                                    {s.Duracion || s.duracion} min
+                                  </span>
+                                </div>
+                                <span className={cn("text-xs font-black shrink-0", isSelected ? "text-indigo-700 dark:text-indigo-300" : "text-slate-500 dark:text-slate-400")}>
+                                  ${Number(s.Precio || s.precio || 0).toLocaleString('es-CO')}
+                                </span>
+                              </div>
+                            </label>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{s.Nombre}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </TooltipProvider>
+                  {filteredServices.length === 0 && (
+                    <p className="text-xs text-slate-500 col-span-2 text-center py-4">
+                      {availableServices.length === 0 ? "No hay servicios disponibles." : "No se encontraron servicios."}
+                    </p>
+                  )}
                 </div>
                 {submitAttempted && errors.services && (
                   <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1">
