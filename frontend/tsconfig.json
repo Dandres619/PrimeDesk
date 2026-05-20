@@ -21,10 +21,10 @@
     "noFallthroughCasesInSwitch": true,
 
     /* Path mapping - CORREGIDO */
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src"]
 }

@@ -323,11 +323,14 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
                                 const parent = e.currentTarget.parentElement;
                                 if (parent) {
                                   const icon = parent.querySelector('.fallback-icon');
-                                  if (icon) icon.classList.remove('hidden');
+                                  if (icon) {
+                                    icon.classList.remove('hidden');
+                                    icon.classList.add('flex');
+                                  }
                                 }
                               }}
                             />
-                            <div className="fallback-icon hidden w-full h-full flex items-center justify-center text-blue-500">
+                            <div className="fallback-icon hidden w-full h-full items-center justify-center text-blue-500">
                               <FileImage className="w-5 h-5" />
                             </div>
                             {/* Overlay hover effect */}

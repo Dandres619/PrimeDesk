@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Button } from '../../ui/button';
@@ -27,6 +27,10 @@ interface ReparacionDialogProps {
   onOrderUpdated?: () => void;
 }
 
+const daysMap: Record<number, string> = {
+  1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo'
+};
+
 export function ReparacionDialog({
   isOpen,
   clients,
@@ -46,6 +50,7 @@ export function ReparacionDialog({
     observations: '',
     nota_estado: '',
     startTime: '',
+    endTime: '',
     mechanicId: '',
     date: format(new Date(), 'yyyy-MM-dd')
   });
@@ -104,7 +109,7 @@ export function ReparacionDialog({
       };
       fetchAgendas();
     }
-  }, [editingOrder]);
+  }, [editingOrder, token]);
 
   const filteredClients = clients.filter((c: any) =>
     `${c.Nombre} ${c.Apellido}`.toLowerCase().includes(search.client.toLowerCase()) ||
@@ -182,15 +187,24 @@ export function ReparacionDialog({
     return { minutes: servicesMinutes, text, endTime };
   }, [formData.selectedServices, formData.startTime, availableServices]);
 
+  const totalPrice = useMemo(() => {
+    return formData.selectedServices.reduce((acc: number, id: number) => {
+      const service = availableServices.find((s: any) => s.ID_Servicio === id || s.id_servicio === id);
+      const val = Number(service?.Precio || service?.precio || 0);
+      return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+  }, [formData.selectedServices, availableServices]);
+
   useEffect(() => {
-    if (durationData.endTime && durationData.endTime !== (formData as any).endTime) {
-      setFormData(prev => ({ ...prev, endTime: durationData.endTime }));
+    if (durationData.endTime) {
+      setFormData(prev => {
+        if (prev.endTime !== durationData.endTime) {
+          return { ...prev, endTime: durationData.endTime };
+        }
+        return prev;
+      });
     }
   }, [durationData.endTime]);
-
-  const daysMap: Record<number, string> = {
-    1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo'
-  };
 
   const availableMechanicsForTime = useMemo(() => {
     if (!formData.date || !formData.startTime) return [];
@@ -265,6 +279,25 @@ export function ReparacionDialog({
     return format(d, 'hh:mm a');
   }, [formData.startTime]);
 
+  const activeSlots = useMemo(() => {
+    const sectionSlots = potentialStartTimes.filter(slot => {
+      const hour = parseInt(slot.split(':')[0]);
+      if (selectedSection === 'mañana') return hour >= 6 && hour < 12;
+      if (selectedSection === 'tarde') return hour >= 12 && hour < 18;
+      return hour >= 18 && hour < 24;
+    });
+
+    const isDateToday = formData.date === format(new Date(), 'yyyy-MM-dd');
+    const nowTime = format(new Date(), 'HH:mm');
+
+    return sectionSlots.filter(slot => {
+      if (isDateToday && slot < nowTime) {
+        return false;
+      }
+      return true;
+    });
+  }, [potentialStartTimes, selectedSection, formData.date]);
+
   const errors = useMemo(() => {
     const errs: Record<string, string> = {};
     if (!formData.clientId) errs.clientId = 'El cliente responsable es obligatorio.';
@@ -317,7 +350,7 @@ export function ReparacionDialog({
     try {
       const cleanDate = f.includes('T') ? f.split('T')[0] : f;
       return format(parseISO(cleanDate), 'dd/MM/yyyy');
-    } catch (e) {
+    } catch {
       return '---';
     }
   }, [localOrder]);
@@ -332,7 +365,7 @@ export function ReparacionDialog({
     try {
       const cleanTime = h.slice(0, 5); // get HH:MM
       return format(parseISO(`2026-01-01T${cleanTime}`), 'hh:mm a');
-    } catch (e) {
+    } catch {
       return '';
     }
   }, [localOrder]);
@@ -423,13 +456,21 @@ export function ReparacionDialog({
   const [confirmDialog, setConfirmDialog] = useState({ open: false, type: 'start' as 'start' | 'finish', title: '', description: '' });
   const [finalizeServiceDialog, setFinalizeServiceDialog] = useState({ open: false, serviceId: null as number | null, obs: '', serviceName: '' });
 
-  const fetchProveedores = async () => {
+  const fetchProveedores = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/proveedores`, { headers: { 'Authorization': `Bearer ${token}` } });
       const data = await res.json();
       setProveedores(data.filter((p: any) => p.estado !== false && p.estado !== 'Inactivo' && p.Estado !== false && p.Estado !== 'Inactivo'));
-    } catch (e) { }
-  };
+    } catch { /* ignore */ }
+  }, [token]);
+
+  const fetchProducts = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/productos`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      setProducts(data);
+    } catch { /* ignore */ }
+  }, [token]);
 
   useEffect(() => {
     setPopovers({ client: false, motorcycle: false, startTime: false, mechanic: false, product: false, proveedor: false });
@@ -455,6 +496,7 @@ export function ReparacionDialog({
           observations: editingOrder.Observaciones || '',
           nota_estado: editingOrder.NotaEstado || '',
           startTime: '',
+          endTime: '',
           mechanicId: '',
           date: format(new Date(), 'yyyy-MM-dd')
         });
@@ -470,20 +512,13 @@ export function ReparacionDialog({
           observations: '',
           nota_estado: '',
           startTime: '',
+          endTime: '',
           mechanicId: '',
           date: format(new Date(), 'yyyy-MM-dd')
         });
       }
     }
-  }, [isOpen, editingOrder]);
-
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch(`${API_URL}/productos`, { headers: { 'Authorization': `Bearer ${token}` } });
-      const data = await res.json();
-      setProducts(data);
-    } catch (e) { }
-  };
+  }, [isOpen, editingOrder, fetchProducts, fetchProveedores]);
 
   const reloadLocalOrder = async () => {
     if (!localOrder) return;
@@ -495,7 +530,7 @@ export function ReparacionDialog({
       setLocalOrder({ ...localOrder, ...data });
       onOrderUpdated?.();
       return { ...localOrder, ...data };
-    } catch (e) {
+    } catch {
       return null;
     }
   };
@@ -667,7 +702,7 @@ export function ReparacionDialog({
                 <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-blue-800 dark:text-blue-300">
-                    Registro Rápido Presencial (Solo Hoy)
+                    Registro Presencial
                   </p>
                   <p className="text-[11px] font-medium text-blue-600/95 dark:text-blue-400/80 leading-relaxed">
                     Esta reparación se creará únicamente para el día de hoy si el cliente acude sin agendamiento previo y hay mecánicos con disponibilidad. Si requiere programar para otra fecha, diríjase al módulo de <strong>Agendamientos</strong>.
@@ -882,14 +917,14 @@ export function ReparacionDialog({
                         className="max-h-[200px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar flex-1"
                         onWheel={(e) => e.stopPropagation()}
                       >
-                        {potentialStartTimes
-                          .filter(slot => {
-                            const hour = parseInt(slot.split(':')[0]);
-                            if (selectedSection === 'mañana') return hour >= 6 && hour < 12;
-                            if (selectedSection === 'tarde') return hour >= 12 && hour < 18;
-                            return hour >= 18 && hour < 24;
-                          })
-                          .map(slot => {
+                        {activeSlots.length === 0 ? (
+                          <div className="py-6 px-4 text-center">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                              La jornada de la {selectedSection === 'mañana' ? 'mañana' : selectedSection === 'tarde' ? 'tarde' : 'noche'} ya transcurrió para el día de hoy.
+                            </p>
+                          </div>
+                        ) : (
+                          activeSlots.map(slot => {
                             const [h, m] = slot.split(':');
                             const slotDate = new Date();
                             slotDate.setHours(parseInt(h), parseInt(m), 0);
@@ -913,7 +948,8 @@ export function ReparacionDialog({
                                 <span className="uppercase">{formattedSlot}</span>
                               </div>
                             );
-                          })}
+                          })
+                        )}
                       </div>
                     </PopoverContent>
                   </Popover>
@@ -1068,17 +1104,25 @@ export function ReparacionDialog({
 
               {/* REAL-TIME ESTIMATIONS & ALERTS */}
               {(formData.selectedServices.length > 0 || formData.startTime) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10">
                   <div className="text-left">
                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Duración Estimada</p>
-                    <p className="text-lg font-black text-slate-700 dark:text-slate-300 mt-1">{durationData.text}</p>
+                    <p className="text-lg font-black text-slate-700 dark:text-slate-300 mt-1">
+                      {formData.selectedServices.length > 0 ? durationData.text : '0 min'}
+                    </p>
                   </div>
-                  <div className="text-left border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800/80 pt-3 sm:pt-0 sm:pl-6">
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Hora Estimada de finalización</p>
+                  <div className="text-left border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800/80 pt-3 sm:pt-0 sm:pl-4">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Hora estimada de Finalización</p>
                     <p className="text-lg font-black text-blue-600 dark:text-blue-400 mt-1">
                       {formData.startTime && durationData.endTime
                         ? format(parseISO(`${formData.date}T${durationData.endTime}`), 'hh:mm a')
-                        : 'Defina la hora de inicio...'}
+                        : 'Defina hora de inicio...'}
+                    </p>
+                  </div>
+                  <div className="text-left border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800/80 pt-3 sm:pt-0 sm:pl-4">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Precio Total</p>
+                    <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                      ${totalPrice.toLocaleString('es-CO')}
                     </p>
                   </div>
                 </div>
@@ -1115,6 +1159,7 @@ export function ReparacionDialog({
                     observations: '',
                     nota_estado: '',
                     startTime: '',
+                    endTime: '',
                     mechanicId: '',
                     date: format(new Date(), 'yyyy-MM-dd')
                   });
@@ -1394,11 +1439,14 @@ export function ReparacionDialog({
                                         const parent = e.currentTarget.parentElement;
                                         if (parent) {
                                           const icon = parent.querySelector('.fallback-icon');
-                                          if (icon) icon.classList.remove('hidden');
+                                          if (icon) {
+                                            icon.classList.remove('hidden');
+                                            icon.classList.add('flex');
+                                          }
                                         }
                                       }}
                                     />
-                                    <div className="fallback-icon hidden w-full h-full flex items-center justify-center text-blue-500">
+                                    <div className="fallback-icon hidden w-full h-full items-center justify-center text-blue-500">
                                       <FileImage className="w-6 h-6" />
                                     </div>
                                     {/* Overlay hover effect */}

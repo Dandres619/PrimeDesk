@@ -140,7 +140,7 @@ export function ReparacionesTable({
               </TableRow>
             )) : (
               <TableRow>
-                <TableCell colSpan={7} className="h-40 text-center text-muted-foreground text-left">
+                <TableCell colSpan={7} className="h-40 text-center text-muted-foreground">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <ClipboardList className="w-8 h-8 opacity-20" />
                     <p>No se encontraron reparaciones registradas.</p>

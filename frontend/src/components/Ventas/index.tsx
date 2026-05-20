@@ -34,6 +34,7 @@ export function Ventas() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewingSale, setViewingSale] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [saleToCancel, setSaleToCancel] = useState<any>(null);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
@@ -45,7 +46,10 @@ export function Ventas() {
 
   const handleViewDetails = async (id: number) => {
     const details = await getSaleDetails(id);
-    if (details) setViewingSale(details);
+    if (details) {
+      setViewingSale(details);
+      setIsDetailsOpen(true);
+    }
   };
 
   const handleShowPDF = async (id: number) => {
@@ -125,7 +129,7 @@ export function Ventas() {
         </Dialog>
 
         {/* View Details Modal */}
-        <Dialog open={!!viewingSale} onOpenChange={() => setViewingSale(null)}>
+        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
           <DialogContent
             className="p-0 overflow-hidden border-none shadow-2xl rounded-2xl flex flex-col animate-modal max-w-4xl w-[95vw] bg-white dark:bg-slate-950"
             onOpenAutoFocus={(e) => e.preventDefault()}
@@ -257,7 +261,7 @@ export function Ventas() {
             )}
 
             <div className="px-8 py-6 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-950 flex justify-end">
-              <Button variant="ghost" onClick={() => setViewingSale(null)} className="h-11 px-8 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl">
+              <Button variant="ghost" onClick={() => setIsDetailsOpen(false)} className="h-11 px-8 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl">
                 Cerrar
               </Button>
             </div>

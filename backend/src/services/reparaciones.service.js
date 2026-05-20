@@ -222,6 +222,16 @@ const syncComprasForReparacion = async (id_reparacion, estado) => {
     }
 };
 
+const syncAgendamientoState = async (id_agendamiento, repairEstado) => {
+    if (!id_agendamiento) return;
+    const sql = await getPool();
+    await sql`
+        UPDATE agendamientos
+        SET estado = ${repairEstado}
+        WHERE id_agendamiento = ${id_agendamiento}
+    `;
+};
+
 const update = async (id, { observaciones, estado, nota_estado }) => {
   const sql = await getPool();
   const [row] = await sql`
@@ -230,12 +240,13 @@ const update = async (id, { observaciones, estado, nota_estado }) => {
             estado = ${estado},
             nota_estado = ${nota_estado || null}
         WHERE id_reparacion = ${id}
-        RETURNING id_reparacion AS "ID_Reparacion"
+        RETURNING id_reparacion AS "ID_Reparacion", id_agendamiento AS "ID_Agendamiento"
     `;
 
   if (!row) throw { status: 404, message: 'Reparación no encontrada.' };
 
   await syncComprasForReparacion(id, estado);
+  await syncAgendamientoState(row.ID_Agendamiento, estado);
 
   return row;
 };
@@ -261,11 +272,12 @@ const updateEstado = async (id, estado, nota_estado) => {
         UPDATE reparaciones 
         SET estado = ${estado}, nota_estado = ${nota_estado || null}
         WHERE id_reparacion = ${id}
-        RETURNING id_reparacion AS "ID_Reparacion"
+        RETURNING id_reparacion AS "ID_Reparacion", id_agendamiento AS "ID_Agendamiento"
     `;
     if (!row) throw { status: 404, message: 'Reparación no encontrada.' };
 
     await syncComprasForReparacion(id, estado);
+    await syncAgendamientoState(row.ID_Agendamiento, estado);
 
     return row;
 };
