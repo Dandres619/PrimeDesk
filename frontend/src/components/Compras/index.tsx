@@ -9,6 +9,7 @@ import { Label } from '../ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { PDFPreviewDialog } from '../shared/PDFPreviewDialog';
 import { Search, ShoppingBag, Calendar, Truck, FileText } from 'lucide-react';
+import { PiMotorcycle } from 'react-icons/pi';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { format } from 'date-fns';
@@ -23,11 +24,11 @@ export function Compras() {
     isLoading,
     isAnuling,
     purchases,
-    cancelPurchase,
-    getPurchaseDetails
+    cancelPurchase
   } = useCompras();
 
   const [viewingPurchase, setViewingPurchase] = useState<any>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [purchaseToCancel, setPurchaseToCancel] = useState<any>(null);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
@@ -37,14 +38,41 @@ export function Compras() {
   const totalPages = Math.max(1, Math.ceil(purchases.length / itemsPerPage));
   const paginatedPurchases = purchases.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handleViewDetails = async (id: number) => {
-    const details = await getPurchaseDetails(id);
-    if (details) setViewingPurchase(details);
+  const handleViewDetails = (id: number) => {
+    const purchase = purchases.find((p: any) => p.ID_Compra === id);
+    if (!purchase) return;
+
+    const mappedDetails = {
+      ...purchase,
+      detalle: (purchase.items || []).map((it: any) => ({
+        ID_DetalleCompra: it.id,
+        ID_Compra: purchase.ID_Compra,
+        ID_Producto: it.id,
+        Cantidad: it.quantity,
+        PrecioUnitario: it.unitCost,
+        Subtotal: it.quantity * it.unitCost,
+        NombreProducto: it.product,
+        NombreCategoria: it.category
+      }))
+    };
+    setViewingPurchase(mappedDetails);
+    setIsDetailsOpen(true);
   };
 
-  const handleGeneratePDF = async (purchase: any) => {
-    const fullPurchase = await getPurchaseDetails(purchase.ID_Compra);
-    if (!fullPurchase) return;
+  const handleGeneratePDF = (purchase: any) => {
+    const fullPurchase = {
+      ...purchase,
+      detalle: (purchase.items || []).map((it: any) => ({
+        ID_DetalleCompra: it.id,
+        ID_Compra: purchase.ID_Compra,
+        ID_Producto: it.id,
+        Cantidad: it.quantity,
+        PrecioUnitario: it.unitCost,
+        Subtotal: it.quantity * it.unitCost,
+        NombreProducto: it.product,
+        NombreCategoria: it.category
+      }))
+    };
 
     setPdfData({
       invoiceNumber: `#${fullPurchase.ID_Compra}`,
@@ -130,7 +158,7 @@ export function Compras() {
         />
 
         {/* View Details Modal */}
-        <Dialog open={!!viewingPurchase} onOpenChange={() => setViewingPurchase(null)}>
+        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
           <DialogContent
             className="p-0 overflow-hidden border-none shadow-2xl rounded-2xl flex flex-col animate-modal max-w-4xl w-[95vw] bg-white dark:bg-slate-950"
             onOpenAutoFocus={(e) => e.preventDefault()}
@@ -169,6 +197,16 @@ export function Compras() {
                     <div>
                       <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Proveedor</Label>
                       <p className="font-bold text-slate-900 dark:text-white text-sm">{viewingPurchase.NombreEmpresa}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 border-t border-slate-100/50 dark:border-slate-800/50 pt-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                      <PiMotorcycle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Motocicleta (Placa)</Label>
+                      <p className="font-bold text-slate-900 dark:text-white text-sm">{viewingPurchase.Placa}</p>
                     </div>
                   </div>
 
@@ -237,7 +275,7 @@ export function Compras() {
             )}
 
             <div className="px-8 py-6 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50 dark:bg-slate-950 flex justify-end">
-              <Button variant="ghost" onClick={() => setViewingPurchase(null)} className="h-11 px-8 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl">
+              <Button variant="ghost" onClick={() => setIsDetailsOpen(false)} className="h-11 px-8 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl">
                 Cerrar
               </Button>
             </div>

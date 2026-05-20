@@ -31,7 +31,7 @@ export function useProductos() {
       const catData = await catRes.json();
 
       setCategories(catData.map((c: any) => ({ id: c.ID_Categoria, name: c.Nombre })));
-      setProducts(prodData.map((p: any) => ({
+      const mappedProducts = prodData.map((p: any) => ({
         id: p.ID_Producto,
         name: p.Nombre,
         description: p.Descripcion,
@@ -39,7 +39,13 @@ export function useProductos() {
         categoryId: p.ID_Categoria,
         categoryName: p.NombreCategoria,
         status: p.Estado ? 'Activo' : 'Inactivo'
-      })));
+      }));
+
+      mappedProducts.sort((a: any, b: any) => 
+        (a.name || '').localeCompare(b.name || '', 'es', { sensitivity: 'base' })
+      );
+
+      setProducts(mappedProducts);
     } catch (error: any) {
       toast.error(error.message);
     } finally {

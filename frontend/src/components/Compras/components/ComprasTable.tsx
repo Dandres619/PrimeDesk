@@ -2,7 +2,6 @@ import { Eye, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../ui/pagination';
 import { format } from 'date-fns';
@@ -29,22 +28,6 @@ export function ComprasTable({
   onPDF
 }: ComprasTableProps) {
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Pendiente de venta':
-        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-none font-bold">Pendiente</Badge>;
-      case 'Anulada':
-      case 'Anulado':
-        return <Badge variant="destructive" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-none font-bold">Anulada</Badge>;
-      case 'Con Venta':
-        return <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-none font-bold">Con Venta</Badge>;
-      case 'Activa':
-        return <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400 border-none font-bold">Activa</Badge>;
-      default:
-        return <Badge variant="outline" className="font-bold">{status}</Badge>;
-    }
-  };
-
   return (
     <Card data-slot="card">
       <CardHeader>
@@ -56,8 +39,8 @@ export function ComprasTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Compra</TableHead>
               <TableHead>Proveedor</TableHead>
+              <TableHead>Motocicleta</TableHead>
               <TableHead>Fecha</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Estado</TableHead>
@@ -67,18 +50,18 @@ export function ComprasTable({
           <TableBody>
             {paginatedPurchases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   No se encontraron compras.
                 </TableCell>
               </TableRow>
             ) : (
               paginatedPurchases.map(p => (
                 <TableRow key={p.ID_Compra}>
-                  <TableCell><p className="font-bold text-blue-600 dark:text-blue-400">#{p.ID_Compra}</p></TableCell>
-                  <TableCell><p className="font-medium">{p.NombreEmpresa}</p></TableCell>
+                  <TableCell><p>{p.NombreEmpresa}</p></TableCell>
+                  <TableCell><p>{p.Placa}</p></TableCell>
                   <TableCell><p>{format(new Date(p.FechaCompra), 'PPP', { locale: es })}</p></TableCell>
-                  <TableCell><p className="font-bold">${parseFloat(p.Total).toLocaleString()}</p></TableCell>
-                  <TableCell>{getStatusBadge(p.Estado)}</TableCell>
+                  <TableCell><p>${parseFloat(p.Total).toLocaleString()}</p></TableCell>
+                  <TableCell>{p.Estado}</TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
                       <Tooltip>

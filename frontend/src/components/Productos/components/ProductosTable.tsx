@@ -79,7 +79,7 @@ export function ProductosTable({
             ) : (
               paginatedProducts.map(p => (
                 <TableRow key={p.id}>
-                  <TableCell><p className="font-medium">{p.name}</p></TableCell>
+                  <TableCell><p>{p.name}</p></TableCell>
                   <TableCell><p>{p.brand}</p></TableCell>
                   <TableCell><p>{p.categoryName}</p></TableCell>
                   <TableCell>
