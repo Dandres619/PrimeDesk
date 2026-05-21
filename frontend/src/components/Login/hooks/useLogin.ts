@@ -49,7 +49,7 @@ export function useLogin(onLogin: (userData: any) => void) {
             username: profileData.correo,
             name: profileData.NombreCliente || profileData.NombreEmpleado || profileData.correo,
             last_name: profileData.ApellidoCliente || profileData.ApellidoEmpleado || '',
-            type: profileData.id_rol === 1 ? 'admin' : (profileData.id_rol === 2 ? 'empleado' : 'cliente'),
+            type: profileData.NombreRol?.toLowerCase() || (profileData.id_rol === 1 ? 'admin' : (profileData.id_rol === 3 ? 'cliente' : 'empleado')),
             permisos: profileData.permisos || []
           });
           return;
@@ -63,7 +63,7 @@ export function useLogin(onLogin: (userData: any) => void) {
         username: data.usuario.correo,
         name: data.usuario.nombre || data.usuario.correo,
         last_name: data.usuario.apellido || '',
-        type: data.usuario.id_rol === 1 ? 'admin' : (data.usuario.id_rol === 2 ? 'empleado' : 'cliente'),
+        type: data.usuario.nombre_rol?.toLowerCase() || (data.usuario.id_rol === 1 ? 'admin' : (data.usuario.id_rol === 3 ? 'cliente' : 'empleado')),
         permisos: data.usuario.permisos || []
       });
 

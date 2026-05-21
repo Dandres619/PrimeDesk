@@ -120,7 +120,7 @@ const create = async (data, file) => {
 const update = async (id, data, file) => {
   const sql = await getPool();
   let { nombre, apellido, tipo_documento, documento, telefono,
-    barrio, direccion, fecha_nacimiento, foto } = data;
+    barrio, direccion, fecha_nacimiento, foto, id_rol } = data;
 
   if (file) {
     try {
@@ -168,19 +168,28 @@ const update = async (id, data, file) => {
 
 
   const finalNacimiento = (fecha_nacimiento && fecha_nacimiento.trim() !== '') ? fecha_nacimiento : null;
-  const [row] = await sql`
-        UPDATE empleados 
-        SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
-            documento = ${documento}, telefono = ${telefono}, barrio = ${barrio || null}, 
-            direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento}, foto = ${foto || null}
-        WHERE id_empleado = ${id}
-        RETURNING id_empleado AS "ID_Empleado", id_usuario AS "ID_Usuario", nombre AS "Nombre", 
-                  apellido AS "Apellido", tipodocumento AS "TipoDocumento", documento AS "Documento",
-                  telefono AS "Telefono", barrio AS "Barrio", direccion AS "Direccion", 
-                  fechanacimiento AS "FechaNacimiento", fechaingreso AS "FechaIngreso", foto AS "Foto"
-    `;
-  if (!row) throw { status: 404, message: 'Empleado no encontrado.' };
-  return row;
+  return await sql.begin(async (tx) => {
+    if (id_rol) {
+      const [emp] = await tx`SELECT id_usuario FROM empleados WHERE id_empleado = ${id}`;
+      if (emp && emp.id_usuario) {
+        await tx`UPDATE usuarios SET id_rol = ${id_rol} WHERE id_usuario = ${emp.id_usuario}`;
+      }
+    }
+
+    const [row] = await tx`
+          UPDATE empleados 
+          SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
+              documento = ${documento}, telefono = ${telefono}, barrio = ${barrio || null}, 
+              direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento}, foto = ${foto || null}
+          WHERE id_empleado = ${id}
+          RETURNING id_empleado AS "ID_Empleado", id_usuario AS "ID_Usuario", nombre AS "Nombre", 
+                    apellido AS "Apellido", tipodocumento AS "TipoDocumento", documento AS "Documento",
+                    telefono AS "Telefono", barrio AS "Barrio", direccion AS "Direccion", 
+                    fechanacimiento AS "FechaNacimiento", fechaingreso AS "FechaIngreso", foto AS "Foto"
+      `;
+    if (!row) throw { status: 404, message: 'Empleado no encontrado.' };
+    return row;
+  });
 };
 
 const remove = async (id) => {
