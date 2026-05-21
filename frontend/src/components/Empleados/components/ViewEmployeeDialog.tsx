@@ -1,4 +1,5 @@
-import { User, Mail, UserCog } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Mail, UserCog, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent } from '../../ui/dialog';
 import { Badge } from '../../ui/badge';
 import { Label } from '../../ui/label';
@@ -24,6 +25,14 @@ const roleBadges: any = {
 };
 
 export function ViewEmployeeDialog({ employee, open, onOpenChange }: ViewEmployeeDialogProps) {
+  const [imgLoading, setImgLoading] = useState(true);
+
+  useEffect(() => {
+    if (open) {
+      setImgLoading(true);
+    }
+  }, [open, employee?.Foto]);
+
   if (!employee) return null;
 
   return (
@@ -33,7 +42,20 @@ export function ViewEmployeeDialog({ employee, open, onOpenChange }: ViewEmploye
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="relative">
               {getPhotoUrl(employee.Foto) ? (
-                <img src={getPhotoUrl(employee.Foto)!} alt="Perfil" className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-xl" />
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl relative">
+                  {imgLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-50 dark:bg-slate-900 z-10">
+                      <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                    </div>
+                  )}
+                  <img
+                    src={getPhotoUrl(employee.Foto)!}
+                    alt="Perfil"
+                    onLoad={() => setImgLoading(false)}
+                    onError={() => setImgLoading(false)}
+                    className={`w-full h-full object-cover transition-opacity duration-200 ${imgLoading ? "opacity-0" : "opacity-100"}`}
+                  />
+                </div>
               ) : (
                 <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center shadow-xl border-4 border-white dark:border-slate-800">
                   <span className="text-white text-2xl font-bold">{employee.Nombre?.[0]}{employee.Apellido?.[0]}</span>

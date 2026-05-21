@@ -1,5 +1,5 @@
-import React from 'react';
-import { Camera, Mail, UserCircle, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Camera, Mail, UserCircle, Shield, Loader2 } from 'lucide-react';
 
 interface ProfileHeaderProps {
     formData: any;
@@ -20,6 +20,14 @@ export function ProfileHeader({
     activeSection,
     setActiveSection
 }: ProfileHeaderProps) {
+    const [imgLoading, setImgLoading] = useState(true);
+
+    useEffect(() => {
+        if (fotoPreview) {
+            setImgLoading(true);
+        }
+    }, [fotoPreview]);
+
     return (
         <div className="mp-sidebar">
             <div className="mp-card mp-profile-card">
@@ -28,7 +36,20 @@ export function ProfileHeader({
                     <div className="mp-avatar-outer">
                         <div className="mp-avatar">
                             {fotoPreview ? (
-                                <img src={fotoPreview} alt="Foto de perfil" />
+                                <div className="relative w-full h-full flex items-center justify-center">
+                                    {imgLoading && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-slate-50 dark:bg-slate-900 rounded-full z-10">
+                                            <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                                        </div>
+                                    )}
+                                    <img
+                                        src={fotoPreview}
+                                        alt="Foto de perfil"
+                                        onLoad={() => setImgLoading(false)}
+                                        onError={() => setImgLoading(false)}
+                                        className={`w-full h-full object-cover transition-opacity duration-200 ${imgLoading ? "opacity-0" : "opacity-100"}`}
+                                    />
+                                </div>
                             ) : (
                                 <span className="mp-avatar-initial">
                                     {formData.nombre?.charAt(0) || profileData?.Correo?.charAt(0).toUpperCase()}

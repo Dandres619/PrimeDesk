@@ -1,4 +1,5 @@
-import { User, Mail, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, Mail, Plus, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent } from '../../ui/dialog';
 import { Badge } from '../../ui/badge';
 
@@ -15,6 +16,14 @@ export function ViewUserDialog({
   setIsViewDialogOpen,
   tipoBadges
 }: ViewUserDialogProps) {
+  const [imgLoading, setImgLoading] = useState(true);
+
+  useEffect(() => {
+    if (viewingUser?.Foto) {
+      setImgLoading(true);
+    }
+  }, [viewingUser?.Foto, isViewDialogOpen]);
+
   return (
     <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
       <DialogContent className="max-w-md animate-modal p-0 overflow-hidden">
@@ -24,7 +33,20 @@ export function ViewUserDialog({
               <div className="flex flex-col items-center text-center gap-4">
                 <div className="relative">
                   {viewingUser.Foto ? (
-                    <img src={viewingUser.Foto} alt="Perfil" className="w-24 h-24 rounded-2xl object-cover border-4 border-white dark:border-slate-800 shadow-md" />
+                    <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-md">
+                      {imgLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-50 dark:bg-slate-900 z-10">
+                          <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                        </div>
+                      )}
+                      <img
+                        src={viewingUser.Foto}
+                        alt="Perfil"
+                        onLoad={() => setImgLoading(false)}
+                        onError={() => setImgLoading(false)}
+                        className={`w-full h-full object-cover transition-opacity duration-200 ${imgLoading ? "opacity-0" : "opacity-100"}`}
+                      />
+                    </div>
                   ) : (
                     <div className="w-24 h-24 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg border-4 border-white dark:border-slate-800">
                       <User className="w-12 h-12 text-white" />

@@ -47,6 +47,13 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [imgLoading, setImgLoading] = useState(true);
+
+  useEffect(() => {
+    if (fotoPreview) {
+      setImgLoading(true);
+    }
+  }, [fotoPreview, open]);
 
   const getPhotoUrl = (photo: string | null) => {
     if (!photo) return null;
@@ -516,9 +523,22 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
                 <div className="bg-blue-50/50 dark:bg-blue-900/10 p-6 rounded-2xl border border-blue-100/50 dark:border-blue-800/30">
                   <div className="flex flex-col md:flex-row gap-8 items-center">
                     <div className="relative group shrink-0">
-                      <div className="w-32 h-32 rounded-3xl bg-white dark:bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-slate-200 dark:border-slate-700 group-hover:border-blue-500 transition-all shadow-xl">
+                      <div className="w-32 h-32 rounded-3xl bg-white dark:bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-slate-200 dark:border-slate-700 group-hover:border-blue-500 transition-all shadow-xl relative">
                         {fotoPreview ? (
-                          <img src={fotoPreview} alt="Preview" className="w-full h-full object-cover" />
+                          <>
+                            {imgLoading && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-slate-50 dark:bg-slate-900 z-10">
+                                <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                              </div>
+                            )}
+                            <img
+                              src={fotoPreview}
+                              alt="Preview"
+                              onLoad={() => setImgLoading(false)}
+                              onError={() => setImgLoading(false)}
+                              className={`w-full h-full object-cover transition-opacity duration-200 ${imgLoading ? "opacity-0" : "opacity-100"}`}
+                            />
+                          </>
                         ) : (
                           <div className="flex flex-col items-center gap-1">
                             <Camera className="w-10 h-10 text-slate-200" />
