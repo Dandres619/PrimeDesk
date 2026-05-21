@@ -47,9 +47,11 @@ export function MotoDialog({ moto, clients, onSave, isSaving, onOpenChange }: an
         else if (value > currentYear + 1) error = 'El año no puede ser futuro';
         break;
       case 'placa':
-        if (!value) error = 'La placa es obligatoria';
-        else if (!/^[a-zA-Z0-9]+$/.test(value)) error = 'Solo letras y números';
-        else if (value.length > 6) error = 'Máximo 6 caracteres';
+        if (!value) {
+          error = 'La placa es obligatoria';
+        } else if (!/^[A-Z]{3}\d{2}[A-Z]$/.test(value.toUpperCase())) {
+          error = 'Formato inválido (Ej: XYZ25H)';
+        }
         break;
       case 'color': if (!value) error = 'El color es obligatorio'; break;
       case 'motor':
