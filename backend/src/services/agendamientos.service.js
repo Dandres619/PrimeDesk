@@ -120,10 +120,39 @@ const update = async (id, { id_motocicleta, id_empleado, dia, horainicio, horafi
   return row;
 };
 
-const remove = async (id) => {
+const remove = async (id, isClient = false) => {
   const sql = await getPool();
 
   try {
+    // 0. Verificar que el agendamiento exista y validar la hora de anticipación (mínimo 1 hora)
+    const [apt] = await sql`
+      SELECT TO_CHAR(dia, 'YYYY-MM-DD') AS "DiaStr", horainicio AS "HoraInicio", estado AS "Estado"
+      FROM agendamientos
+      WHERE id_agendamiento = ${id}
+    `;
+
+    if (!apt) {
+      throw { status: 404, message: 'Agendamiento no encontrado.' };
+    }
+
+    if (isClient) {
+      const currentEstado = (apt.Estado || '').toLowerCase();
+      if (!['esperando motocicleta', 'confirmado'].includes(currentEstado)) {
+        throw { 
+          status: 400, 
+          message: 'No se puede cancelar un agendamiento que ya inició, finalizó o fue anulado.' 
+        };
+      }
+
+      const aptDateTime = new Date(`${apt.DiaStr}T${apt.HoraInicio}`);
+      const now = new Date();
+      const diffHours = (aptDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      if (diffHours < 1) {
+        throw { status: 400, message: 'Solo se puede anular con al menos una hora de anticipación.' };
+      }
+    }
+
     const [deleted] = await sql.begin(async (tx) => {
       // 1. Marcar la reparación vinculada como 'Anulado'
       await tx`

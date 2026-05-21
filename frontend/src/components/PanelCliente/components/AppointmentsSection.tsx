@@ -144,6 +144,14 @@ export function AppointmentsSection({
   };
 
   const handleDelete = async (apt: any) => {
+    const rep = reparaciones.find((r: any) => Number(r.ID_Agendamiento) === Number(apt.id));
+    const status = (rep?.estadoBase || apt.status || 'Confirmado').toLowerCase();
+
+    if (!['esperando motocicleta', 'confirmado'].includes(status)) {
+      toast.error('No se puede cancelar un agendamiento que ya inició o finalizó.');
+      return;
+    }
+
     const aptDateTime = new Date(apt.date + 'T' + apt.startTime);
     const now = new Date();
     const diffHours = (aptDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -161,7 +169,10 @@ export function AppointmentsSection({
           'Authorization': `Bearer ${token}`
         }
       });
-      if (!res.ok) throw new Error('Error al anular');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Error al anular');
+      }
       toast.success('Agendamiento cancelado exitosamente');
       setIsDetailsOpen(false);
       await fetchClientData(false);

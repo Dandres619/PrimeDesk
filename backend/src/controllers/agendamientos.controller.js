@@ -31,4 +31,14 @@ const removeServicio = async (req, res) => {
     }
 };
 
-module.exports = { ...base, getAll, addServicio, removeServicio };
+const remove = async (req, res) => {
+    try {
+        const isClient = req.user && req.user.id_rol === 3;
+        const data = await agendamientosService.remove(parseInt(req.params.id), isClient);
+        res.json(data);
+    } catch (err) {
+        res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
+    }
+};
+
+module.exports = { ...base, getAll, addServicio, removeServicio, remove };

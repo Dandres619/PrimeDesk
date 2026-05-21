@@ -31,7 +31,6 @@ export function MotosSection({
   isLoadingData,
   handleCreateMoto,
   handleEditMoto,
-  fetchMotoHistory,
   handleDeleteMoto,
   selectedMotoForHistory,
   setSelectedMotoForHistory,
@@ -55,7 +54,7 @@ export function MotosSection({
     );
   }
 
-  const filteredMotos = motos.filter(moto => 
+  const filteredMotos = motos.filter(moto =>
     moto.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
     moto.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     moto.placa.toLowerCase().includes(searchTerm.toLowerCase())
@@ -64,7 +63,7 @@ export function MotosSection({
   return (
     <div className="motos-root">
       <MotosStyles />
-      
+
       <div className="motos-content-animate space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -125,7 +124,7 @@ export function MotosSection({
                         <TableCell>
                           {moto.placa}
                         </TableCell>
-                        <TableCell className="font-medium">{moto.marca}</TableCell>
+                        <TableCell>{moto.marca}</TableCell>
                         <TableCell>{moto.modelo}</TableCell>
                         <TableCell>{moto.ano}</TableCell>
                         <TableCell>{(moto.kilometraje || 0).toLocaleString()} km</TableCell>
@@ -157,21 +156,6 @@ export function MotosSection({
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent><p>Editar datos</p></TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => fetchMotoHistory(moto.id)}
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                  disabled={isFetchingHistory}
-                                >
-                                  <History className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Ver historial</p></TooltipContent>
                             </Tooltip>
 
                             <Tooltip>

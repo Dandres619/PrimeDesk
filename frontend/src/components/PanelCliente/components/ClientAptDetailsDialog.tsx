@@ -2,8 +2,42 @@ import React from 'react';
 import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Button } from '../../ui/button';
-import { ClipboardPen, Wrench, FileText, Info, Calendar, Clock, Phone, FileImage, ExternalLink } from 'lucide-react';
+import { ClipboardPen, Wrench, FileText, Info, Calendar, Clock, Phone, FileImage, ExternalLink, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+function FacturaImage({ src }: { src: string }) {
+  const [imgLoading, setImgLoading] = React.useState(true);
+  const [hasError, setHasError] = React.useState(false);
+
+  return (
+    <>
+      {imgLoading && !hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl z-10">
+          <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+        </div>
+      )}
+      {!hasError ? (
+        <img
+          src={src}
+          alt="Factura"
+          onLoad={() => setImgLoading(false)}
+          onError={() => {
+            setImgLoading(false);
+            setHasError(true);
+          }}
+          className={cn(
+            "w-full h-full object-cover transition-all duration-500 group-hover/img:scale-110",
+            imgLoading ? "opacity-0" : "opacity-100"
+          )}
+        />
+      ) : (
+        <div className="fallback-icon flex w-full h-full items-center justify-center text-blue-500">
+          <FileImage className="w-5 h-5" />
+        </div>
+      )}
+    </>
+  );
+}
 
 interface ClientAptDetailsDialogProps {
   apt: any;
@@ -94,7 +128,15 @@ export function ClientAptDetailsDialog({
   const data = resolvedReparacion;
   if (!data) return null;
 
-  const isCancelable = onDelete && !['anulado', 'anulada', 'finalizado', 'terminado', 'entregado', 'en progreso', 'reparando'].includes((data.estadoBase || '').toLowerCase());
+  const isSaleCompleted = !!(data.associatedSaleId || data.AssociatedSaleId);
+  const displayStatus = (data.estadoBase === 'Reparación finalizada' && !isSaleCompleted)
+    ? 'Reparación finalizada - Pendiente de facturación'
+    : data.estadoBase;
+
+  const isCancelable = onDelete && [
+    'esperando motocicleta',
+    'confirmado'
+  ].includes((data.estadoBase || '').toLowerCase());
 
   const mappedServices = (data.servicios || []).map((s: any) => {
     const catalog = availableServices.find((cs: any) => cs.ID_Servicio === s.ID_Servicio || cs.id_servicio === s.ID_Servicio);
@@ -205,7 +247,7 @@ export function ClientAptDetailsDialog({
                 <span className="text-slate-300 dark:text-slate-700">•</span>
                 <span className="flex items-center gap-1.5">
                   <span>Estado actual:</span>
-                  {getStatusBadge(data.estadoBase)}
+                  {getStatusBadge(displayStatus)}
                 </span>
               </div>
             </div>
@@ -216,12 +258,12 @@ export function ClientAptDetailsDialog({
       <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-5 space-y-6 lg:border-r lg:border-slate-100 lg:dark:border-slate-800/80 lg:pr-8">
-            <div className="relative bg-gradient-to-b from-yellow-300 to-yellow-400 dark:from-slate-900 dark:to-slate-950 text-slate-950 dark:text-white py-3.5 px-5 rounded-2xl border border-slate-950/20 dark:border-slate-800/80 shadow-lg flex flex-col items-center justify-center gap-1.5 transition-transform duration-300 hover:scale-[1.02]">
-              <span className="text-[9px] font-black text-slate-950 dark:text-slate-400 uppercase tracking-widest text-center">Datos de la motocicleta</span>
-              <span className="text-3xl font-extrabold tracking-widest uppercase font-mono px-4 py-1 bg-white/40 dark:bg-slate-900/50 rounded-xl border border-slate-950/20 dark:border-slate-800/60">
+            <div className="relative bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 text-slate-900 dark:text-white py-3.5 px-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm flex flex-col items-center justify-center gap-1.5 transition-transform duration-300 hover:scale-[1.02]">
+              <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-center">Datos de la motocicleta</span>
+              <span className="text-3xl font-extrabold tracking-widest uppercase font-mono px-4 py-1 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white rounded-xl border border-slate-200 dark:border-slate-800/60 shadow-sm">
                 {data.motorcyclePlate}
               </span>
-              <div className="text-[9px] font-black tracking-[0.2em] text-slate-950 dark:text-slate-400 uppercase mt-0.5 text-center">
+              <div className="text-[9px] font-black tracking-[0.2em] text-slate-600 dark:text-slate-400 uppercase mt-0.5 text-center">
                 {data.motorcycleBrand} {data.motorcycleModel} · {data.motorcycleYear}
               </div>
             </div>
@@ -306,7 +348,7 @@ export function ClientAptDetailsDialog({
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-black text-slate-700 dark:text-slate-300">
+                        <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
                           {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(s.Precio || 0)}
                         </p>
                         <span className={cn(
@@ -354,25 +396,7 @@ export function ClientAptDetailsDialog({
                             className="relative w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-800 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-700 shrink-0 transition-transform duration-300 hover:scale-105 active:scale-95 group/img"
                             title="Ver factura de compra"
                           >
-                            <img
-                              src={c.Factura}
-                              alt="Factura"
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                const parent = e.currentTarget.parentElement;
-                                if (parent) {
-                                  const icon = parent.querySelector('.fallback-icon');
-                                  if (icon) {
-                                    icon.classList.remove('hidden');
-                                    icon.classList.add('flex');
-                                  }
-                                }
-                              }}
-                            />
-                            <div className="fallback-icon hidden w-full h-full items-center justify-center text-blue-500">
-                              <FileImage className="w-5 h-5" />
-                            </div>
+                            <FacturaImage src={c.Factura} />
                             <div className="absolute inset-0 bg-black/45 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
                               <ExternalLink className="w-4 h-4 text-white" />
                             </div>
@@ -424,25 +448,37 @@ export function ClientAptDetailsDialog({
               </div>
             </div>
 
-            <div className="p-4 bg-slate-900 dark:bg-slate-900 text-white rounded-2xl border border-slate-950 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-lg shadow-blue-500/5 text-left">
+            {/* Financial Summary */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-sm text-left">
               <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto text-left justify-between items-center">
                 <div>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Servicios</span>
-                  <p className="text-sm font-black text-slate-200">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Servicios</span>
+                  <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
                     {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalServices)}
                   </p>
                 </div>
-                <div className="hidden sm:block w-px h-8 bg-slate-800" />
+                <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-800" />
                 <div>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Repuestos</span>
-                  <p className="text-sm font-black text-indigo-200">
-                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalPurchases)}
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Mano de obra</span>
+                  <p className={cn("text-sm font-black", isSaleCompleted ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400 italic")}>
+                    {isSaleCompleted
+                      ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalServices)
+                      : "Por calcular"}
+                  </p>
+                </div>
+                <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-800" />
+                <div>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Repuestos</span>
+                  <p className={cn("text-sm font-black", totalPurchases === 0 ? "text-slate-500 dark:text-slate-400 italic" : "text-indigo-600 dark:text-indigo-400")}>
+                    {totalPurchases === 0
+                      ? "Por calcular"
+                      : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalPurchases)}
                   </p>
                 </div>
               </div>
-              <div className="text-right w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-800 flex sm:flex-col justify-between sm:justify-start items-center sm:items-end">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Total de la Reparación</span>
-                <p className="text-2xl font-black text-blue-400 tracking-tight">
+              <div className="text-right w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-200 dark:border-slate-800 flex sm:flex-col justify-between sm:justify-start items-center sm:items-end">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Total de la Reparación</span>
+                <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
                   {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(grandTotal)}
                 </p>
               </div>

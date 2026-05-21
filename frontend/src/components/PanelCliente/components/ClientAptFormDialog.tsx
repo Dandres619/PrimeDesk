@@ -4,7 +4,7 @@ import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Button } from '../../ui/button';
-import { CalendarClock, Clock, Loader2, User, Wrench, Search, Check, ChevronsUpDown, MessageSquare, AlertCircle } from 'lucide-react';
+import { CalendarClock, Clock, Loader2, User, Wrench, Search, Check, ChevronsUpDown, MessageSquare, AlertCircle, Info } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { format, parseISO, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -481,6 +481,16 @@ export function ClientAptFormDialog({
             </Label>
             <div className="w-full h-11 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 text-slate-900 dark:text-white flex items-center shadow-sm">
               <span className="font-semibold capitalize">{form.date ? format(parseISO(form.date), 'EEEE, d MMMM yyyy', { locale: es }) : 'No seleccionada'}</span>
+            </div>
+          </div>
+
+          <div className="bg-amber-50/60 dark:bg-blue-950/20 border border-amber-200/60 dark:border-blue-900/30 p-4 rounded-xl flex items-start gap-3 animate-fadeIn">
+            <Info className="w-5 h-5 text-amber-600 dark:text-blue-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-xs font-black text-amber-800 dark:text-blue-300 uppercase tracking-wider">Políticas de Cancelación</h4>
+              <p className="text-xs text-amber-700 dark:text-blue-400/80 font-medium leading-relaxed">
+                Si requiere cancelar este agendamiento, debe hacerlo con más de una hora de anticipación respecto al horario programado. De lo contrario, el sistema no le permitirá realizar la cancelación.
+              </p>
             </div>
           </div>
 
