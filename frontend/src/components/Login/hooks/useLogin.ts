@@ -10,8 +10,38 @@ export function useLogin(onLogin: (userData: any) => void) {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!loginData.email || !loginData.password) {
-      toast.error('Por favor complete todos los campos');
+    const email = loginData.email.trim();
+    const password = loginData.password;
+
+    // Email Validations (Matching Registration Rules)
+    if (!email) {
+      toast.error('El correo electrónico no puede estar vacío');
+      return;
+    }
+    if (email.length < 5) {
+      toast.error('El correo electrónico debe tener al menos 5 caracteres');
+      return;
+    }
+    if (email.length > 254) {
+      toast.error('El correo electrónico no puede superar los 254 caracteres');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('El correo electrónico ingresado no es válido');
+      return;
+    }
+
+    // Password Validations (Matching Registration Rules)
+    if (!password) {
+      toast.error('La contraseña no puede estar vacía');
+      return;
+    }
+    if (password.length < 8) {
+      toast.error('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (password.length > 128) {
+      toast.error('La contraseña no puede superar los 128 caracteres');
       return;
     }
 

@@ -40,7 +40,7 @@ export function LoginView({
         </p>
       </div>
 
-      <form onSubmit={handleLogin} className="lv-form">
+      <form onSubmit={handleLogin} className="lv-form" noValidate>
         {/* Email Field */}
         <div className="lv-field-group">
           <Label htmlFor="email" className="lv-label">Correo electrónico</Label>
