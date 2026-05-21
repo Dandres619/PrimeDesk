@@ -10,6 +10,8 @@ export function useClientData() {
   const [mechanics, setMechanics] = useState<any[]>([]);
   const [horarios, setHorarios] = useState<any[]>([]);
   const [availableServices, setAvailableServices] = useState<any[]>([]);
+  const [novedades, setNovedades] = useState<any[]>([]);
+  const [reparaciones, setReparaciones] = useState<any[]>([]);
   const token = localStorage.getItem('token');
 
   const fetchClientData = useCallback(async (showLoading = true) => {
@@ -23,7 +25,7 @@ export function useClientData() {
       const userData = await meRes.json();
 
       if (userData.ID_Cliente) {
-        const [resMotos, resAg, resEmp, resSrv, resHor] = await Promise.all([
+        const [resMotos, resAg, resEmp, resSrv, resHor, resNov, resRep] = await Promise.all([
           fetch(`${API_URL}/motocicletas?id_cliente=${userData.ID_Cliente}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
@@ -37,6 +39,12 @@ export function useClientData() {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
           fetch(`${API_URL}/horarios`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${API_URL}/novedades`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${API_URL}/reparaciones?id_cliente=${userData.ID_Cliente}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
         ]);
@@ -65,11 +73,13 @@ export function useClientData() {
             motoModel: a.Modelo,
             motoPlate: a.Placa,
             fecha: a.Dia.split('T')[0],
+            date: a.Dia.split('T')[0], // for compatibility with AptFormDialog date checks
             startTime: a.HoraInicio,
             endTime: a.HoraFin,
             mechanicName: `${a.NombreEmpleado} ${a.ApellidoEmpleado}`,
             serviceTypes: a.Servicios || [],
-            notes: a.Notas || ''
+            notes: a.Notas || '',
+            status: a.Estado || 'Confirmado'
           })));
         }
 
@@ -80,23 +90,53 @@ export function useClientData() {
             e.EstadoUsuario !== false && e.EstadoUsuario !== 'Inactivo'
           );
           setMechanics(onlyMechanics.map((e: any) => ({
-            id: e.ID_Empleado,
-            nombre: e.Nombre,
-            apellido: e.Apellido
+            ID_Empleado: e.ID_Empleado,
+            Nombre: e.Nombre,
+            Apellido: e.Apellido,
+            Documento: e.Documento,
+            Telefono: e.Telefono
           })));
         }
 
         if (resSrv.ok) {
           const srvData = await resSrv.json();
           setAvailableServices(srvData.map((s: any) => ({
-            id: s.ID_Servicio,
-            nombre: s.Nombre,
-            descripcion: s.Descripcion
+            ID_Servicio: s.ID_Servicio,
+            Nombre: s.Nombre,
+            Descripcion: s.Descripcion,
+            Precio: s.Precio || s.precio,
+            Duracion: s.Duracion || s.duracion
           })));
         }
 
         if (resHor.ok) {
           setHorarios(await resHor.json());
+        }
+
+        if (resNov && resNov.ok) {
+          setNovedades(await resNov.json());
+        }
+
+        if (resRep && resRep.ok) {
+          const repsData = await resRep.json();
+          setReparaciones(repsData.map((r: any) => ({
+            ...r,
+            estadoBase: r.Estado || r.estado || 'Esperando motocicleta',
+            clientName: r.NombreCliente,
+            motorcyclePlate: r.Placa,
+            motorcycleBrand: r.Marca,
+            motorcycleModel: r.Modelo,
+            motorcycleYear: r.Anio,
+            observations: r.Observaciones,
+            mecanico: r.Mecanico || 'No asignado',
+            mecanicoDocumento: r.MecanicoDocumento || '',
+            mecanicoTelefono: r.MecanicoTelefono || '',
+            diaAgendamiento: r.DiaAgendamiento || '',
+            horaInicio: r.HoraInicio || '',
+            notaEstado: r.NotaEstado || '',
+            servicios: r.servicios || [],
+            compras: r.compras || []
+          })));
         }
       }
     } catch (err) {
@@ -113,8 +153,11 @@ export function useClientData() {
     mechanics,
     horarios,
     availableServices,
+    novedades,
+    reparaciones,
     fetchClientData,
     setMotos,
-    setAgendamientos
+    setAgendamientos,
+    setReparaciones
   };
 }

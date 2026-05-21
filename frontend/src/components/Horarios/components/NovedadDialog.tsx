@@ -25,14 +25,7 @@ export function NovedadDialog({ schedule, onSave, onOpenChange }: NovedadDialogP
     return `${year}-${month}-${day}`;
   };
 
-  const getTomorrowString = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+
 
   const [activeTab, setActiveTab] = useState<'registrar' | 'ver'>('registrar');
 
@@ -52,12 +45,7 @@ export function NovedadDialog({ schedule, onSave, onOpenChange }: NovedadDialogP
     return d;
   }, []);
 
-  const tomorrowDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
+
 
   const sixMonthsFromNow = useMemo(() => {
     const d = new Date();
@@ -170,6 +158,61 @@ export function NovedadDialog({ schedule, onSave, onOpenChange }: NovedadDialogP
     return null;
   }, [formData.dia]);
 
+  const getDayName = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parsedDate = parseEnteredDate(dateStr);
+    if (!parsedDate) return '';
+    const daysMap: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo' };
+    return daysMap[parsedDate.getDay()];
+  };
+
+  const mechanicSchedule = useMemo(() => {
+    if (!schedule || !formData.dia) return null;
+    const dayName = getDayName(formData.dia);
+    return schedule.daySchedules?.[dayName] || null;
+  }, [schedule, formData.dia]);
+
+  const isTodayDate = useMemo(() => {
+    if (!formData.dia) return false;
+    try {
+      const today = new Date();
+      const parsedDate = parseEnteredDate(formData.dia);
+      if (!parsedDate) return false;
+      return parsedDate.getDate() === today.getDate() &&
+             parsedDate.getMonth() === today.getMonth() &&
+             parsedDate.getFullYear() === today.getFullYear();
+    } catch {
+      return false;
+    }
+  }, [formData.dia]);
+
+  const timeError = useMemo(() => {
+    if (formData.tipo !== 'Ausencia parcial') return null;
+    if (!formData.hora_inicio || !formData.hora_fin) return 'Las horas de inicio y fin son requeridas.';
+    if (formData.hora_inicio >= formData.hora_fin) {
+      return 'La hora de inicio debe ser anterior a la hora de fin.';
+    }
+    if (isTodayDate) {
+      const now = new Date();
+      const nowTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      if (formData.hora_inicio < nowTime) {
+        return 'La hora de inicio de la novedad no puede ser anterior a la hora actual.';
+      }
+    }
+    if (mechanicSchedule) {
+      if (!mechanicSchedule.enabled) {
+        return 'El mecánico no tiene un horario laboral asignado para este día.';
+      }
+      if (formData.hora_inicio < mechanicSchedule.startTime) {
+        return `El mecánico ${schedule?.mechanicName} inicia su turno a las ${formatTime12h(mechanicSchedule.startTime)} y esta novedad inicia a las ${formatTime12h(formData.hora_inicio)}. Elija otro horario.`;
+      }
+      if (formData.hora_fin > mechanicSchedule.endTime) {
+        return `El mecánico ${schedule?.mechanicName} termina su turno a las ${formatTime12h(mechanicSchedule.endTime)} y esta novedad finaliza a las ${formatTime12h(formData.hora_fin)}. Elija otro horario.`;
+      }
+    }
+    return null;
+  }, [formData.tipo, formData.hora_inicio, formData.hora_fin, isTodayDate, mechanicSchedule, schedule]);
+
   useEffect(() => {
     if (schedule) {
       setFormData(prev => ({
@@ -196,12 +239,8 @@ export function NovedadDialog({ schedule, onSave, onOpenChange }: NovedadDialogP
     }
 
     if (formData.tipo === 'Ausencia parcial') {
-      if (!formData.hora_inicio || !formData.hora_fin) {
-        toast.error('Complete las horas de inicio y fin para la ausencia parcial');
-        return;
-      }
-      if (formData.hora_inicio >= formData.hora_fin) {
-        toast.error('La hora de inicio debe ser anterior a la hora de fin');
+      if (timeError) {
+        toast.error(timeError);
         return;
       }
     }
@@ -375,28 +414,40 @@ export function NovedadDialog({ schedule, onSave, onOpenChange }: NovedadDialogP
 
               {/* Time range picker (only for partial) */}
               {formData.tipo === 'Ausencia parcial' && (
-                <div className="grid grid-cols-2 gap-4 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 bg-blue-50/10 dark:bg-blue-950/10">
-                  <div className="space-y-2">
-                    <Label htmlFor="novedad-inicio" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-blue-500" /> Desde las
-                    </Label>
-                    <TimePickerInput
-                      id="novedad-inicio"
-                      value={formData.hora_inicio}
-                      onChange={(value) => setFormData(prev => ({ ...prev, hora_inicio: value }))}
-                      date={formData.dia}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="novedad-fin" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-blue-500" /> Hasta las
-                    </Label>
-                    <TimePickerInput
-                      id="novedad-fin"
-                      value={formData.hora_fin}
-                      onChange={(value) => setFormData(prev => ({ ...prev, hora_fin: value }))}
-                      date={formData.dia}
-                    />
+                <div className="space-y-4">
+                  {timeError && (
+                    <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-800/30 text-xs text-red-600 dark:text-red-400 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
+                        <span className="font-semibold">
+                          {timeError}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 bg-blue-50/10 dark:bg-blue-950/10">
+                    <div className="space-y-2">
+                      <Label htmlFor="novedad-inicio" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-blue-500" /> Desde las
+                      </Label>
+                      <TimePickerInput
+                        id="novedad-inicio"
+                        value={formData.hora_inicio}
+                        onChange={(value) => setFormData(prev => ({ ...prev, hora_inicio: value }))}
+                        date={formData.dia}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="novedad-fin" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-blue-500" /> Hasta las
+                      </Label>
+                      <TimePickerInput
+                        id="novedad-fin"
+                        value={formData.hora_fin}
+                        onChange={(value) => setFormData(prev => ({ ...prev, hora_fin: value }))}
+                        date={formData.dia}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -514,7 +565,7 @@ export function NovedadDialog({ schedule, onSave, onOpenChange }: NovedadDialogP
               <Button
                 type="submit"
                 className="h-12 px-10 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white font-black rounded-xl shadow-xl shadow-blue-200/50 dark:shadow-none transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                disabled={isSaving || hasDuplicateNovedad}
+                disabled={isSaving || hasDuplicateNovedad || !!dateError || !!timeError}
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Registrar Novedad

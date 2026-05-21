@@ -82,11 +82,14 @@ function AppContent() {
     const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
     const getPrefix = (type?: string) => {
-        const t = type?.toLowerCase();
+        if (!type) return '';
+        const t = type.toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .trim();
         if (t === 'administrador' || t === 'admin') return '/admin';
-        if (t === 'mecánico' || t === 'mecanico' || t === 'empleado' || t === 'mec') return '/mecanico';
         if (t === 'cliente' || t === 'cli') return '/cliente';
-        return '';
+        return `/${t}`;
     };
 
     React.useEffect(() => {
@@ -101,7 +104,7 @@ function AppContent() {
             })
                 .then(res => res.json())
                 .then(profileData => {
-                    const type = profileData.id_rol === 1 ? 'administrador' : (profileData.id_rol === 2 ? 'mecánico' : 'cliente');
+                    const type = profileData.NombreRol?.toLowerCase() || (profileData.id_rol === 1 ? 'administrador' : (profileData.id_rol === 3 ? 'cliente' : 'mecánico'));
                     const permisos = profileData.permisos || [];
 
                     setCurrentUser({

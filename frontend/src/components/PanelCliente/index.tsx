@@ -8,10 +8,8 @@ import { ClientSidebar } from './components/ClientSidebar';
 import { MotosSection } from './components/MotosSection';
 import { AppointmentsSection } from './components/AppointmentsSection';
 import { MotoDialog } from './components/MotoDialog';
-import { AppointmentDialog } from './components/AppointmentDialog';
 import { ClientPanelStyles } from './styles/ClientPanelStyles';
 import { toast } from 'sonner';
-import { parseISO, isBefore, startOfDay, isToday } from 'date-fns';
 import { Badge } from '../ui/badge';
 import { UserCircle, Sun, Moon } from 'lucide-react';
 import { Switch } from '../ui/switch';
@@ -37,6 +35,8 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
     mechanics,
     horarios,
     availableServices,
+    novedades,
+    reparaciones,
     fetchClientData
   } = useClientData();
 
@@ -160,101 +160,6 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   };
 
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [showAgendarModal, setShowAgendarModal] = useState(false);
-  const [agendarFormData, setAgendarFormData] = useState({
-    motoId: 0, fecha: '', startTime: '', mecanicoId: 0, serviceIds: [] as number[], descripcion: ''
-  });
-  const [isSubmittingApt, setIsSubmittingApt] = useState(false);
-
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
-  const [appointmentDetailsOpen, setAppointmentDetailsOpen] = useState(false);
-
-  useEffect(() => {
-    if (appointmentDetailsOpen && selectedAppointment) {
-      console.log('Detalle de cita:', selectedAppointment.id);
-    }
-  }, [appointmentDetailsOpen, selectedAppointment]);
-
-  const getAppointmentsForDate = (date: any) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return agendamientos.filter((apt: any) => apt.fecha === dateStr);
-  };
-
-  const handleDateClick = (date: Date) => {
-    if (isBefore(startOfDay(date), startOfDay(new Date()))) {
-      toast.error('No se pueden agendar servicios en fechas pasadas');
-      return;
-    }
-    const dayOfWeek = date.getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      toast.error('No se pueden agendar servicios los fines de semana');
-      return;
-    }
-    setAgendarFormData({
-      motoId: 0, fecha: date.toISOString().split('T')[0], startTime: '', mecanicoId: 0, serviceIds: [], descripcion: ''
-    });
-    setShowAgendarModal(true);
-  };
-
-  const getAvailableSlots = (mecanicoId: number, fecha: string) => {
-    if (!mecanicoId || !fecha) return [];
-    const selectedDate = parseISO(fecha);
-    const daysMap: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 0: 'Domingo' };
-    const dayName = daysMap[selectedDate.getDay()];
-    const mechanicSched = horarios.filter((h: any) => h.ID_Empleado === mecanicoId && h.Dia === dayName && h.Estado);
-    if (mechanicSched.length === 0) return [];
-    const slots: string[] = [];
-    mechanicSched.forEach((sched: any) => {
-      const startStr = sched.HoraEntrada || sched.Hora_entrada;
-      const endStr = sched.HoraSalida || sched.Hora_salida;
-      let current = parseInt(startStr.split(':')[0]);
-      const end = parseInt(endStr.split(':')[0]);
-      while (current < end) {
-        const slotTime = `${current.toString().padStart(2, '0')}:00`;
-        if (isToday(selectedDate)) {
-          const now = new Date();
-          if (current < now.getHours() || (current === now.getHours() && now.getMinutes() > 0)) {
-            current++; continue;
-          }
-        }
-        const isOccupied = agendamientos.some((a: any) => a.mechanicId === mecanicoId && a.fecha === fecha && slotTime >= a.startTime && slotTime < a.endTime);
-        if (!isOccupied) slots.push(slotTime);
-        current++;
-      }
-    });
-    return slots;
-  };
-
-  const handleSubmitAgendamiento = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmittingApt(true);
-    try {
-      const token = localStorage.getItem('token');
-      const [hours, minutes] = agendarFormData.startTime.split(':');
-      const endTime = `${(parseInt(hours) + 1).toString().padStart(2, '0')}:${minutes}`;
-      const response = await fetch(`${API_URL}/agendamientos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          id_motocicleta: agendarFormData.motoId,
-          id_empleado: agendarFormData.mecanicoId,
-          dia: agendarFormData.fecha,
-          horainicio: agendarFormData.startTime,
-          horafin: endTime,
-          notas: agendarFormData.descripcion,
-          servicios: agendarFormData.serviceIds
-        })
-      });
-      if (!response.ok) throw new Error('Error al agendar');
-      toast.success('Servicio agendado');
-      setShowAgendarModal(false);
-      fetchClientData(false);
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setIsSubmittingApt(false);
-    }
-  };
 
   const getEstadoBadge = (estado: string) => {
     const variants: Record<string, string> = {
@@ -335,10 +240,15 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
                     currentDate={currentDate}
                     isLoadingData={isLoadingData}
                     setCurrentDate={setCurrentDate}
-                    getAppointmentsForDate={getAppointmentsForDate}
-                    handleDateClick={handleDateClick}
-                    setSelectedAppointment={setSelectedAppointment}
-                    setAppointmentDetailsOpen={setAppointmentDetailsOpen}
+                    motos={motos}
+                    mechanics={mechanics}
+                    availableServices={availableServices}
+                    horarios={horarios}
+                    novedades={novedades}
+                    reparaciones={reparaciones}
+                    agendamientos={agendamientos}
+                    fetchClientData={fetchClientData}
+                    currentUser={currentUser}
                   />
                 } />
                 <Route path="*" element={<Navigate to="perfil" replace />} />
@@ -355,19 +265,6 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
           setFormData={setMotoFormData}
           isSubmitting={isSubmittingMoto}
           onSubmit={handleSubmitMoto}
-        />
-
-        <AppointmentDialog
-          open={showAgendarModal}
-          onOpenChange={setShowAgendarModal}
-          formData={agendarFormData}
-          setFormData={setAgendarFormData}
-          motos={motos}
-          mechanics={mechanics}
-          availableServices={availableServices}
-          getAvailableSlots={getAvailableSlots}
-          isSubmitting={isSubmittingApt}
-          onSubmit={handleSubmitAgendamiento}
         />
 
         <ConfirmDialog
