@@ -12,7 +12,7 @@ const getAll = async () => {
         SELECT c.id_cliente AS "ID_Cliente", c.id_usuario AS "ID_Usuario", c.nombre AS "Nombre", 
                c.apellido AS "Apellido", c.tipodocumento AS "TipoDocumento", c.documento AS "Documento",
                c.telefono AS "Telefono", c.barrio AS "Barrio", c.direccion AS "Direccion", 
-               c.fechanacimiento AS "FechaNacimiento", c.foto AS "Foto", u.correo AS "Correo",
+               c.fechanacimiento AS "FechaNacimiento", u.foto AS "Foto", u.correo AS "Correo",
                u.correo_verificado AS "CorreoVerificado", u.estado AS "EstadoUsuario",
                (SELECT COUNT(*) FROM motocicletas WHERE id_cliente = c.id_cliente)::int AS "MotosCount"
         FROM clientes c
@@ -27,7 +27,7 @@ const getById = async (id) => {
         SELECT c.id_cliente AS "ID_Cliente", c.id_usuario AS "ID_Usuario", c.nombre AS "Nombre", 
                c.apellido AS "Apellido", c.tipodocumento AS "TipoDocumento", c.documento AS "Documento",
                c.telefono AS "Telefono", c.barrio AS "Barrio", c.direccion AS "Direccion", 
-               c.fechanacimiento AS "FechaNacimiento", c.foto AS "Foto", u.correo AS "Correo",
+               c.fechanacimiento AS "FechaNacimiento", u.foto AS "Foto", u.correo AS "Correo",
                u.correo_verificado AS "CorreoVerificado", u.estado AS "EstadoUsuario",
                (SELECT COUNT(*) FROM motocicletas WHERE id_cliente = c.id_cliente)::int AS "MotosCount"
         FROM clientes c
@@ -65,7 +65,8 @@ const create = async (data, file) => {
         .replace(/__+/g, '_')
         .replace(/^_+|_+$/g, '');
 
-      const fileName = `foto_perfil_${nombreClean}_${apellidoClean}${ext}`;
+      const documentoClean = (documento || 'cedula').toString().replace(/[^a-zA-Z0-9]/g, '');
+      const fileName = `foto_perfil_${nombreClean}_${apellidoClean}_${documentoClean}${ext}`;
 
       const { data: uploadData, error } = await supabase.storage
         .from('profiles')
@@ -75,7 +76,7 @@ const create = async (data, file) => {
         console.error('❌ Error al subir a Supabase:', error.message);
       } else {
         const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(fileName);
-        foto = publicUrl.publicUrl;
+        foto = `${publicUrl.publicUrl}?t=${Date.now()}`;
       }
     } catch (err) {
       console.error('Error subiendo foto:', err);
@@ -96,24 +97,28 @@ const create = async (data, file) => {
         const hashed = await bcrypt.hash(contrasena, 10);
         // id_rol 3 = Cliente
         const [newUser] = await tx`
-            INSERT INTO usuarios (id_rol, correo, contrasena, estado, correo_verificado)
-            VALUES (3, ${correo}, ${hashed}, TRUE, TRUE)
+            INSERT INTO usuarios (id_rol, correo, contrasena, estado, correo_verificado, foto)
+            VALUES (3, ${correo}, ${hashed}, TRUE, TRUE, ${foto || null})
             RETURNING id_usuario
           `;
         final_id_usuario = newUser.id_usuario;
+      } else if (final_id_usuario && foto) {
+        // Si no se crea usuario pero ya se especificó uno, actualizamos su foto
+        await tx`UPDATE usuarios SET foto = ${foto} WHERE id_usuario = ${final_id_usuario}`;
       }
 
       const finalNacimiento = (fecha_nacimiento && fecha_nacimiento.trim() !== '') ? fecha_nacimiento : null;
       const [row] = await tx`
           INSERT INTO clientes (id_usuario, nombre, apellido, tipodocumento, documento,
-              telefono, barrio, direccion, fechanacimiento, foto)
+              telefono, barrio, direccion, fechanacimiento)
           VALUES (${final_id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento},
-              ${telefono}, ${barrio || null}, ${direccion || null}, ${finalNacimiento}, ${foto || null})
+              ${telefono}, ${barrio || null}, ${direccion || null}, ${finalNacimiento})
           RETURNING id_cliente AS "ID_Cliente", id_usuario AS "ID_Usuario", nombre AS "Nombre", 
                     apellido AS "Apellido", tipodocumento AS "TipoDocumento", documento AS "Documento",
                     telefono AS "Telefono", barrio AS "Barrio", direccion AS "Direccion", 
-                    fechanacimiento AS "FechaNacimiento", foto AS "Foto"
+                    fechanacimiento AS "FechaNacimiento"
         `;
+      row.Foto = foto || null;
       return row;
     });
   } catch (err) {
@@ -145,7 +150,8 @@ const update = async (id, data, file) => {
         .replace(/__+/g, '_')
         .replace(/^_+|_+$/g, '');
 
-      const fileName = `foto_perfil_${nombreClean}_${apellidoClean}${ext}`;
+      const documentoClean = (documento || 'cedula').toString().replace(/[^a-zA-Z0-9]/g, '');
+      const fileName = `foto_perfil_${nombreClean}_${apellidoClean}_${documentoClean}${ext}`;
 
       const { data: uploadData, error } = await supabase.storage
         .from('profiles')
@@ -155,13 +161,18 @@ const update = async (id, data, file) => {
         console.error('❌ Error al subir a Supabase:', error.message);
       } else {
         const { data: publicUrl } = supabase.storage.from('profiles').getPublicUrl(fileName);
-        foto = publicUrl.publicUrl;
+        foto = `${publicUrl.publicUrl}?t=${Date.now()}`;
       }
     } catch (err) {
       console.error('Error subiendo foto:', err);
     }
   } else if (!foto || foto === 'null') {
-    const [current] = await sql`SELECT foto FROM clientes WHERE id_cliente = ${id}`;
+    const [current] = await sql`
+      SELECT u.foto 
+      FROM clientes c
+      INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
+      WHERE c.id_cliente = ${id}
+    `;
     // Si el frontend envia foto vacia/null y no envia file
     if (current && (!foto || foto.trim() === '')) {
       foto = current.foto;
@@ -170,18 +181,30 @@ const update = async (id, data, file) => {
 
 
   const finalNacimiento = (fecha_nacimiento && fecha_nacimiento.trim() !== '') ? fecha_nacimiento : null;
-  const [row] = await sql`
-        UPDATE clientes 
-        SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
-            documento = ${documento}, telefono = ${telefono}, barrio = ${barrio || null}, 
-            direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento}, foto = ${foto || null}
-        WHERE id_cliente = ${id}
-        RETURNING id_cliente AS "ID_Cliente", id_usuario AS "ID_Usuario", nombre AS "Nombre", 
-                  apellido AS "Apellido", tipodocumento AS "TipoDocumento", documento AS "Documento",
-                  telefono AS "Telefono", barrio AS "Barrio", direccion AS "Direccion", 
-                  fechanacimiento AS "FechaNacimiento", foto AS "Foto"
+  
+  const [row] = await sql.begin(async (tx) => {
+    // 1. Obtener el id_usuario del cliente para actualizar su foto en usuarios
+    const [cli] = await tx`SELECT id_usuario FROM clientes WHERE id_cliente = ${id}`;
+    if (cli && cli.id_usuario) {
+      await tx`UPDATE usuarios SET foto = ${foto || null} WHERE id_usuario = ${cli.id_usuario}`;
+    }
+
+    const [updatedCli] = await tx`
+      UPDATE clientes 
+      SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
+          documento = ${documento}, telefono = ${telefono}, barrio = ${barrio || null}, 
+          direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento}
+      WHERE id_cliente = ${id}
+      RETURNING id_cliente AS "ID_Cliente", id_usuario AS "ID_Usuario", nombre AS "Nombre", 
+                apellido AS "Apellido", tipodocumento AS "TipoDocumento", documento AS "Documento",
+                telefono AS "Telefono", barrio AS "Barrio", direccion AS "Direccion", 
+                fechanacimiento AS "FechaNacimiento"
     `;
+    return [updatedCli];
+  });
+
   if (!row) throw { status: 404, message: 'Cliente no encontrado.' };
+  row.Foto = foto || null;
   return row;
 };
 

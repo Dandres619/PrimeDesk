@@ -12,7 +12,7 @@ const getAll = async () => {
           r.nombre AS "NombreRol",
           COALESCE(e.nombre, c.nombre) AS "Nombre",
           COALESCE(e.apellido, c.apellido) AS "Apellido",
-          COALESCE(e.foto, c.foto) AS "Foto"
+          u.foto AS "Foto"
         FROM usuarios u
         INNER JOIN roles r ON u.id_rol = r.id_rol
         LEFT JOIN empleados e ON u.id_usuario = e.id_usuario
@@ -32,7 +32,7 @@ const getById = async (id) => {
           r.nombre AS "NombreRol",
           COALESCE(e.nombre, c.nombre) AS "Nombre",
           COALESCE(e.apellido, c.apellido) AS "Apellido",
-          COALESCE(e.foto, c.foto) AS "Foto"
+          u.foto AS "Foto"
         FROM usuarios u
         INNER JOIN roles r ON u.id_rol = r.id_rol
         LEFT JOIN empleados e ON u.id_usuario = e.id_usuario

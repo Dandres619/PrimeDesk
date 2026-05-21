@@ -203,7 +203,10 @@ export function useAgendamientos() {
         method: 'DELETE',
         headers
       });
-      if (!res.ok) throw new Error('Error al anular');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Error al anular');
+      }
       toast.success('Agendamiento y reparación vinculada anulados exitosamente');
       setIsDetailsOpen(false);
       fetchData();

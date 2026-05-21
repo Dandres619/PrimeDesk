@@ -146,13 +146,14 @@ const getMe = async (id_usuario) => {
 
     const users = await sql`
       SELECT u.id_usuario, u.correo AS "Correo", u.estado, u.id_rol, u.correo_verificado,
+             u.foto AS "Foto", u.foto AS "FotoEmpleado", u.foto AS "FotoCliente",
              r.nombre AS "NombreRol", r.descripcion AS "DescripcionRol",
              e.id_empleado AS "ID_Empleado", e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado",
              e.tipodocumento AS "TipoDocEmpleado", e.documento AS "DocEmpleado", e.telefono AS "TelEmpleado",
-             e.barrio AS "BarrioEmpleado", e.direccion AS "DirEmpleado", e.fechanacimiento AS "NacEmpleado", e.foto AS "FotoEmpleado",
+             e.barrio AS "BarrioEmpleado", e.direccion AS "DirEmpleado", e.fechanacimiento AS "NacEmpleado",
              c.id_cliente AS "ID_Cliente", c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente",
              c.tipodocumento AS "TipoDocumento", c.documento AS "Documento", c.telefono AS "Telefono", 
-             c.barrio AS "Barrio", c.direccion AS "Direccion", c.fechanacimiento AS "FechaNacimiento", c.foto AS "FotoCliente"
+             c.barrio AS "Barrio", c.direccion AS "Direccion", c.fechanacimiento AS "FechaNacimiento"
       FROM usuarios u
       INNER JOIN roles r ON u.id_rol = r.id_rol
       LEFT JOIN empleados e ON e.id_usuario = u.id_usuario
@@ -215,7 +216,8 @@ const updateProfile = async (id_usuario, data, file) => {
                 .replace(/__+/g, '_')
                 .replace(/^_+|_+$/g, '');
 
-            const fileName = `foto_perfil_${nombreClean}_${apellidoClean}${ext}`;
+            const documentoClean = (documento || 'cedula').toString().replace(/[^a-zA-Z0-9]/g, '');
+            const fileName = `foto_perfil_${nombreClean}_${apellidoClean}_${documentoClean}${ext}`;
 
             const { data: uploadData, error } = await supabase.storage
                 .from('profiles')
@@ -233,7 +235,7 @@ const updateProfile = async (id_usuario, data, file) => {
                     .from('profiles')
                     .getPublicUrl(fileName);
 
-                finalFoto = publicUrl.publicUrl;
+                finalFoto = `${publicUrl.publicUrl}?t=${Date.now()}`;
             }
         } catch (uploadErr) {
             console.error('❌ Error crítico en el proceso de subida:', uploadErr.message);
@@ -248,35 +250,36 @@ const updateProfile = async (id_usuario, data, file) => {
         ? (fecha_nacimiento.trim() === '' ? null : fecha_nacimiento)
         : currentNacimiento;
 
-    if (isClient) {
-        await sql`
-            UPDATE clientes 
-            SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
-                documento = ${documento}, telefono = ${telefono}, barrio = ${barrio || null}, 
-                direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento || null},
-                foto = ${finalFoto || null}
-            WHERE id_usuario = ${id_usuario}
-        `;
-    } else {
-        await sql.begin(async (tx) => {
+    await sql.begin(async (tx) => {
+        // 1. Actualizar foto en la tabla de usuarios
+        await tx`UPDATE usuarios SET foto = ${finalFoto || null} WHERE id_usuario = ${id_usuario}`;
+
+        if (isClient) {
+            await tx`
+                UPDATE clientes 
+                SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
+                    documento = ${documento}, telefono = ${telefono}, barrio = ${barrio || null}, 
+                    direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento || null}
+                WHERE id_usuario = ${id_usuario}
+            `;
+        } else {
             const emp = await tx`SELECT id_empleado FROM empleados WHERE id_usuario = ${id_usuario}`;
             if (emp.length === 0) {
                 await tx`
-                    INSERT INTO empleados (id_usuario, nombre, apellido, tipodocumento, documento, telefono, barrio, direccion, fechanacimiento, foto, fechaingreso)
-                    VALUES (${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento}, ${telefono}, ${barrio || null}, ${direccion || null}, ${finalNacimiento || null}, ${finalFoto || null}, NOW())
+                    INSERT INTO empleados (id_usuario, nombre, apellido, tipodocumento, documento, telefono, barrio, direccion, fechanacimiento, fechaingreso)
+                    VALUES (${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento}, ${telefono}, ${barrio || null}, ${direccion || null}, ${finalNacimiento || null}, NOW())
                 `;
             } else {
                 await tx`
                     UPDATE empleados 
                     SET nombre = ${nombre}, apellido = ${apellido}, tipodocumento = ${tipo_documento},
                         documento = ${documento}, telefono = ${telefono}, barrio = ${barrio || null}, 
-                        direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento || null},
-                        foto = ${finalFoto || null}
+                        direccion = ${direccion || null}, fechanacimiento = ${finalNacimiento || null}
                     WHERE id_usuario = ${id_usuario}
                 `;
             }
-        });
-    }
+        }
+    });
 
     return { message: 'Perfil actualizado correctamente.' };
 };
