@@ -4,7 +4,7 @@ import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
 import { Button } from '../../ui/button';
-import { CalendarClock, Clock, Loader2, User, Wrench, Search, Check, ChevronsUpDown, MessageSquare } from 'lucide-react';
+import { CalendarClock, Clock, Loader2, User, Wrench, Search, Check, ChevronsUpDown, MessageSquare, AlertCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
 import { format, parseISO, isToday } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -296,6 +296,16 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
     return format(d, 'hh:mm a');
   }, [form.startTime]);
 
+  const hasSectionPassed = useMemo(() => {
+    const isDateToday = form.date ? isToday(parseISO(form.date)) : false;
+    if (!isDateToday) return false;
+
+    const nowTime = format(new Date(), 'HH:mm');
+    if (selectedSection === 'mañana') return nowTime >= '12:00';
+    if (selectedSection === 'tarde') return nowTime >= '18:00';
+    return nowTime >= '23:50';
+  }, [form.date, selectedSection]);
+
   const activeSlots = useMemo(() => {
     const sectionSlots = potentialStartTimes.filter(slot => {
       const hour = parseInt(slot.split(':')[0]);
@@ -464,6 +474,15 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
           </div>
         </div>
 
+        {selectedMechanicSchedule && durationData.endTime > selectedMechanicSchedule.salida && (
+          <div className="bg-rose-50 dark:bg-rose-950/40 border-b border-rose-100 dark:border-rose-900/40 px-8 py-3 text-left flex items-center gap-2.5 shrink-0 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
+              El mecánico {selectedMechanic?.Nombre} {selectedMechanic?.Apellido} termina su turno a las {format12h(selectedMechanicSchedule.salida)} y este agendamiento finaliza a las {format12h(durationData.endTime)}. Elija otro mecánico o reduzca los servicios.
+            </span>
+          </div>
+        )}
+
         <div className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar text-left">
           <div className="space-y-2">
             <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
@@ -630,8 +649,14 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
           </div>
 
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
-            <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-              <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-blue-500" /> Hora de Inicio *</div>
+            <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Clock className="w-4 h-4 text-blue-500" /> 
+                Hora de Inicio *
+                <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 italic ml-1">
+                  (Solo aparecen horarios disponibles según la disponibilidad de los mecánicos)
+                </span>
+              </div>
               {showErrors && !form.startTime && <span className="text-[10px] text-red-500 font-bold">Seleccione una hora</span>}
             </Label>
 
@@ -680,7 +705,11 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                   {activeSlots.length === 0 ? (
                     <div className="py-6 px-4 text-center">
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
-                        La jornada de la {selectedSection === 'mañana' ? 'mañana' : selectedSection === 'tarde' ? 'tarde' : 'noche'} ya transcurrió para el día de hoy.
+                        {hasSectionPassed ? (
+                          `La jornada de la ${selectedSection === 'mañana' ? 'mañana' : selectedSection === 'tarde' ? 'tarde' : 'noche'} ya transcurrió para el día de hoy.`
+                        ) : (
+                          "No hay mecánicos disponibles para este horario."
+                        )}
                       </p>
                     </div>
                   ) : (
@@ -796,14 +825,6 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                 <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30">
                   <p className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
                     No hay ningún mecánico disponible a las {form.startTime} en esta fecha.
-                  </p>
-                </div>
-              )}
-
-              {selectedMechanicSchedule && durationData.endTime > selectedMechanicSchedule.salida && (
-                <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/40 mt-2 text-left">
-                  <p className="text-xs font-bold text-rose-600 dark:text-rose-400">
-                    ⚠️ El mecánico {selectedMechanic?.Nombre} {selectedMechanic?.Apellido} termina su turno a las {format12h(selectedMechanicSchedule.salida)} y este agendamiento finaliza a las {format12h(durationData.endTime)}. Elija otro mecánico o reduzca los servicios.
                   </p>
                 </div>
               )}

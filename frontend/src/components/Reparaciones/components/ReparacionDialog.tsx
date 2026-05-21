@@ -89,15 +89,17 @@ export function ReparacionDialog({
   const token = localStorage.getItem('token');
   const [horarios, setHorarios] = useState<any[]>([]);
   const [existingAppointments, setExistingAppointments] = useState<any[]>([]);
+  const [novedades, setNovedades] = useState<any[]>([]);
 
   useEffect(() => {
     if (!editingOrder) {
       const fetchAgendas = async () => {
         try {
           const headers = { 'Authorization': `Bearer ${token}` };
-          const [resHor, resAge] = await Promise.all([
+          const [resHor, resAge, resNov] = await Promise.all([
             fetch(`${API_URL}/horarios`, { headers }),
-            fetch(`${API_URL}/agendamientos`, { headers })
+            fetch(`${API_URL}/agendamientos`, { headers }),
+            fetch(`${API_URL}/novedades`, { headers })
           ]);
           if (resHor.ok) {
             const dataHor = await resHor.json();
@@ -114,6 +116,9 @@ export function ReparacionDialog({
               motorcycleId: a.ID_Motocicleta,
               mechanicId: a.ID_Empleado
             })));
+          }
+          if (resNov.ok) {
+            setNovedades(await resNov.json());
           }
         } catch (e) {
           console.error(e);
@@ -261,9 +266,43 @@ export function ReparacionDialog({
         return newStart < existBlockedUntil && existStart < newBlockedUntil;
       });
 
-      return !isBusy;
+      if (isBusy) return false;
+
+      // 3. Check for overlaps with novelties (novedades) - only if date is today
+      const isDateToday = formData.date === format(new Date(), 'yyyy-MM-dd');
+      if (isDateToday) {
+        const hasNovelty = novedades.some((n: any) => {
+          if (Number(n.ID_Empleado) !== Number(mech.ID_Empleado)) return false;
+
+          let novDateStr = n.Dia;
+          if (n.Dia instanceof Date) {
+            novDateStr = n.Dia.toISOString().split('T')[0];
+          } else if (novDateStr && typeof novDateStr === 'string') {
+            novDateStr = novDateStr.substring(0, 10);
+          }
+
+          if (novDateStr !== formData.date) return false;
+
+          const novStart = n.HoraInicio || n.Hora_inicio || n.horainicio;
+          const novEnd = n.HoraFin || n.Hora_fin || n.horafin;
+
+          if (!novStart || !novEnd) return true;
+
+          const ns = novStart.slice(0, 5);
+          const ne = novEnd.slice(0, 5);
+
+          const newStart = formData.startTime;
+          const newEnd = addMinutesToTime(formData.startTime, durationData.minutes);
+
+          return newStart < ne && ns < newEnd;
+        });
+
+        if (hasNovelty) return false;
+      }
+
+      return true;
     });
-  }, [formData.date, formData.startTime, mechanics, horarios, existingAppointments, durationData.minutes]);
+  }, [formData.date, formData.startTime, mechanics, horarios, existingAppointments, durationData.minutes, novedades]);
 
   const selectedMechanic = mechanics.find((m: any) => m.ID_Empleado === parseInt(formData.mechanicId));
 
@@ -291,6 +330,16 @@ export function ReparacionDialog({
     return format(d, 'hh:mm a');
   }, [formData.startTime]);
 
+  const hasSectionPassed = useMemo(() => {
+    const isDateToday = formData.date === format(new Date(), 'yyyy-MM-dd');
+    if (!isDateToday) return false;
+
+    const nowTime = format(new Date(), 'HH:mm');
+    if (selectedSection === 'mañana') return nowTime >= '12:00';
+    if (selectedSection === 'tarde') return nowTime >= '18:00';
+    return nowTime >= '23:50';
+  }, [formData.date, selectedSection]);
+
   const activeSlots = useMemo(() => {
     const sectionSlots = potentialStartTimes.filter(slot => {
       const hour = parseInt(slot.split(':')[0]);
@@ -302,13 +351,94 @@ export function ReparacionDialog({
     const isDateToday = formData.date === format(new Date(), 'yyyy-MM-dd');
     const nowTime = format(new Date(), 'HH:mm');
 
+    const isMechanicAvailable = (mech: any, dateStr: string, startTime: string) => {
+      const selectedDate = parseISO(dateStr);
+      const dayName = daysMap[selectedDate.getDay()];
+
+      const addMinutesToTime = (timeStr: string, mins: number) => {
+        if (!timeStr) return '';
+        const [h, m] = timeStr.split(':').map(Number);
+        const totalMins = h * 60 + m + mins;
+        const endH = Math.floor(totalMins / 60) % 24;
+        const endM = totalMins % 60;
+        return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+      };
+
+      // 1. Shift
+      const hasSchedule = horarios.some((h: any) => {
+        const entrada = (h.HoraEntrada || h.Hora_entrada || '00:00').slice(0, 5);
+        const salida = (h.HoraSalida || h.Hora_salida || '23:59').slice(0, 5);
+        return (
+          h.ID_Empleado === mech.ID_Empleado &&
+          h.Dia === dayName &&
+          h.Estado &&
+          startTime >= entrada &&
+          startTime < salida
+        );
+      });
+      if (!hasSchedule) return false;
+
+      // 2. Busy
+      const isBusy = existingAppointments.some((a: any) => {
+        if (a.mechanicId !== mech.ID_Empleado || a.date !== dateStr) return false;
+
+        const existStart = (a.startTime || '').slice(0, 5);
+        const existEndBase = (a.endTime || '').slice(0, 5);
+        const existBlockedUntil = addMinutesToTime(existEndBase, 20);
+
+        const newStart = startTime;
+        const newBlockedUntil = addMinutesToTime(startTime, durationData.minutes + 20);
+
+        return newStart < existBlockedUntil && existStart < newBlockedUntil;
+      });
+      if (isBusy) return false;
+
+      // 3. Novelty - only if date is today (same day)
+      if (isDateToday) {
+        const hasNovelty = novedades.some((n: any) => {
+          if (Number(n.ID_Empleado) !== Number(mech.ID_Empleado)) return false;
+
+          let novDateStr = n.Dia;
+          if (n.Dia instanceof Date) {
+            novDateStr = n.Dia.toISOString().split('T')[0];
+          } else if (novDateStr && typeof novDateStr === 'string') {
+            novDateStr = novDateStr.substring(0, 10);
+          }
+
+          if (novDateStr !== dateStr) return false;
+
+          const novStart = n.HoraInicio || n.Hora_inicio || n.horainicio;
+          const novEnd = n.HoraFin || n.Hora_fin || n.horafin;
+
+          if (!novStart || !novEnd) return true;
+
+          const ns = novStart.slice(0, 5);
+          const ne = novEnd.slice(0, 5);
+
+          const newStart = startTime;
+          const newEnd = addMinutesToTime(startTime, durationData.minutes);
+
+          return newStart < ne && ns < newEnd;
+        });
+        if (hasNovelty) return false;
+      }
+
+      return true;
+    };
+
     return sectionSlots.filter(slot => {
       if (isDateToday && slot < nowTime) {
         return false;
       }
+
+      if (formData.date) {
+        const anyMechAvailable = mechanics.some((m: any) => isMechanicAvailable(m, formData.date, slot));
+        if (!anyMechAvailable) return false;
+      }
+
       return true;
     });
-  }, [potentialStartTimes, selectedSection, formData.date]);
+  }, [potentialStartTimes, selectedSection, formData.date, mechanics, horarios, existingAppointments, durationData.minutes, novedades]);
 
   const errors = useMemo(() => {
     const errs: Record<string, string> = {};
@@ -710,6 +840,15 @@ export function ReparacionDialog({
               </div>
             </div>
 
+            {selectedMechanicSchedule && durationData.endTime > selectedMechanicSchedule.salida && (
+              <div className="bg-rose-50 dark:bg-rose-950/40 border-b border-rose-100 dark:border-rose-900/40 px-8 py-3 text-left flex items-center gap-2.5 shrink-0 animate-fadeIn">
+                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                  El turno del mecánico finaliza a las {format(parseISO(`${formData.date}T${selectedMechanicSchedule.salida}`), 'hh:mm a')}. La duración estimada de los servicios excede su jornada laboral (finalizaría a las {format(parseISO(`${formData.date}T${durationData.endTime}`), 'hh:mm a')}).
+                </span>
+              </div>
+            )}
+
             <div className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar text-left">
               <div className="p-4 rounded-xl bg-blue-50/80 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-left flex items-start gap-3">
                 <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
@@ -886,8 +1025,14 @@ export function ReparacionDialog({
 
               <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
                 <div className="space-y-2 text-left">
-                  <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-blue-500" /> Hora de Inicio *
+                  <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Clock className="w-4 h-4 text-blue-500" />
+                      Hora de Inicio *
+                      <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 italic ml-1">
+                        (Solo aparecen horarios disponibles según la disponibilidad de los mecánicos para hoy)
+                      </span>
+                    </div>
                   </Label>
                   <Popover open={popovers.startTime} onOpenChange={(open) => setPopovers({ ...popovers, startTime: open })}>
                     <PopoverTrigger asChild>
@@ -933,7 +1078,11 @@ export function ReparacionDialog({
                         {activeSlots.length === 0 ? (
                           <div className="py-6 px-4 text-center">
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
-                              La jornada de la {selectedSection === 'mañana' ? 'mañana' : selectedSection === 'tarde' ? 'tarde' : 'noche'} ya transcurrió para el día de hoy.
+                              {hasSectionPassed ? (
+                                `La jornada de la ${selectedSection === 'mañana' ? 'mañana' : selectedSection === 'tarde' ? 'tarde' : 'noche'} ya transcurrió para el día de hoy.`
+                              ) : (
+                                "No hay mecánicos disponibles para este horario."
+                              )}
                             </p>
                           </div>
                         ) : (
@@ -1166,14 +1315,6 @@ export function ReparacionDialog({
                       ${totalPrice.toLocaleString('es-CO')}
                     </p>
                   </div>
-                </div>
-              )}
-
-              {selectedMechanicSchedule && durationData.endTime > selectedMechanicSchedule.salida && (
-                <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/40 text-left">
-                  <p className="text-xs font-bold text-rose-600 dark:text-rose-400">
-                    ⚠️ Atención: El turno del mecánico finaliza a las {format(parseISO(`${formData.date}T${selectedMechanicSchedule.salida}`), 'hh:mm a')}. La duración estimada de los servicios excede su jornada laboral (finalizaría a las {format(parseISO(`${formData.date}T${durationData.endTime}`), 'hh:mm a')}).
-                  </p>
                 </div>
               )}
 

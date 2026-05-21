@@ -106,6 +106,20 @@ export function useReparaciones() {
         };
       });
 
+      mappedReparaciones.sort((a: any, b: any) => {
+        const dateA = a.diaAgendamiento || new Date().toISOString().split('T')[0];
+        const dateB = b.diaAgendamiento || new Date().toISOString().split('T')[0];
+        if (dateA !== dateB) {
+          return dateB.localeCompare(dateA);
+        }
+        const timeA = a.horaInicio || '00:00';
+        const timeB = b.horaInicio || '00:00';
+        if (timeA !== timeB) {
+          return timeB.localeCompare(timeA);
+        }
+        return b.id - a.id;
+      });
+
       setReparaciones(mappedReparaciones);
 
       // Auto-sync active editing order if it is open
