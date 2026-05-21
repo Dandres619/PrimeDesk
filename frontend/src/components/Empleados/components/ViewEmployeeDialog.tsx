@@ -70,7 +70,7 @@ export function ViewEmployeeDialog({ employee, open, onOpenChange }: ViewEmploye
                 {employee.Nombre} {employee.Apellido}
               </h3>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
-                <Badge variant="outline" className={roleBadges[employee.NombreRol as keyof typeof roleBadges]}>
+                <Badge variant="outline" className={roleBadges[employee.NombreRol as keyof typeof roleBadges] || 'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'}>
                   {employee.NombreRol}
                 </Badge>
               </div>

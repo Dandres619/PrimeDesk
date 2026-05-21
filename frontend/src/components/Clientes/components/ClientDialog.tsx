@@ -370,7 +370,7 @@ export function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: C
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Tipo Documento *</Label>
-                      <Select value={formData.tipo_documento} onValueChange={(v) => handleChange('tipo_documento', v)}>
+                      <Select disabled={!!client} value={formData.tipo_documento} onValueChange={(v) => handleChange('tipo_documento', v)}>
                         <SelectTrigger className="w-full !h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
@@ -387,6 +387,7 @@ export function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: C
                         {touchedFields.documento && formErrors.documento && <span className="text-[9px] font-bold text-red-500 uppercase">{formErrors.documento}</span>}
                       </div>
                       <Input
+                        disabled={!!client}
                         value={formData.documento}
                         onChange={(e) => handleChange('documento', e.target.value)}
                         onFocus={() => handleTouch('documento')}

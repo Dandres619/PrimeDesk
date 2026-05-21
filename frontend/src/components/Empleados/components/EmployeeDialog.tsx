@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Camera, ArrowRight, ArrowLeft, Loader2, Mail, UserCog, Eye, EyeOff, Lock, Check, X, Shield, Smartphone, MapPin, CheckCircle2, Plus } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Camera, ArrowRight, ArrowLeft, Loader2, Mail, UserCog, Eye, EyeOff, Lock, Check, X, Shield, Smartphone, MapPin, CheckCircle2, Plus, ChevronsUpDown, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -8,9 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { DatePickerInput } from '../../ui/DatePickerInput';
 import { validateField } from '../utils/validation';
 import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover';
+import { cn } from '@/lib/utils';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 const BASE_URL = API_URL.replace('/api', '');
+
+function getTodayLocalDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 interface EmployeeDialogProps {
   employee: any;
@@ -40,7 +50,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
     direccion: '',
     barrio: '',
     fecha_nacimiento: '',
-    fecha_ingreso: new Date().toISOString().split('T')[0],
+    fecha_ingreso: getTodayLocalDateString(),
     foto: '',
     fotoFile: null as File | null
   });
@@ -48,6 +58,52 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [imgLoading, setImgLoading] = useState(true);
+  const [availableRoles, setAvailableRoles] = useState<any[]>([]);
+  const [rolePopoverOpen, setRolePopoverOpen] = useState(false);
+  const [roleSearch, setRoleSearch] = useState('');
+
+  const filteredRoles = useMemo(() => {
+    return availableRoles.filter(r => 
+      r.Nombre?.toLowerCase().includes(roleSearch.toLowerCase())
+    );
+  }, [availableRoles, roleSearch]);
+
+  useEffect(() => {
+    if (open) {
+      const fetchAvailableRoles = async () => {
+        try {
+          const response = await fetch(`${API_URL}/roles`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            const filtered = data.filter((r: any) => 
+              (r.Estado === true || r.Estado === 1) && 
+              r.ID_Rol !== 3 && 
+              r.Nombre?.toLowerCase() !== 'cliente'
+            );
+            setAvailableRoles(filtered);
+          }
+        } catch (error) {
+          console.error('Error fetching roles:', error);
+        }
+      };
+      fetchAvailableRoles();
+    } else {
+      setRoleSearch('');
+      setRolePopoverOpen(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (availableRoles.length > 0 && !employee && open) {
+      const hasRole2 = availableRoles.some(r => r.ID_Rol === 2);
+      setFormData(prev => ({
+        ...prev,
+        id_rol: hasRole2 ? 2 : availableRoles[0].ID_Rol
+      }));
+    }
+  }, [availableRoles, employee, open]);
 
   useEffect(() => {
     if (fotoPreview) {
@@ -77,7 +133,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
         direccion: employee.Direccion || '',
         barrio: employee.Barrio || '',
         fecha_nacimiento: employee.FechaNacimiento ? employee.FechaNacimiento.split('T')[0] : '',
-        fecha_ingreso: employee.FechaIngreso ? employee.FechaIngreso.split('T')[0] : new Date().toISOString().split('T')[0],
+        fecha_ingreso: employee.FechaIngreso ? employee.FechaIngreso.split('T')[0] : getTodayLocalDateString(),
         foto: employee.Foto || '',
         confirmarContrasena: '',
         fotoFile: null
@@ -101,7 +157,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
         direccion: '',
         barrio: '',
         fecha_nacimiento: '',
-        fecha_ingreso: new Date().toISOString().split('T')[0],
+        fecha_ingreso: getTodayLocalDateString(),
         foto: '',
         fotoFile: null
       });
@@ -308,15 +364,70 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
                     <div className="flex items-center gap-2 px-1">
                       <Shield className="w-3.5 h-3.5 text-blue-500" /> Rol
                     </div>
-                    <Select value={formData.id_rol.toString()} onValueChange={(v) => handleChange('id_rol', parseInt(v))}>
-                      <SelectTrigger className="w-full !h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl">
-                        <SelectValue placeholder="Seleccione un rol" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Administrador</SelectItem>
-                        <SelectItem value="2">Mecánico</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Popover open={rolePopoverOpen} onOpenChange={setRolePopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={rolePopoverOpen}
+                          className={cn(
+                            "w-full justify-between font-medium h-11 px-4 text-left overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl",
+                            !formData.id_rol && "text-slate-500"
+                          )}
+                        >
+                          <span className="truncate">
+                            {availableRoles.find(r => r.ID_Rol === formData.id_rol)?.Nombre || "Seleccionar rol..."}
+                          </span>
+                          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent 
+                        className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto bg-white dark:bg-slate-950" 
+                        align="start"
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                      >
+                        <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950">
+                          <div className="flex items-center px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50 text-slate-500" />
+                            <input
+                              className="flex h-7 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-slate-500 bg-transparent text-slate-900 dark:text-white"
+                              placeholder="Buscar rol..."
+                              value={roleSearch}
+                              onChange={(e) => setRoleSearch(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div 
+                          className="max-h-[200px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
+                          onWheel={(e) => e.stopPropagation()}
+                        >
+                          {filteredRoles.length === 0 ? (
+                            <div className="py-6 px-2 text-center text-sm text-slate-500">
+                              No se encontraron roles.
+                            </div>
+                          ) : (
+                            filteredRoles.map(role => (
+                              <div
+                                key={role.ID_Rol}
+                                className={cn(
+                                  "relative flex cursor-pointer select-none items-center rounded-xl px-4 py-3 text-sm outline-none transition-colors",
+                                  "hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300",
+                                  formData.id_rol === role.ID_Rol && "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold"
+                                )}
+                                onClick={() => {
+                                  handleChange('id_rol', role.ID_Rol);
+                                  setRolePopoverOpen(false);
+                                  setRoleSearch('');
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", formData.id_rol === role.ID_Rol ? "opacity-100" : "opacity-0")} />
+                                <span>{role.Nombre}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   <div className="space-y-2">
@@ -390,7 +501,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Tipo Documento *</Label>
-                      <Select value={formData.tipo_documento} onValueChange={(v) => handleChange('tipo_documento', v)}>
+                      <Select disabled={!!employee} value={formData.tipo_documento} onValueChange={(v) => handleChange('tipo_documento', v)}>
                         <SelectTrigger className="w-full !h-11 bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
@@ -407,6 +518,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
                         {touchedFields.documento && formErrors.documento && <span className="text-[9px] font-bold text-red-500 uppercase">{formErrors.documento}</span>}
                       </div>
                       <Input
+                        disabled={!!employee}
                         value={formData.documento}
                         onChange={(e) => handleChange('documento', e.target.value)}
                         onFocus={() => handleTouch('documento')}
@@ -561,7 +673,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
                         {formData.nombre} {formData.apellido}
                       </h5>
                       <span className="inline-block px-2.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-[10px] font-black uppercase tracking-wider rounded-full">
-                        {formData.id_rol === 1 ? 'Administrador' : 'Mecánico'}
+                        {availableRoles.find(r => r.ID_Rol === formData.id_rol)?.Nombre || (formData.id_rol === 1 ? 'Administrador' : 'Mecánico')}
                       </span>
                     </div>
                   </div>
