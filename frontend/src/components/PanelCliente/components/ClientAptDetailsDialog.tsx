@@ -467,7 +467,7 @@ export function ClientAptDetailsDialog({
             onClick={() => onDelete(apt)}
             className="h-11 px-6 font-bold rounded-xl shadow-lg transition-transform active:scale-95 bg-red-600 hover:bg-red-700 text-white"
           >
-            Anular Agendamiento
+            Cancelar Agendamiento
           </Button>
         )}
         <Button

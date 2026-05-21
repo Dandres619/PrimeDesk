@@ -111,8 +111,7 @@ export function AppointmentsSection({
           const err = await res.json();
           throw new Error(err.message || err.errors?.[0]?.msg || 'Error al crear agendamiento');
         }
-        const created = await res.json();
-        toast.success(`Agendamiento creado. Reparación #${created.ID_Reparacion} generada automáticamente.`);
+        toast.success(`Agendamiento creado exitosamente.`);
       } else {
         const res = await fetch(`${API_URL}/agendamientos/${editingApt.id}`, {
           method: 'PUT',
@@ -162,7 +161,7 @@ export function AppointmentsSection({
         }
       });
       if (!res.ok) throw new Error('Error al anular');
-      toast.success('Agendamiento y reparación vinculada anulados exitosamente');
+      toast.success('Agendamiento cancelado exitosamente');
       setIsDetailsOpen(false);
       await fetchClientData(false);
     } catch (err: any) {
@@ -353,9 +352,9 @@ export function AppointmentsSection({
             onDelete={(apt) => {
               setConfirmDialog({
                 open: true,
-                title: 'Anular Agendamiento',
-                description: '¿Estás seguro de que deseas anular este agendamiento? Esta acción no se puede deshacer.',
-                confirmText: 'Anular',
+                title: 'Cancelar Agendamiento',
+                description: '¿Estás seguro de que deseas cancelar este agendamiento? Esta acción no se puede deshacer.',
+                confirmText: 'Aceptar',
                 variant: 'destructive',
                 onConfirm: () => handleDelete(apt)
               });
