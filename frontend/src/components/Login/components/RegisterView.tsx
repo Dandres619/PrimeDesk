@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, Loader2, Phone, Home, MapPin, ArrowRight, User, FileText, Shield, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, Phone, Home, MapPin, ArrowRight, User, FileText, Shield, CheckCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
@@ -330,9 +330,24 @@ export function RegisterView({
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              <p className="rv-password-hint">
-                Mínimo 8 caracteres, una mayúscula, un número y un carácter especial.
-              </p>
+              <div className="rv-tips">
+                <p className="rv-tips-title">Requisitos de contraseña</p>
+                <ul className="rv-tips-list">
+                  {[
+                    { label: 'Mínimo 8 caracteres', met: registerData.contrasena.length >= 8 },
+                    { label: 'Al menos una mayúscula', met: /[A-Z]/.test(registerData.contrasena) },
+                    { label: 'Al menos un número', met: /\d/.test(registerData.contrasena) },
+                    { label: 'Al menos un carácter especial', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(registerData.contrasena) },
+                  ].map((tip, i) => (
+                    <li key={i} className={`rv-tip-item ${tip.met ? 'met' : ''}`}>
+                      <span className={`rv-tip-check ${tip.met ? 'met' : ''}`}>
+                        {tip.met && <CheckCircle2 style={{ width: 8, height: 8 }} />}
+                      </span>
+                      {tip.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
             <div className="rv-field">
@@ -743,6 +758,61 @@ export function RegisterView({
           margin-top: 0.25rem;
           padding-left: 0.25rem;
           line-height: 1.4;
+        }
+
+        /* --- Password tips --- */
+        .rv-tips {
+          margin-top: 0.75rem;
+          padding: 0 0.25rem;
+        }
+
+        .rv-tips-title {
+          font-size: 0.7rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #94a3b8;
+          margin-bottom: 8px;
+        }
+
+        .rv-tips-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 6px 12px;
+        }
+
+        .rv-tip-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 0.725rem;
+          color: #64748b;
+          transition: color 0.2s ease;
+        }
+
+        .rv-tip-item.met {
+          color: #10b981;
+        }
+
+        .rv-tip-check {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          border: 1.5px solid #cbd5e1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+        }
+
+        .rv-tip-check.met {
+          background: #10b981;
+          border-color: #10b981;
+          color: #fff;
         }
 
         /* Select */

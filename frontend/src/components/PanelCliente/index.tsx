@@ -173,7 +173,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
   const clientMenuItems = [
     { id: 'perfil', label: 'Mi Perfil' },
     { id: 'motos', label: 'Mis Motocicletas' },
-    { id: 'agendar', label: 'Agendar Servicio' },
+    { id: 'agendar', label: 'Agendamientos' },
   ];
 
   return (

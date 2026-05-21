@@ -52,8 +52,8 @@ const sendWelcomeEmail = async (to, name, options = {}) => {
                 <div class="wrapper">
                     <div class="container">
                         <div class="header">
-                            <div class="logo-box">RM</div>
-                            <div style="font-size: 20px; font-weight: 700; color: #fff;">RAFA MOTOS</div>
+                            <img src="https://ynigfdldjybizqysmnaf.supabase.co/storage/v1/object/public/profiles/rafamotos-logo.png" alt="Rafa Motos Logo" style="height: 64px; width: auto; display: block; margin: 0 auto 12px auto; object-fit: contain;" />
+                            <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; text-transform: uppercase;">RAFA MOTOS</div>
                         </div>
                         <div class="content">
                             <h1>¡Bienvenido a bordo!</h1>
@@ -103,9 +103,9 @@ const sendResetPasswordEmail = async (to, name, resetLink, options = {}) => {
         <body>
             <div class="wrapper">
                 <div class="container">
-                    <div class="header">
-                        <div class="logo-box">RM</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px;">RAFA MOTOS</div>
+                    <div class="header" style="padding: 40px 0; text-align: center; background: linear-gradient(135deg, #0b1426, #161e31);">
+                        <img src="https://ynigfdldjybizqysmnaf.supabase.co/storage/v1/object/public/profiles/rafamotos-logo.png" alt="Rafa Motos Logo" style="height: 64px; width: auto; display: block; margin: 0 auto 12px auto; object-fit: contain;" />
+                        <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; text-transform: uppercase;">RAFA MOTOS</div>
                     </div>
                     <div class="content">
                         <h1>Recupera tu cuenta</h1>
@@ -167,8 +167,8 @@ const sendVerificationEmail = async (to, token, name, options = {}) => {
                 <div class="wrapper">
                     <div class="container">
                         <div class="header">
-                            <div class="logo-box">RM</div>
-                            <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px;">RAFA MOTOS</div>
+                            <img src="https://ynigfdldjybizqysmnaf.supabase.co/storage/v1/object/public/profiles/rafamotos-logo.png" alt="Rafa Motos Logo" style="height: 64px; width: auto; display: block; margin: 0 auto 12px auto; object-fit: contain;" />
+                            <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; text-transform: uppercase;">RAFA MOTOS</div>
                         </div>
                         <div class="content">
                             <h1>¡Activa tu motor!</h1>
@@ -224,8 +224,8 @@ const sendCancellationEmail = async (to, name, date, time, options = {}) => {
                 <div class="wrapper">
                     <div class="container">
                         <div class="header">
-                            <div class="logo-box">RM</div>
-                            <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px;">RAFA MOTOS</div>
+                            <img src="https://ynigfdldjybizqysmnaf.supabase.co/storage/v1/object/public/profiles/rafamotos-logo.png" alt="Rafa Motos Logo" style="height: 64px; width: auto; display: block; margin: 0 auto 12px auto; object-fit: contain;" />
+                            <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; text-transform: uppercase;">RAFA MOTOS</div>
                         </div>
                         <div class="content">
                             <h1>Aviso de Cancelación</h1>

@@ -1,5 +1,5 @@
 import { Button } from '../ui/button';
-import { Bike, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { useVerify } from './hooks/useVerify';
 import { LoadingView } from './components/LoadingView';
 import { SuccessView } from './components/SuccessView';
@@ -27,41 +27,43 @@ export function VerificarCuenta() {
 
             <div className="w-full max-w-lg relative z-20 animate-fade-in-up">
                 {/* Header Section (Branding) */}
-                <div className="text-center mb-10">
-                    <div className="login-hero-logo mx-auto">
-                        <div className="login-logo-icon">
-                            <Bike className="w-8 h-8 text-white" />
-                        </div>
+                <div className="text-center mb-10 flex flex-col items-center justify-center">
+                    <div className="mb-4">
+                        <img
+                            src="/favicon/rafamotos-logo.png"
+                            alt="Rafa Motos Logo"
+                            className="h-16 w-auto object-contain hover:scale-105 transition-transform duration-300"
+                        />
                     </div>
-                    <h1 className="login-hero-title">Rafa Motos</h1>
-                    <p className="login-hero-subtitle">Verificación de Cuenta</p>
+                    <h1 className="verify-hero-title">Rafa Motos</h1>
+                    <p className="verify-hero-subtitle">Verificación de Cuenta</p>
                 </div>
 
-                {/* Form Card (White Panel Style) */}
-                <div className="login-form-card">
-                    <div className="login-form-header">
+                {/* Form Card (Glass Panel Style) */}
+                <div className="verify-form-card">
+                    <div className="verify-form-header">
                         <div className="mb-6 flex justify-center">
                             {status === 'loading' && <LoadingView />}
                             {status === 'success' && <SuccessView />}
                             {status === 'error' && <ErrorView />}
                         </div>
 
-                        <h2 className="lv-title">
+                        <h2 className="verify-title">
                             {status === 'loading' ? 'Verificando...' : status === 'success' ? '¡Verificado!' : 'Algo salió mal'}
                         </h2>
                     </div>
 
-                    <div className="login-form-body text-center">
-                        <p className="lv-subtitle mb-8 px-4">
+                    <div className="text-center">
+                        <p className="verify-subtitle mb-8 px-4">
                             {message}
                         </p>
 
                         <Button
                             onClick={() => window.location.href = '/'}
-                            className="lv-submit-btn mt-4"
+                            className="verify-submit-btn mt-4"
                         >
                             {status === 'success' ? 'Ir al Login' : 'Volver al Inicio'}
-                            <CheckCircle className="w-4 h-4 lv-btn-arrow" />
+                            <CheckCircle className="w-4 h-4 verify-btn-arrow" />
                         </Button>
                     </div>
                 </div>

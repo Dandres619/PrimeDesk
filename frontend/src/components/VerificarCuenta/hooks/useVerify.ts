@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -6,6 +6,7 @@ const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000
 export function useVerify() {
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('Verificando tu cuenta...');
+    const hasCalled = useRef(false);
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -16,6 +17,9 @@ export function useVerify() {
             setMessage('Token de verificación no encontrado.');
             return;
         }
+
+        if (hasCalled.current) return;
+        hasCalled.current = true;
 
         const verifyEmail = async () => {
             try {

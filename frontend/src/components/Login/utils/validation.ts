@@ -9,9 +9,13 @@ export const validateField = (name: string, value: string, currentData: any, act
     switch (name) {
       case 'nombre':
         if (!value) error = 'No puede estar vacío';
+        else if (value.length < 2) error = 'Mínimo 2 caracteres';
+        else if (value.length > 50) error = 'Máximo 50 caracteres';
         break;
       case 'apellido':
         if (!value) error = 'No puede estar vacío';
+        else if (value.length < 2) error = 'Mínimo 2 caracteres';
+        else if (value.length > 50) error = 'Máximo 50 caracteres';
         break;
       case 'documento':
         if (!value) error = 'No puede estar vacío';
@@ -49,6 +53,8 @@ export const validateField = (name: string, value: string, currentData: any, act
     switch (name) {
       case 'email':
         if (!value) error = 'No puede estar vacío';
+        else if (value.length < 5) error = 'Mínimo 5 caracteres';
+        else if (value.length > 254) error = 'Máximo 254 caracteres';
         else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Correo inválido';
         break;
       case 'telefono':
@@ -57,9 +63,13 @@ export const validateField = (name: string, value: string, currentData: any, act
         break;
       case 'barrio':
         if (!value) error = 'No puede estar vacío';
+        else if (value.length < 5) error = 'Mínimo 5 caracteres';
+        else if (value.length > 100) error = 'Máximo 100 caracteres';
         break;
       case 'direccion':
         if (!value) error = 'No puede estar vacío';
+        else if (value.length < 5) error = 'Mínimo 5 caracteres';
+        else if (value.length > 100) error = 'Máximo 100 caracteres';
         else {
           const addressRegex = /^(calle|carrera|cra|diagonal|diag|transversal|tv|avenida|av|circular|circ|vía|via|manzana|mz|lote)\s+[a-zA-Z0-9\s#-]+$/i;
           if (!addressRegex.test(value)) {
@@ -72,6 +82,8 @@ export const validateField = (name: string, value: string, currentData: any, act
     switch (name) {
       case 'contrasena':
         if (!value) error = 'No puede estar vacío';
+        else if (value.length < 8) error = 'Mínimo 8 caracteres';
+        else if (value.length > 128) error = 'Máximo 128 caracteres';
         else {
           const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
           if (!passwordRegex.test(value)) error = 'Contraseña insegura';
@@ -79,6 +91,8 @@ export const validateField = (name: string, value: string, currentData: any, act
         break;
       case 'confirmarContrasena':
         if (!value) error = 'No puede estar vacío';
+        else if (value.length < 8) error = 'Mínimo 8 caracteres';
+        else if (value.length > 128) error = 'Máximo 128 caracteres';
         else if (value !== currentData.contrasena) error = 'No coinciden';
         break;
     }
