@@ -265,6 +265,7 @@ export function ClientPanel({ currentUser, onLogout }: ClientPanelProps) {
           setFormData={setMotoFormData}
           isSubmitting={isSubmittingMoto}
           onSubmit={handleSubmitMoto}
+          motos={motos}
         />
 
         <ConfirmDialog

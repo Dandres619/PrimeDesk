@@ -44,6 +44,18 @@ const getById = async (id) => {
 
 const create = async ({ id_cliente, marca, modelo, anio, placa, color, motor, kilometraje }) => {
   const sql = await getPool();
+
+  // Verificar si la placa ya existe
+  if (placa) {
+    const trimmedPlaca = placa.trim().toUpperCase();
+    const [existing] = await sql`
+      SELECT 1 FROM motocicletas WHERE UPPER(TRIM(placa)) = ${trimmedPlaca} LIMIT 1
+    `;
+    if (existing) {
+      throw { status: 400, message: 'Ya existe una motocicleta registrada con esta placa.' };
+    }
+  }
+
   const [row] = await sql`
         INSERT INTO motocicletas (id_cliente, marca, modelo, anio, placa, color, motor, kilometraje, estado)
         VALUES (${id_cliente}, ${marca}, ${modelo}, ${anio}, ${placa}, ${color}, ${motor}, ${kilometraje || 0}, TRUE)
@@ -56,6 +68,18 @@ const create = async ({ id_cliente, marca, modelo, anio, placa, color, motor, ki
 
 const update = async (id, { id_cliente, marca, modelo, anio, placa, color, motor, kilometraje, estado }) => {
   const sql = await getPool();
+
+  // Verificar si la placa está siendo utilizada por otra motocicleta
+  if (placa) {
+    const trimmedPlaca = placa.trim().toUpperCase();
+    const [existing] = await sql`
+      SELECT 1 FROM motocicletas WHERE UPPER(TRIM(placa)) = ${trimmedPlaca} AND id_motocicleta <> ${id} LIMIT 1
+    `;
+    if (existing) {
+      throw { status: 400, message: 'Ya existe otra motocicleta registrada con esta placa.' };
+    }
+  }
+
   const [row] = await sql`
         UPDATE motocicletas 
         SET id_cliente = ${id_cliente}, marca = ${marca}, modelo = ${modelo},

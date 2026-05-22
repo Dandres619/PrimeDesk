@@ -397,8 +397,11 @@ export function ClientAptFormDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setShowErrors(true);
-    if (!form.motorcycleId || !form.startTime || (!apt && form.serviceIds.length === 0) || !form.mechanicId) {
-      toast.error('Por favor, complete todos los campos obligatorios.');
+
+    const isNotesTooLong = form.notes.length > 80;
+
+    if (!form.motorcycleId || !form.startTime || (!apt && form.serviceIds.length === 0) || !form.mechanicId || isNotesTooLong) {
+      toast.error('Por favor corrija los errores en el formulario');
       return;
     }
 
@@ -861,12 +864,24 @@ export function ClientAptFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2"><MessageSquare className="w-4 h-4 text-blue-500" /> Observaciones <span className="font-normal text-xs text-slate-400">(opcional)</span></Label>
+            <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between w-full">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-blue-500" /> Observaciones <span className="font-normal text-xs text-slate-400">(opcional)</span>
+              </div>
+              {form.notes.length > 80 && (
+                <span className="text-[10px] text-red-500 font-bold animate-fadeIn">
+                  Máximo 80 caracteres (lleva {form.notes.length})
+                </span>
+              )}
+            </Label>
             <Textarea
               value={form.notes}
               onChange={e => setForm({ ...form, notes: e.target.value })}
               placeholder="Detalles sobre el motivo del agendamiento..."
-              className="min-h-[80px] rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-sm p-3 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
+              className={cn(
+                "min-h-[80px] rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-sm p-3 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none",
+                form.notes.length > 80 && "border-red-500 ring-1 ring-red-500/20 bg-red-50/10"
+              )}
             />
           </div>
         </div>

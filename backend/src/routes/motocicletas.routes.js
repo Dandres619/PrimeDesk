@@ -13,7 +13,7 @@ const validations = [
     body('modelo').notEmpty().withMessage('Modelo requerido.'),
     body('anio').isInt({ min: 1900, max: 2100 }).withMessage('Año inválido.'),
     body('placa').notEmpty().withMessage('Placa requerida.'),
-    body('color').notEmpty().withMessage('Color requerido.'),
+    body('color').notEmpty().withMessage('Color requerido.').isLength({ max: 50 }).withMessage('El color no puede superar los 50 caracteres.'),
     body('motor').isInt({ min: 1 }).withMessage('Cilindraje de motor inválido.'),
     handleValidation,
 ];

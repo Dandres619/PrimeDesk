@@ -18,6 +18,7 @@ interface MotoDialogProps {
   setFormData: (data: any) => void;
   isSubmitting: boolean;
   onSubmit: (e: React.FormEvent) => void;
+  motos?: any[];
 }
 
 export function MotoDialog({
@@ -27,7 +28,8 @@ export function MotoDialog({
   formData,
   setFormData,
   isSubmitting,
-  onSubmit
+  onSubmit,
+  motos
 }: MotoDialogProps) {
   const { data: motorcycleDataset, loading: loadingDataset } = useMotorcycleData();
   const [marcaSearch, setMarcaSearch] = useState('');
@@ -54,9 +56,17 @@ export function MotoDialog({
           error = 'La placa es obligatoria';
         } else if (!/^[A-Z]{3}\d{2}[A-Z]$/.test(value.toUpperCase())) {
           error = 'Formato inválido (Ej: XYZ25H)';
+        } else if (motos && motos.some((m: any) => m.placa.trim().toUpperCase() === value.trim().toUpperCase() && m.id !== editingMoto?.id)) {
+          error = 'Ya tienes una motocicleta registrada con esta placa';
         }
         break;
-      case 'color': if (!value) error = 'El color es obligatorio'; break;
+      case 'color':
+        if (!value) {
+          error = 'El color es obligatorio';
+        } else if (value.length > 50) {
+          error = 'Máximo 50 caracteres';
+        }
+        break;
       case 'cilindraje':
         if (value === '') error = 'El cilindraje es obligatorio';
         else if (isNaN(value)) error = 'Solo números';
