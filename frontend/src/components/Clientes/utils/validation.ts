@@ -14,6 +14,11 @@ export const validatePassword = (pass: string, isEditing: boolean) => {
   return '';
 };
 
+export const validateAddress = (address: string) => {
+  const addressRegex = /^(calle|carrera|cra|diagonal|diag|transversal|tv|avenida|av|circular|circ|vía|via|manzana|mz|lote)\s+[a-zA-Z0-9\s#-]+$/i;
+  return addressRegex.test(address);
+};
+
 export const validateField = (name: string, value: string, currentData: any, isEditing: boolean) => {
   let error = '';
 
@@ -31,9 +36,13 @@ export const validateField = (name: string, value: string, currentData: any, isE
       break;
     case 'nombre':
       if (!value) error = 'El nombre es obligatorio';
+      else if (value.length < 2) error = 'Mínimo 2 caracteres';
+      else if (value.length > 50) error = 'Máximo 50 caracteres';
       break;
     case 'apellido':
       if (!value) error = 'El apellido es obligatorio';
+      else if (value.length < 2) error = 'Mínimo 2 caracteres';
+      else if (value.length > 50) error = 'Máximo 50 caracteres';
       break;
     case 'documento':
       if (!value) error = 'El documento es obligatorio';
@@ -41,7 +50,8 @@ export const validateField = (name: string, value: string, currentData: any, isE
       break;
     case 'telefono':
       if (!value) error = 'El teléfono es obligatorio';
-      else if (!/^\d{7,10}$/.test(value)) error = 'Debe tener entre 7 y 10 dígitos';
+      else if (value.length < 8) error = 'Mínimo 8 caracteres';
+      else if (value.length > 10) error = 'Máximo 10 caracteres';
       break;
     case 'fecha_nacimiento':
       if (value) {
@@ -81,9 +91,14 @@ export const validateField = (name: string, value: string, currentData: any, isE
       break;
     case 'barrio':
       if (!value) error = 'El barrio es obligatorio';
+      else if (value.length < 5) error = 'Mínimo 5 caracteres';
+      else if (value.length > 100) error = 'Máximo 100 caracteres';
       break;
     case 'direccion':
       if (!value) error = 'La dirección es obligatoria';
+      else if (value.length < 5) error = 'Mínimo 5 caracteres';
+      else if (value.length > 100) error = 'Máximo 100 caracteres';
+      else if (!validateAddress(value)) error = 'Dirección inválida (Ej: Calle 10 #20-30)';
       break;
   }
   return error;

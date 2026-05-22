@@ -94,7 +94,9 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
         break;
       case 'email':
         if (!value?.trim()) {
-          error = 'Obligatorio';
+          if (currentPersonType === 'Jurídica') {
+            error = 'Obligatorio';
+          }
         } else {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(value)) error = 'Email inválido';
@@ -123,7 +125,7 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
         }
         break;
       case 'notes':
-        if (value && value.length > 200) error = 'Máximo 200 caracteres';
+        if (value && value.length > 80) error = 'Máximo 80 caracteres';
         break;
     }
     setErrors(prev => ({ ...prev, [name]: error }));
@@ -135,6 +137,7 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
       const next = { ...prev, personType: type };
       validateField('taxId', prev.taxId, type);
       validateField('website', prev.website, type);
+      validateField('email', prev.email, type);
       return next;
     });
   };
@@ -160,8 +163,7 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
         city: 30,
         country: 30,
         email: 50,
-        website: 100,
-        notes: 200
+        website: 100
       };
       if (limits[name] && finalValue.length > limits[name]) {
         finalValue = finalValue.slice(0, limits[name]);
@@ -169,7 +171,7 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
     }
 
     setForm(prev => ({ ...prev, [name]: finalValue }));
-    if (touched[name]) {
+    if (touched[name] || name === 'notes') {
       validateField(name, finalValue);
     }
   };
@@ -399,7 +401,9 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Email *</Label>
+                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  Email {form.personType === 'Jurídica' ? '*' : '(Opcional)'}
+                </Label>
                 {touched.email && errors.email && <span className="text-red-500 text-[10px] font-bold uppercase">{errors.email}</span>}
               </div>
               <Input
@@ -483,7 +487,7 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Notas</Label>
-              {touched.notes && errors.notes && <span className="text-red-500 text-[10px] font-bold uppercase">{errors.notes}</span>}
+              {errors.notes && <span className="text-red-500 text-[10px] font-bold">{errors.notes}</span>}
             </div>
             <Textarea
               value={form.notes}
@@ -493,7 +497,7 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
               placeholder="Observaciones adicionales..."
               className={cn(
                 "bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 transition-all resize-none p-3 text-sm",
-                touched.notes && errors.notes ? 'border-red-500 ring-1 ring-red-500/10' : ''
+                errors.notes ? 'border-red-500 ring-1 ring-red-500/10' : ''
               )}
             />
           </div>

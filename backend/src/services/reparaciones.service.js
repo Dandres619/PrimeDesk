@@ -161,7 +161,7 @@ const syncComprasForReparacion = async (id_reparacion, estado) => {
         if (!reparacion) return;
 
         const purchases = await sql`
-            SELECT id_producto, cantidad, precio_unitario, subtotal, id_proveedor, observaciones
+            SELECT id_producto, cantidad, precio_unitario, subtotal, id_proveedor, observaciones, factura
             FROM reparaciones_compras
             WHERE id_reparacion = ${id_reparacion}
         `;
@@ -205,11 +205,12 @@ const syncComprasForReparacion = async (id_reparacion, estado) => {
                     id_producto: item.id_producto,
                     cantidad: item.cantidad,
                     preciounitario: item.precio_unitario,
-                    subtotal: item.subtotal
+                    subtotal: item.subtotal,
+                    factura: item.factura
                 }));
 
                 await tx`
-                    INSERT INTO detalle_compras ${sql(detailInserts, 'id_compra', 'id_producto', 'cantidad', 'preciounitario', 'subtotal')}
+                    INSERT INTO detalle_compras ${sql(detailInserts, 'id_compra', 'id_producto', 'cantidad', 'preciounitario', 'subtotal', 'factura')}
                 `;
             });
         }

@@ -50,6 +50,7 @@ export function ProfileForm({
                     <div className="mp-form-row">
                         <div className="mp-field">
                             <label className="mp-label">Nombre <span className="mp-required">*</span></label>
+                            <FieldError field="nombre" errors={formErrors} touched={touchedFields} />
                             <div className={`mp-input-wrap ${touchedFields.nombre && formErrors.nombre ? 'mp-input-err' : ''}`}>
                                 <input
                                     value={formData.nombre}
@@ -59,10 +60,10 @@ export function ProfileForm({
                                     placeholder="Tu nombre"
                                 />
                             </div>
-                            <FieldError field="nombre" errors={formErrors} touched={touchedFields} />
                         </div>
                         <div className="mp-field">
                             <label className="mp-label">Apellido <span className="mp-required">*</span></label>
+                            <FieldError field="apellido" errors={formErrors} touched={touchedFields} />
                             <div className={`mp-input-wrap ${touchedFields.apellido && formErrors.apellido ? 'mp-input-err' : ''}`}>
                                 <input
                                     value={formData.apellido}
@@ -72,7 +73,6 @@ export function ProfileForm({
                                     placeholder="Tu apellido"
                                 />
                             </div>
-                            <FieldError field="apellido" errors={formErrors} touched={touchedFields} />
                         </div>
                     </div>
 
@@ -110,6 +110,7 @@ export function ProfileForm({
                                 <Phone style={{ width: 11, height: 11, display: 'inline', marginRight: 4 }} />
                                 Teléfono <span className="mp-required">*</span>
                             </label>
+                            <FieldError field="telefono" errors={formErrors} touched={touchedFields} />
                             <div className={`mp-input-wrap ${touchedFields.telefono && formErrors.telefono ? 'mp-input-err' : ''}`}>
                                 <input
                                     value={formData.telefono}
@@ -119,13 +120,13 @@ export function ProfileForm({
                                     placeholder="3001234567"
                                 />
                             </div>
-                            <FieldError field="telefono" errors={formErrors} touched={touchedFields} />
                         </div>
                         <div className="mp-field">
                             <label className="mp-label">
                                 <Home style={{ width: 11, height: 11, display: 'inline', marginRight: 4 }} />
                                 Barrio <span className="mp-required">*</span>
                             </label>
+                            <FieldError field="barrio" errors={formErrors} touched={touchedFields} />
                             <div className={`mp-input-wrap ${touchedFields.barrio && formErrors.barrio ? 'mp-input-err' : ''}`}>
                                 <input
                                     value={formData.barrio}
@@ -135,7 +136,6 @@ export function ProfileForm({
                                     placeholder="Tu barrio"
                                 />
                             </div>
-                            <FieldError field="barrio" errors={formErrors} touched={touchedFields} />
                         </div>
                     </div>
 
@@ -145,6 +145,7 @@ export function ProfileForm({
                                 <MapPin style={{ width: 11, height: 11, display: 'inline', marginRight: 4 }} />
                                 Dirección <span className="mp-required">*</span>
                             </label>
+                            <FieldError field="direccion" errors={formErrors} touched={touchedFields} />
                             <div className={`mp-input-wrap ${touchedFields.direccion && formErrors.direccion ? 'mp-input-err' : ''}`}>
                                 <input
                                     value={formData.direccion}
@@ -154,7 +155,6 @@ export function ProfileForm({
                                     placeholder="Ej: Calle 10 #20-30"
                                 />
                             </div>
-                            <FieldError field="direccion" errors={formErrors} touched={touchedFields} />
                         </div>
                     </div>
 
@@ -164,6 +164,7 @@ export function ProfileForm({
                                 <Calendar style={{ width: 11, height: 11, display: 'inline', marginRight: 4 }} />
                                 Fecha de Nacimiento (Opcional)
                             </label>
+                            <FieldError field="fecha_nacimiento" errors={formErrors} touched={touchedFields} />
                             <DatePickerInput
                                 value={formData.fecha_nacimiento}
                                 onChange={(v) => {
@@ -176,7 +177,6 @@ export function ProfileForm({
                                 placeholder="Seleccionar fecha (DD/MM/AAAA)"
                                 error={!!(touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento)}
                             />
-                            <FieldError field="fecha_nacimiento" errors={formErrors} touched={touchedFields} />
                         </div>
                     </div>
 

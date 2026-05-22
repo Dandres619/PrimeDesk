@@ -37,11 +37,23 @@ const create = async (data) => {
     const { nombre_empresa, documento, persona_contacto, especialidad, telefono,
         email, direccion, ciudad, pais, sitio_web, notas, tipo_persona } = data;
 
+    // Verificar si ya existe un proveedor con el mismo documento
+    const [existing] = await sql`
+        SELECT id_proveedor FROM proveedores WHERE documento = ${documento}
+    `;
+    if (existing) {
+        throw { status: 400, message: 'El NIT o documento ingresado ya está registrado por otro proveedor.' };
+    }
+
+    if (notas && notas.length > 80) {
+        throw { status: 400, message: 'Las notas no pueden superar los 80 caracteres.' };
+    }
+
     const [row] = await sql`
         INSERT INTO proveedores (nombreempresa, documento, personacontacto, especialidad, telefono,
             email, direccion, ciudad, pais, sitioweb, notas, estado, tipopersona)
         VALUES (${nombre_empresa}, ${documento}, ${persona_contacto}, ${especialidad || null}, ${telefono},
-            ${email}, ${direccion}, ${ciudad || 'Medellin'}, ${pais || 'Colombia'}, ${sitio_web || null}, ${notas || null}, TRUE, ${tipo_persona || 'Natural'})
+            ${email || null}, ${direccion}, ${ciudad || 'Medellin'}, ${pais || 'Colombia'}, ${sitio_web || null}, ${notas || null}, TRUE, ${tipo_persona || 'Natural'})
         RETURNING id_proveedor AS "ID_Proveedor", nombreempresa AS "NombreEmpresa", 
                   documento AS "Documento", personacontacto AS "PersonaContacto", 
                   especialidad AS "Especialidad", telefono AS "Telefono",
@@ -58,12 +70,24 @@ const update = async (id, data) => {
     const { nombre_empresa, documento, persona_contacto, especialidad, telefono,
         email, direccion, ciudad, pais, sitio_web, notas, estado, tipo_persona } = data;
 
+    // Verificar si ya existe otro proveedor con el mismo documento
+    const [existing] = await sql`
+        SELECT id_proveedor FROM proveedores WHERE documento = ${documento} AND id_proveedor <> ${id}
+    `;
+    if (existing) {
+        throw { status: 400, message: 'El NIT o documento ingresado ya está registrado por otro proveedor.' };
+    }
+
+    if (notas && notas.length > 80) {
+        throw { status: 400, message: 'Las notas no pueden superar los 80 caracteres.' };
+    }
+
     const boolEstado = estado === true || estado === 1 || estado === '1' || estado === 'Activo';
 
     const [row] = await sql`
         UPDATE proveedores 
         SET nombreempresa = ${nombre_empresa}, documento = ${documento}, personacontacto = ${persona_contacto},
-            especialidad = ${especialidad || null}, telefono = ${telefono}, email = ${email}, 
+            especialidad = ${especialidad || null}, telefono = ${telefono}, email = ${email || null}, 
             direccion = ${direccion}, ciudad = ${ciudad || 'Medellin'}, pais = ${pais || 'Colombia'}, 
             sitioweb = ${sitio_web || null}, notas = ${notas || null}, estado = ${boolEstado},
             tipopersona = ${tipo_persona || 'Natural'}

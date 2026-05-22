@@ -26,8 +26,8 @@ export function useAgendamientos() {
   const token = localStorage.getItem('token');
   const headers = useMemo(() => ({ 'Authorization': `Bearer ${token}` }), [token]);
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     const results = await Promise.allSettled([
       fetch(`${API_URL}/agendamientos`, { headers }),
       fetch(`${API_URL}/clientes`, { headers }),
@@ -182,7 +182,7 @@ export function useAgendamientos() {
       }
       setIsModalOpen(false);
       setEditingApt(null);
-      fetchData();
+      fetchData(true);
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -209,7 +209,7 @@ export function useAgendamientos() {
       }
       toast.success('Agendamiento y reparación vinculada anulados exitosamente');
       setIsDetailsOpen(false);
-      fetchData();
+      fetchData(true);
     } catch (err: any) {
       toast.error(err.message);
     }

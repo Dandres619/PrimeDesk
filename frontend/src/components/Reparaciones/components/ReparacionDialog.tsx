@@ -585,6 +585,7 @@ export function ReparacionDialog({
     );
     return products.filter((p: any) => {
       if (addedProductIds.has(p.ID_Producto.toString())) return false;
+      if (!p.Estado) return false;
       return (
         p.Nombre.toLowerCase().includes((search.product || '').toLowerCase()) ||
         p.ID_Producto.toString().includes(search.product || '')

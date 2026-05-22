@@ -79,7 +79,22 @@ export function CategoriasTable({
               paginatedCategories.map(c => (
                 <TableRow key={c.id}>
                   <TableCell><p>{c.name}</p></TableCell>
-                  <TableCell><p className="line-clamp-1 max-w-xs">{c.description}</p></TableCell>
+                  <TableCell>
+                    {c.description && c.description.length > 45 ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="cursor-help max-w-[250px] truncate text-left">
+                            {c.description.substring(0, 45).trim()}...
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[300px] break-words">
+                          <p>{c.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <p className="text-left">{c.description || 'Sin descripción detallada'}</p>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Switch

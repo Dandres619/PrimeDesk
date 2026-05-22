@@ -113,6 +113,8 @@ export function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: C
   const handleChange = (name: string, value: any) => {
     if (name === 'documento' || name === 'telefono') {
       value = value.replace(/\D/g, '');
+    } else if (name === 'nombre' || name === 'apellido') {
+      value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
     }
 
     setFormData(prev => {
@@ -525,7 +527,7 @@ export function ClientDialog({ client, onSave, isSaving, onOpenChange, open }: C
 
                     <div className="flex-1 space-y-2 text-center md:text-left">
                       <h5 className="text-lg font-black text-slate-900 dark:text-white truncate max-w-[280px]">
-                        {formData.nombre} {formData.apellido}
+                        {client ? `${client.Nombre || ''} ${client.Apellido || ''}` : `${formData.nombre} ${formData.apellido}`}
                       </h5>
                       <span className="inline-block px-2.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-[10px] font-black uppercase tracking-wider rounded-full">
                         Cliente

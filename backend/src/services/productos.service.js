@@ -32,6 +32,22 @@ const getById = async (id) => {
 
 const create = async ({ id_categoria, nombre, marca, descripcion }) => {
   const sql = await getPool();
+
+  // Validar nombre único
+  const [existing] = await sql`
+        SELECT id_producto 
+        FROM productos 
+        WHERE UPPER(TRIM(nombre)) = UPPER(TRIM(${nombre}))
+    `;
+  if (existing) {
+    throw { status: 400, message: `Ya existe un producto registrado con el nombre ${nombre}.` };
+  }
+
+  // Validar límite de descripción
+  if (descripcion && descripcion.length > 80) {
+    throw { status: 400, message: 'La descripción no puede superar los 80 caracteres.' };
+  }
+
   const [row] = await sql`
         INSERT INTO productos (id_categoria, nombre, marca, descripcion, estado)
         VALUES (${id_categoria}, ${nombre}, ${marca}, ${descripcion || null}, TRUE)
@@ -45,6 +61,22 @@ const create = async ({ id_categoria, nombre, marca, descripcion }) => {
 
 const update = async (id, { id_categoria, nombre, marca, descripcion, estado }) => {
   const sql = await getPool();
+
+  // Validar nombre único al actualizar
+  const [existing] = await sql`
+        SELECT id_producto 
+        FROM productos 
+        WHERE UPPER(TRIM(nombre)) = UPPER(TRIM(${nombre})) AND id_producto <> ${id}
+    `;
+  if (existing) {
+    throw { status: 400, message: `Ya existe otro producto registrado con el nombre ${nombre}.` };
+  }
+
+  // Validar límite de descripción
+  if (descripcion && descripcion.length > 80) {
+    throw { status: 400, message: 'La descripción no puede superar los 80 caracteres.' };
+  }
+
   // Ensure estado is boolean
   const boolEstado = estado === true || estado === 1 || estado === '1' || estado === 'Activo';
   
@@ -68,24 +100,14 @@ const update = async (id, { id_categoria, nombre, marca, descripcion, estado }) 
 const remove = async (id) => {
   const sql = await getPool();
 
-  // 1. Verificar si el producto existe y su estado
+  // 1. Verificar si el producto existe
   const [prod] = await sql`SELECT nombre, estado FROM productos WHERE id_producto = ${id}`;
   if (!prod) throw { status: 404, message: 'Producto no encontrado.' };
-
-  if (prod.estado !== false && prod.estado !== 'Inactivo') {
-      throw { status: 400, message: `No se puede eliminar el producto ${prod.nombre} porque está Activo. Primero debe inactivarlo.` };
-  }
 
   // 2. Verificar asociaciones (compras)
   const compras = await sql`SELECT COUNT(*) FROM detalle_compras WHERE id_producto = ${id}`;
   if (parseInt(compras[0].count) > 0) {
       throw { status: 400, message: `No se puede eliminar ${prod.nombre} porque tiene compras registradas.` };
-  }
-
-  // 3. Verificar asociaciones (ventas)
-  const ventas = await sql`SELECT COUNT(*) FROM ventas_compras WHERE id_compra IN (SELECT id_compra FROM detalle_compras WHERE id_producto = ${id})`;
-  if (parseInt(ventas[0].count) > 0) {
-      throw { status: 400, message: `No se puede eliminar ${prod.nombre} porque tiene ventas registradas.` };
   }
 
   await sql`

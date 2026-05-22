@@ -17,9 +17,9 @@ export function useVentas() {
   const token = localStorage.getItem('token');
   const headers = { 'Authorization': `Bearer ${token}` };
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const [resVentas, resClientes, resMotos, resCompras, resServicios, resReparaciones] = await Promise.all([
         fetch(`${API_URL}/ventas`, { headers }),
         fetch(`${API_URL}/clientes`, { headers }),
@@ -139,7 +139,7 @@ export function useVentas() {
       });
       if (!res.ok) throw new Error('Error al registrar la venta');
       toast.success('Venta registrada exitosamente');
-      fetchData();
+      fetchData(true);
       return true;
     } catch (e) {
       toast.error('Ocurrió un error al guardar la venta');
@@ -156,7 +156,7 @@ export function useVentas() {
       });
       if (!res.ok) throw new Error('Error al anular la venta');
       toast.success('Venta anulada exitosamente');
-      fetchData();
+      fetchData(true);
       return true;
     } catch (e) {
       toast.error('Error al anular la venta');

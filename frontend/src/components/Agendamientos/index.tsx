@@ -9,7 +9,7 @@ import { Input } from '../ui/input';
 import { format, subMonths, addMonths, isSameMonth, isToday, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, isColombianHoliday } from '@/lib/utils';
 import { useAgendamientos } from './hooks/useAgendamientos';
 import { AgendamientosStyles } from './styles/AgendamientosStyles';
 import { AptFormDialog } from './components/AptFormDialog';
@@ -123,7 +123,8 @@ export function Agendamientos() {
                 const dayStr = format(day, 'yyyy-MM-dd');
                 const dayApts = enrichedApts.filter(a => a.date === dayStr);
                 const past = isBefore(startOfDay(day), startOfDay(new Date()));
-                const isClickable = isCurr && !isWeekend && !past;
+                const isHoliday = isColombianHoliday(day);
+                const isClickable = isCurr && !isWeekend && !past && !isHoliday;
 
                 return (
                   <div
@@ -138,6 +139,10 @@ export function Agendamientos() {
                         toast.error('No se pueden agendar servicios en fechas pasadas');
                         return;
                       }
+                      if (isHoliday) {
+                        toast.error('No se pueden agendar servicios en días festivos');
+                        return;
+                      }
                       setSelectedDate(day);
                       setEditingApt(null);
                       setIsModalOpen(true);
@@ -145,7 +150,7 @@ export function Agendamientos() {
                     className={cn(
                       "min-h-[120px] p-3 rounded-2xl border transition-all relative group flex flex-col gap-2",
                       !isCurr ? "bg-slate-50/50 dark:bg-slate-900/20 opacity-40 border-transparent" : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800",
-                      (isWeekend || past) && isCurr ? "bg-slate-50 dark:bg-slate-900/50 opacity-80" : "",
+                      (isWeekend || past || isHoliday) && isCurr ? "bg-slate-50 dark:bg-slate-900/50 opacity-80" : "",
                       isToday(day) ? "border-blue-500 shadow-sm bg-blue-50/10 dark:bg-blue-900/10 ring-1 ring-blue-500/20" : "",
                       isClickable ? "hover:shadow-md hover:border-blue-400 dark:hover:border-blue-600 cursor-pointer" : (isCurr ? "cursor-pointer" : "cursor-default")
                     )}

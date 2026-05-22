@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Button } from '../../ui/button';
 import { Label } from '../../ui/label';
@@ -15,9 +15,9 @@ interface CategoryDialogProps {
 }
 
 export function CategoryDialog({ category, onSave, onOpenChange }: CategoryDialogProps) {
-  const [form, setForm] = useState({ 
-    name: category?.name || '', 
-    description: category?.description || '' 
+  const [form, setForm] = useState({
+    name: category?.name || '',
+    description: category?.description || ''
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -29,16 +29,30 @@ export function CategoryDialog({ category, onSave, onOpenChange }: CategoryDialo
     }
   }, [category]);
 
+  const descriptionError = useMemo(() => {
+    const val = form.description;
+    if (val && val.length > 80) {
+      return `Máximo 80 caracteres`;
+    }
+    return null;
+  }, [form.description]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name?.trim() || !form.description?.trim()) {
+    if (!form.name?.trim()) {
       toast.error('Complete todos los campos obligatorios');
       return;
     }
+    if (descriptionError) {
+      toast.error('Por favor corrija los errores en el formulario');
+      return;
+    }
+    
+    const finalDesc = form.description?.trim() ? form.description.trim() : 'Sin descripción detallada';
     
     setIsSaving(true);
     try {
-      const success = await onSave(form);
+      const success = await onSave({ ...form, description: finalDesc });
       if (success && onOpenChange) {
         onOpenChange(false);
       }
@@ -82,12 +96,18 @@ export function CategoryDialog({ category, onSave, onOpenChange }: CategoryDialo
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Descripción *</Label>
+            <div className="flex justify-between items-center">
+              <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Descripción</Label>
+              {descriptionError && <span className="text-red-500 text-[10px] font-bold">{descriptionError}</span>}
+            </div>
             <Textarea 
               value={form.description} 
               onChange={e => setForm({ ...form, description: e.target.value })} 
               placeholder="Describa brevemente qué tipo de productos incluye esta categoría..."
-              className="min-h-[120px] rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none"
+              className={cn(
+                "min-h-[120px] rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none",
+                descriptionError ? "border-red-500 focus:ring-red-500/20" : ""
+              )}
               rows={4}
             />
           </div>

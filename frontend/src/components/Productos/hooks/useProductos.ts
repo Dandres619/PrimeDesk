@@ -16,8 +16,8 @@ export function useProductos() {
     'Content-Type': 'application/json'
   };
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
+  const fetchData = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [prodRes, catRes] = await Promise.all([
         fetch(`${API_URL}/productos`, { headers }),
@@ -82,7 +82,7 @@ export function useProductos() {
       }
 
       toast.success(`Producto ${editingProduct ? 'actualizado' : 'creado'} exitosamente`);
-      fetchData();
+      fetchData(true);
       return true;
     } catch (error: any) {
       toast.error(error.message);
@@ -91,11 +91,6 @@ export function useProductos() {
   };
 
   const handleDelete = async (product: any) => {
-    if (product.status === 'Activo') {
-      toast.error('No se puede eliminar un producto activo. Primero debe inactivarlo.');
-      return false;
-    }
-
     try {
       const res = await fetch(`${API_URL}/productos/${product.id}`, {
         method: 'DELETE',
@@ -106,7 +101,7 @@ export function useProductos() {
         throw new Error(resData.message || 'Error al eliminar producto');
       }
       toast.success('Producto eliminado');
-      fetchData();
+      fetchData(true);
       return true;
     } catch (error: any) {
       toast.error(error.message);
@@ -132,7 +127,7 @@ export function useProductos() {
         throw new Error(resData.message || 'Error al actualizar estado');
       }
       toast.success('Estado actualizado');
-      fetchData();
+      fetchData(true);
       return true;
     } catch (error: any) {
       toast.error(error.message);

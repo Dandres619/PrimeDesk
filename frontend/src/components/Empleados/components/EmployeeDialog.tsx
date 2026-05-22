@@ -172,6 +172,8 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
   const handleChange = (name: string, value: any) => {
     if (name === 'documento' || name === 'telefono') {
       value = value.replace(/\D/g, '');
+    } else if (name === 'nombre' || name === 'apellido') {
+      value = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
     }
 
     setFormData(prev => {
@@ -670,7 +672,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
 
                     <div className="flex-1 space-y-2 text-center md:text-left">
                       <h5 className="text-lg font-black text-slate-900 dark:text-white truncate max-w-[280px]">
-                        {formData.nombre} {formData.apellido}
+                        {employee ? `${employee.Nombre || ''} ${employee.Apellido || ''}` : `${formData.nombre} ${formData.apellido}`}
                       </h5>
                       <span className="inline-block px-2.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-[10px] font-black uppercase tracking-wider rounded-full">
                         {availableRoles.find(r => r.ID_Rol === formData.id_rol)?.Nombre || (formData.id_rol === 1 ? 'Administrador' : 'Mecánico')}

@@ -74,6 +74,7 @@ export function Motos() {
             clients={clients}
             onSave={onSave}
             isSaving={isSaving}
+            motos={motos}
           />
 
           <div className="flex justify-start">

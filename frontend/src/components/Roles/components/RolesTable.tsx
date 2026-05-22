@@ -64,7 +64,7 @@ export function RolesTable({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <p className="cursor-help max-w-[300px] truncate">
-                            {r.description.substring(0, 45)}...
+                            {r.description.substring(0, 45).trim()}...
                           </p>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-[300px] break-words">

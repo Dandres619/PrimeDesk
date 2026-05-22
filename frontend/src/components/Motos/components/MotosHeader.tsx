@@ -12,6 +12,7 @@ interface MotosHeaderProps {
   clients: any[];
   onSave: (formData: any) => Promise<boolean>;
   isSaving: boolean;
+  motos: any[];
 }
 
 export function MotosHeader({
@@ -21,7 +22,8 @@ export function MotosHeader({
   editingMoto,
   clients,
   onSave,
-  isSaving
+  isSaving,
+  motos
 }: MotosHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -43,6 +45,7 @@ export function MotosHeader({
         </DialogTrigger>
         <MotoDialog
           moto={editingMoto}
+          motos={motos}
           clients={clients}
           onSave={onSave}
           isSaving={isSaving}

@@ -54,6 +54,16 @@ const getByEmpleado = async (id_empleado) => {
  * diasHorarios: Array de { dia, hora_entrada, hora_salida }
  */
 const upsertHorarios = async (id_empleado, diasHorarios) => {
+  const hasWeekend = diasHorarios.some(d => {
+    const normalize = d.dia.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return normalize === 'sabado' || normalize === 'domingo';
+  });
+  if (hasWeekend) {
+    const error = new Error('No se pueden registrar horarios para fines de semana (Sábados y Domingos).');
+    error.status = 400;
+    throw error;
+  }
+
   const sql = await getPool();
 
   const result = await sql.begin(async (tx) => {

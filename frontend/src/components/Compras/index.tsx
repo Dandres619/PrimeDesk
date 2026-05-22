@@ -52,7 +52,8 @@ export function Compras() {
         PrecioUnitario: it.unitCost,
         Subtotal: it.quantity * it.unitCost,
         NombreProducto: it.product,
-        NombreCategoria: it.category
+        NombreCategoria: it.category,
+        Factura: it.factura
       }))
     };
     setViewingPurchase(mappedDetails);
@@ -204,9 +205,15 @@ export function Compras() {
                     <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
                       <PiMotorcycle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div>
-                      <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Motocicleta (Placa)</Label>
-                      <p className="font-bold text-slate-900 dark:text-white text-sm">{viewingPurchase.Placa}</p>
+                    <div className="flex-1 grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Motocicleta (Placa)</Label>
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">{viewingPurchase.Placa}</p>
+                      </div>
+                      <div>
+                        <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Cliente</Label>
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">{viewingPurchase.NombreCliente || 'No asignado'}</p>
+                      </div>
                     </div>
                   </div>
 
@@ -234,6 +241,7 @@ export function Compras() {
                     <Table>
                       <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
                         <TableRow>
+                          <TableHead className="w-20 text-center font-bold">Factura</TableHead>
                           <TableHead className="font-bold">Producto</TableHead>
                           <TableHead className="text-center font-bold">Cant.</TableHead>
                           <TableHead className="text-right font-bold">Precio Unit.</TableHead>
@@ -243,6 +251,17 @@ export function Compras() {
                       <TableBody>
                         {viewingPurchase.detalle?.map((it: any) => (
                           <TableRow key={it.ID_DetalleCompra}>
+                            <TableCell className="text-center">
+                              {it.Factura ? (
+                                <a href={it.Factura} target="_blank" rel="noopener noreferrer" title="Ver Factura Completa">
+                                  <img 
+                                    src={it.Factura} 
+                                    alt="Factura" 
+                                    className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-800 hover:scale-105 transition-transform duration-200 cursor-pointer mx-auto" 
+                                  />
+                                </a>
+                              ) : null}
+                            </TableCell>
                             <TableCell className="font-medium text-slate-900 dark:text-slate-200">{it.NombreProducto}</TableCell>
                             <TableCell className="text-center font-bold">{it.Cantidad}</TableCell>
                             <TableCell className="text-right font-medium">${parseFloat(it.PrecioUnitario).toLocaleString()}</TableCell>

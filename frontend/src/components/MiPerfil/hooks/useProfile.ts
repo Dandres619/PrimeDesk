@@ -36,8 +36,8 @@ export function useProfile() {
         return `${BASE_URL}${photo}`;
     };
 
-    const fetchProfile = async () => {
-        setIsLoading(true);
+    const fetchProfile = async (showLoading = true) => {
+        if (showLoading) setIsLoading(true);
         try {
             const response = await fetch(`${API_URL}/auth/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -67,7 +67,7 @@ export function useProfile() {
         } catch (error: any) {
             toast.error(error.message);
         } finally {
-            setIsLoading(false);
+            if (showLoading) setIsLoading(false);
         }
     };
 
@@ -95,16 +95,40 @@ export function useProfile() {
         const todayDate = new Date();
         const globalMinAgeDate = new Date(todayDate.getFullYear() - 18, todayDate.getMonth(), todayDate.getDate());
 
-        if (!formData.nombre) errs.nombre = 'No puede estar vacío';
-        if (!formData.apellido) errs.apellido = 'No puede estar vacío';
+        if (!formData.nombre) {
+            errs.nombre = 'No puede estar vacío';
+        } else if (formData.nombre.length < 2) {
+            errs.nombre = 'Mínimo 2 caracteres';
+        } else if (formData.nombre.length > 50) {
+            errs.nombre = 'Máximo 50 caracteres';
+        }
+
+        if (!formData.apellido) {
+            errs.apellido = 'No puede estar vacío';
+        } else if (formData.apellido.length < 2) {
+            errs.apellido = 'Mínimo 2 caracteres';
+        } else if (formData.apellido.length > 50) {
+            errs.apellido = 'Máximo 50 caracteres';
+        }
 
         if (!formData.telefono) errs.telefono = 'No puede estar vacío';
         else if (!validatePhone(formData.telefono)) errs.telefono = 'Entre 7 y 10 números';
 
-        if (!formData.barrio) errs.barrio = 'No puede estar vacío';
+        if (!formData.barrio) {
+            errs.barrio = 'No puede estar vacío';
+        } else if (formData.barrio.length < 5) {
+            errs.barrio = 'Mínimo 5 caracteres';
+        } else if (formData.barrio.length > 100) {
+            errs.barrio = 'Máximo 100 caracteres';
+        }
 
-        if (!formData.direccion) errs.direccion = 'No puede estar vacío';
-        else if (!validateAddress(formData.direccion)) {
+        if (!formData.direccion) {
+            errs.direccion = 'No puede estar vacío';
+        } else if (formData.direccion.length < 5) {
+            errs.direccion = 'Mínimo 5 caracteres';
+        } else if (formData.direccion.length > 100) {
+            errs.direccion = 'Máximo 100 caracteres';
+        } else if (!validateAddress(formData.direccion)) {
             errs.direccion = 'Dirección inválida (Ej: Calle 10 #20-30)';
         }
 
@@ -153,7 +177,7 @@ export function useProfile() {
         setTouchedFields(allFields);
 
         if (Object.keys(formErrors).length > 0) {
-            toast.error('Por favor corrija los errores en el formulario');
+            toast.error('Error al guardar: Por favor corrija los errores en el formulario');
             return;
         }
 
@@ -193,7 +217,7 @@ export function useProfile() {
 
             toast.success('Perfil actualizado exitosamente');
             setFotoFile(null);
-            fetchProfile();
+            fetchProfile(false);
         } catch (error: any) {
             let errorMsg = error.message;
             if (errorMsg === 'Error de validación.' && error.errors) {

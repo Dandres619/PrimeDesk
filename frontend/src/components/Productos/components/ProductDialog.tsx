@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Button } from '../../ui/button';
 import { Label } from '../../ui/label';
@@ -64,10 +64,22 @@ export function ProductDialog({ product, categories, brands, onSave, onOpenChang
 
   const selectedCategory = categories.find(c => c.id.toString() === form.categoryId);
 
+  const descriptionError = useMemo(() => {
+    const val = form.description;
+    if (val && val.length > 80) {
+      return `Máximo 80 caracteres`;
+    }
+    return null;
+  }, [form.description]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name?.trim() || !form.brand?.trim() || !form.categoryId) {
       toast.error('Complete todos los campos obligatorios');
+      return;
+    }
+    if (descriptionError) {
+      toast.error('Por favor corrija los errores en el formulario');
       return;
     }
 
@@ -249,12 +261,18 @@ export function ProductDialog({ product, categories, brands, onSave, onOpenChang
 
             {/* Description Row */}
             <div className="sm:col-span-2 space-y-2">
-              <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Descripción</Label>
+              <div className="flex justify-between items-center">
+                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Descripción</Label>
+                {descriptionError && <span className="text-red-500 text-[10px] font-bold">{descriptionError}</span>}
+              </div>
               <Textarea
                 placeholder="Detalles del producto, especificaciones, etc."
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
-                className="min-h-[120px] rounded-xl focus:ring-2 focus:ring-blue-500/20"
+                className={cn(
+                  "min-h-[120px] rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all resize-none",
+                  descriptionError ? "border-red-500 focus:ring-red-500/20" : ""
+                )}
               />
             </div>
           </div>

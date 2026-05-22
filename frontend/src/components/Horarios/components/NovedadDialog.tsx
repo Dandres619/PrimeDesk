@@ -213,6 +213,14 @@ export function NovedadDialog({ schedule, onSave, onOpenChange }: NovedadDialogP
     return null;
   }, [formData.tipo, formData.hora_inicio, formData.hora_fin, isTodayDate, mechanicSchedule, schedule]);
 
+  const descripcionError = useMemo(() => {
+    const val = formData.descripcion;
+    if (val && val.length > 80) {
+      return 'Máximo 80 caracteres';
+    }
+    return null;
+  }, [formData.descripcion]);
+
   useEffect(() => {
     if (schedule) {
       setFormData(prev => ({
@@ -228,21 +236,11 @@ export function NovedadDialog({ schedule, onSave, onOpenChange }: NovedadDialogP
       toast.error('Por favor seleccione un mecánico');
       return;
     }
-    if (dateError) {
-      toast.error(dateError);
+    
+    const hasErrors = dateError || hasDuplicateNovedad || (formData.tipo === 'Ausencia parcial' && timeError) || descripcionError;
+    if (hasErrors) {
+      toast.error('Por favor corrija los errores en el formulario');
       return;
-    }
-
-    if (hasDuplicateNovedad) {
-      toast.error('Ya existe una novedad registrada para este día.');
-      return;
-    }
-
-    if (formData.tipo === 'Ausencia parcial') {
-      if (timeError) {
-        toast.error(timeError);
-        return;
-      }
     }
 
     setIsSaving(true);
@@ -454,15 +452,21 @@ export function NovedadDialog({ schedule, onSave, onOpenChange }: NovedadDialogP
 
               {/* Description textarea */}
               <div className="space-y-2">
-                <Label htmlFor="novedad-descripcion" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-500" /> Razón (opcional)
-                </Label>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="novedad-descripcion" className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-blue-500" /> Razón (opcional)
+                  </Label>
+                  {descripcionError && <span className="text-red-500 text-[10px] font-medium">{descripcionError}</span>}
+                </div>
                 <Textarea
                   id="novedad-descripcion"
                   placeholder="Ej. Salida médica, capacitación, ausencia programada..."
                   value={formData.descripcion}
                   onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))}
-                  className="min-h-[100px] rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 custom-scrollbar p-3 text-sm"
+                  className={cn(
+                    "min-h-[100px] rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 custom-scrollbar p-3 text-sm",
+                    descripcionError ? "border-red-500" : ""
+                  )}
                 />
               </div>
 
@@ -565,7 +569,7 @@ export function NovedadDialog({ schedule, onSave, onOpenChange }: NovedadDialogP
               <Button
                 type="submit"
                 className="h-12 px-10 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white font-black rounded-xl shadow-xl shadow-blue-200/50 dark:shadow-none transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                disabled={isSaving || hasDuplicateNovedad || !!dateError || !!timeError}
+                disabled={isSaving}
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Registrar Novedad

@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useMotorcycleData } from '../hooks/useMotorcycleData';
 
-export function MotoDialog({ moto, clients, onSave, isSaving, onOpenChange }: any) {
+export function MotoDialog({ moto, motos, clients, onSave, isSaving, onOpenChange }: any) {
   const [formData, setFormData] = useState({
     id_cliente: '',
     marca: '',
@@ -51,9 +51,17 @@ export function MotoDialog({ moto, clients, onSave, isSaving, onOpenChange }: an
           error = 'La placa es obligatoria';
         } else if (!/^[A-Z]{3}\d{2}[A-Z]$/.test(value.toUpperCase())) {
           error = 'Formato inválido (Ej: XYZ25H)';
+        } else if (motos && motos.some((m: any) => m.Placa.trim().toUpperCase() === value.trim().toUpperCase() && m.ID_Motocicleta !== moto?.ID_Motocicleta)) {
+          error = 'Ya existe una motocicleta registrada con esta placa';
         }
         break;
-      case 'color': if (!value) error = 'El color es obligatorio'; break;
+      case 'color':
+        if (!value) {
+          error = 'El color es obligatorio';
+        } else if (value.length > 50) {
+          error = 'Máximo 50 caracteres';
+        }
+        break;
       case 'motor':
         if (value === '') error = 'El cilindraje es obligatorio';
         else if (isNaN(value)) error = 'Solo números';
@@ -114,7 +122,7 @@ export function MotoDialog({ moto, clients, onSave, isSaving, onOpenChange }: an
 
   const handleInputChange = (name: string, value: any) => {
     let finalValue = value;
-    if (name === 'placa') finalValue = value.toUpperCase().replace(/[^A-DF-Z0-9]/g, '').slice(0, 6);
+    if (name === 'placa') finalValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
     if (name === 'anio' || name === 'motor' || name === 'kilometraje') {
       if (value === '') finalValue = '';
       else {

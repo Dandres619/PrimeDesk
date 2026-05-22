@@ -13,8 +13,8 @@ export function useCompras() {
   const token = localStorage.getItem('token');
   const headers = { 'Authorization': `Bearer ${token}` };
 
-  const fetchPurchases = useCallback(async () => {
-    setIsLoading(true);
+  const fetchPurchases = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/compras`, { headers });
       if (!response.ok) throw new Error('Error al cargar compras');
@@ -43,7 +43,7 @@ export function useCompras() {
         throw new Error(data.message || 'Error al anular la compra');
       }
       toast.success('Compra anulada exitosamente');
-      fetchPurchases();
+      fetchPurchases(true);
       return true;
     } catch (error: any) {
       toast.error(error.message);

@@ -60,7 +60,7 @@ export function ServiciosTable({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <p className="cursor-help max-w-[250px] truncate text-left">
-                            {s.Descripcion.substring(0, 45)}...
+                            {s.Descripcion.substring(0, 45).trim()}...
                           </p>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-[300px] break-words">

@@ -7,13 +7,15 @@ const getAll = async () => {
                c.id_motocicleta AS "ID_Motocicleta", c.fechacompra AS "FechaCompra", 
                c.total AS "Total", c.notas AS "Notas", c.estado AS "Estado",
                p.nombreempresa AS "NombreEmpresa", p.telefono AS "TelefonoProveedor", p.email AS "EmailProveedor", m.placa AS "Placa",
+               CONCAT(cli.nombre, ' ', cli.apellido) AS "NombreCliente",
                (
                  SELECT COALESCE(json_agg(json_build_object(
                     'id', pr.id_producto,
                     'product', pr.nombre, 
                     'category', cat.nombre,
                     'quantity', dc.cantidad, 
-                    'unitCost', dc.preciounitario
+                    'unitCost', dc.preciounitario,
+                    'factura', dc.factura
                  )), '[]'::json)
                  FROM detalle_compras dc
                  JOIN productos pr ON dc.id_producto = pr.id_producto
@@ -23,6 +25,7 @@ const getAll = async () => {
         FROM compras c
         INNER JOIN proveedores p ON c.id_proveedor = p.id_proveedor
         INNER JOIN motocicletas m ON c.id_motocicleta = m.id_motocicleta
+        INNER JOIN clientes cli ON m.id_cliente = cli.id_cliente
         ORDER BY c.fechacompra DESC
     `;
   return rows;
@@ -34,10 +37,12 @@ const getById = async (id) => {
         SELECT c.id_compra AS "ID_Compra", c.id_proveedor AS "ID_Proveedor", 
                c.id_motocicleta AS "ID_Motocicleta", c.fechacompra AS "FechaCompra", 
                c.total AS "Total", c.notas AS "Notas", c.estado AS "Estado",
-               p.nombreempresa AS "NombreEmpresa", p.telefono AS "TelefonoProveedor", p.email AS "EmailProveedor", m.placa AS "Placa"
+               p.nombreempresa AS "NombreEmpresa", p.telefono AS "TelefonoProveedor", p.email AS "EmailProveedor", m.placa AS "Placa",
+               CONCAT(cli.nombre, ' ', cli.apellido) AS "NombreCliente"
         FROM compras c
         INNER JOIN proveedores p ON c.id_proveedor = p.id_proveedor
         INNER JOIN motocicletas m ON c.id_motocicleta = m.id_motocicleta
+        INNER JOIN clientes cli ON m.id_cliente = cli.id_cliente
         WHERE c.id_compra = ${id}
     `;
   if (purchases.length === 0) throw { status: 404, message: 'Compra no encontrada.' };
@@ -46,6 +51,7 @@ const getById = async (id) => {
         SELECT dc.id_detallecompra AS "ID_DetalleCompra", dc.id_compra AS "ID_Compra", 
                dc.id_producto AS "ID_Producto", dc.cantidad AS "Cantidad", 
                dc.preciounitario AS "PrecioUnitario", dc.subtotal AS "Subtotal",
+               dc.factura AS "Factura",
                pr.nombre AS "NombreProducto", cat.nombre AS "NombreCategoria"
         FROM detalle_compras dc
         INNER JOIN productos pr ON dc.id_producto = pr.id_producto
@@ -73,10 +79,11 @@ const create = async ({ id_proveedor, id_motocicleta, fechacompra, total, notas,
           id_producto: item.id_producto,
           cantidad: item.cantidad,
           preciounitario: item.precio_unitario,
-          subtotal: item.subtotal
+          subtotal: item.subtotal,
+          factura: item.factura || null
         }));
 
-        await tx`INSERT INTO detalle_compras ${sql(itemInserts, 'id_compra', 'id_producto', 'cantidad', 'preciounitario', 'subtotal')}`;
+        await tx`INSERT INTO detalle_compras ${sql(itemInserts, 'id_compra', 'id_producto', 'cantidad', 'preciounitario', 'subtotal', 'factura')}`;
       }
 
       return compra;
@@ -104,12 +111,6 @@ const update = async (id, { id_proveedor, id_motocicleta, total, notas, estado }
 
 const remove = async (id) => {
   const sql = await getPool();
-
-  // 1. Validar que la compra no esté asociada a una venta
-  const association = await sql`SELECT 1 FROM ventas_compras WHERE id_compra = ${id} LIMIT 1`;
-  if (association.length > 0) {
-    throw { status: 400, message: 'No se puede anular la compra porque ya está asociada a una venta.' };
-  }
 
   // 2. Anular la compra y revertir el stock de productos
   try {

@@ -28,6 +28,10 @@ export function ProfileHeader({
         }
     }, [fotoPreview]);
 
+    const isClient = profileData?.id_rol === 3;
+    const savedNombre = isClient ? profileData?.NombreCliente : profileData?.NombreEmpleado;
+    const savedApellido = isClient ? profileData?.ApellidoCliente : profileData?.ApellidoEmpleado;
+
     return (
         <div className="mp-sidebar">
             <div className="mp-card mp-profile-card">
@@ -52,7 +56,7 @@ export function ProfileHeader({
                                 </div>
                             ) : (
                                 <span className="mp-avatar-initial">
-                                    {formData.nombre?.charAt(0) || profileData?.Correo?.charAt(0).toUpperCase()}
+                                    {savedNombre?.charAt(0) || profileData?.Correo?.charAt(0).toUpperCase()}
                                 </span>
                             )}
                         </div>
@@ -74,7 +78,7 @@ export function ProfileHeader({
 
                 <div className="mp-profile-info">
                     <h2 className="mp-profile-name">
-                        {formData.nombre} {formData.apellido}
+                        {savedNombre || ''} {savedApellido || ''}
                     </h2>
                     <div className="mp-badges">
                         <span className="mp-badge-role">{profileData?.NombreRol}</span>
