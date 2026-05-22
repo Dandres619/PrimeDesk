@@ -196,7 +196,7 @@ const syncComprasForReparacion = async (id_reparacion, estado) => {
             await sql.begin(async (tx) => {
                 const [compra] = await tx`
                     INSERT INTO compras (id_proveedor, id_motocicleta, fechacompra, total, notas, estado, id_reparacion)
-                    VALUES (${provId}, ${reparacion.id_motocicleta}, NOW(), ${total}, ${`Compra registrada automáticamente al finalizar la reparación #${id_reparacion}`}, 'Activa', ${id_reparacion})
+                    VALUES (${provId}, ${reparacion.id_motocicleta}, timezone('America/Bogota', NOW()), ${total}, ${`Compra registrada automáticamente al finalizar la reparación #${id_reparacion}`}, 'Activa', ${id_reparacion})
                     RETURNING id_compra
                 `;
 
@@ -297,6 +297,14 @@ const updateServicioEstado = async (id_reparacion, id_servicio, estado, observac
 const addCompra = async (id_reparacion, data, file) => {
     const sql = await getPool();
     const { id_producto, cantidad, precio_unitario, observaciones, id_proveedor } = data;
+
+    if (precio_unitario < 1000) {
+        throw { status: 400, message: 'El precio unitario mínimo es $1.000.' };
+    }
+    if (precio_unitario > 5000000) {
+        throw { status: 400, message: 'El precio unitario máximo es $5.000.000.' };
+    }
+
     const subtotal = (cantidad || 1) * (precio_unitario || 0);
 
     let finalFoto = null;
@@ -390,5 +398,47 @@ const remove = async (id) => {
   }
 };
 
+const removeCompra = async (id_reparacion, id_reparacion_compra) => {
+  const sql = await getPool();
+  try {
+    const [compra] = await sql`
+      SELECT factura 
+      FROM reparaciones_compras 
+      WHERE id_reparacion = ${id_reparacion} AND id_reparacion_compra = ${id_reparacion_compra}
+    `;
 
-module.exports = { getAll, getById, create, update, addServicio, updateEstado, updateServicioEstado, addCompra, remove };
+    if (!compra) {
+      throw { status: 404, message: 'El repuesto no se encuentra en esta reparación.' };
+    }
+
+    if (compra.factura) {
+      const parts = compra.factura.split('/');
+      const fileName = parts[parts.length - 1];
+      if (fileName) {
+        const { error } = await supabase.storage.from('facturas').remove([fileName]);
+        if (error) {
+          console.error('❌ Error al eliminar factura de Supabase Storage:', error.message || error);
+        } else {
+          console.log('✅ Factura eliminada de Supabase Storage:', fileName);
+        }
+      }
+    }
+
+    const [deleted] = await sql`
+      DELETE FROM reparaciones_compras
+      WHERE id_reparacion = ${id_reparacion} AND id_reparacion_compra = ${id_reparacion_compra}
+      RETURNING id_reparacion_compra AS "ID_Reparacion_Compra"
+    `;
+
+    if (!deleted) {
+      throw { status: 404, message: 'No se pudo eliminar el repuesto.' };
+    }
+
+    return { message: 'Repuesto eliminado de la reparación.' };
+  } catch (err) {
+    console.error('❌ Error en reparaciones.service.removeCompra:', err);
+    throw err;
+  }
+};
+
+module.exports = { getAll, getById, create, update, addServicio, updateEstado, updateServicioEstado, addCompra, remove, removeCompra };

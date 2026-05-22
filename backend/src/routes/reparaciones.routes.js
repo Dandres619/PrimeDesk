@@ -51,4 +51,8 @@ router.post('/:id/compras', verifyToken, requirePermiso('gestionar_reparaciones'
     reparacionesController.addCompra
 );
 
+router.delete('/:id/compras/:id_reparacion_compra', verifyToken, requirePermiso('gestionar_reparaciones'),
+    reparacionesController.removeCompra
+);
+
 module.exports = router;

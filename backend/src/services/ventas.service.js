@@ -140,7 +140,7 @@ const create = async ({ id_reparacion, id_empleado, id_motocicleta, fecha, total
 
       const [venta] = await tx`
                 INSERT INTO ventas (id_reparacion, id_empleado, id_motocicleta, fecha, total, observaciones, estado)
-                VALUES (${id_reparacion}, ${final_id_empleado}, ${id_motocicleta}, COALESCE(${fecha || null}::timestamp, NOW()), ${total}, ${observaciones || null}, true)
+                VALUES (${id_reparacion}, ${final_id_empleado}, ${id_motocicleta}, COALESCE(${fecha || null}::timestamp, timezone('America/Bogota', NOW())), ${total}, ${observaciones || null}, true)
                 RETURNING id_venta AS "ID_Venta"
             `;
 

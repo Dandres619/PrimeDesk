@@ -63,7 +63,7 @@ const create = async ({ id_proveedor, id_motocicleta, fechacompra, total, notas,
     const result = await sql.begin(async (tx) => {
       const [compra] = await tx`
                 INSERT INTO compras (id_proveedor, id_motocicleta, fechacompra, total, notas, estado)
-                VALUES (${id_proveedor}, ${id_motocicleta}, COALESCE(${fechacompra || null}::timestamp, NOW()), ${total}, ${notas || null}, 'Pendiente de venta')
+                VALUES (${id_proveedor}, ${id_motocicleta}, COALESCE(${fechacompra || null}::timestamp, timezone('America/Bogota', NOW())), ${total}, ${notas || null}, 'Pendiente de venta')
                 RETURNING id_compra AS "ID_Compra"
             `;
 

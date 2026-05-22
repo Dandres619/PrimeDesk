@@ -64,7 +64,7 @@ const upsertHorarios = async (id_empleado, diasHorarios) => {
     for (const d of diasHorarios) {
       const [row] = await tx`
         INSERT INTO horarios (id_empleado, dia, hora_entrada, hora_salida, estado, updated_at)
-        VALUES (${id_empleado}, ${d.dia}, ${d.hora_entrada}, ${d.hora_salida}, TRUE, NOW())
+        VALUES (${id_empleado}, ${d.dia}, ${d.hora_entrada}, ${d.hora_salida}, TRUE, timezone('America/Bogota', NOW()))
         RETURNING id_horario AS "ID_Horario", dia AS "Dia", hora_entrada AS "HoraEntrada", hora_salida AS "HoraSalida"
       `;
       inserted.push(row);
@@ -82,7 +82,7 @@ const toggleEstado = async (id_empleado, estado) => {
   const sql = await getPool();
   await sql`
     UPDATE horarios
-    SET estado = ${estado}, updated_at = NOW()
+    SET estado = ${estado}, updated_at = timezone('America/Bogota', NOW())
     WHERE id_empleado = ${id_empleado}
   `;
   return { message: `Horarios ${estado ? 'activados' : 'desactivados'} exitosamente.` };

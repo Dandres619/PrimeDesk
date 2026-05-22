@@ -47,4 +47,13 @@ const addCompra = async (req, res) => {
     }
 };
 
-module.exports = { ...base, addServicio, updateEstado, updateServicioEstado, addCompra };
+const removeCompra = async (req, res) => {
+    try {
+        const result = await reparacionesService.removeCompra(parseInt(req.params.id), parseInt(req.params.id_reparacion_compra));
+        res.status(200).json(result);
+    } catch (err) {
+        res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
+    }
+};
+
+module.exports = { ...base, addServicio, updateEstado, updateServicioEstado, addCompra, removeCompra };

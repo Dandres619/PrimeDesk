@@ -267,7 +267,7 @@ const updateProfile = async (id_usuario, data, file) => {
             if (emp.length === 0) {
                 await tx`
                     INSERT INTO empleados (id_usuario, nombre, apellido, tipodocumento, documento, telefono, barrio, direccion, fechanacimiento, fechaingreso)
-                    VALUES (${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento}, ${telefono}, ${barrio || null}, ${direccion || null}, ${finalNacimiento || null}, NOW())
+                    VALUES (${id_usuario}, ${nombre}, ${apellido}, ${tipo_documento}, ${documento}, ${telefono}, ${barrio || null}, ${direccion || null}, ${finalNacimiento || null}, timezone('America/Bogota', NOW()))
                 `;
             } else {
                 await tx`
