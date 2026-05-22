@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Button } from '../../ui/button';
 import { Textarea } from '../../ui/textarea';
 import { Badge } from '../../ui/badge';
-import { ClipboardPen, Check, User, Bike, AlertCircle, FileImage, Plus, Loader2, Info, Wrench, Search, ChevronsUpDown, Clock, ExternalLink, Gauge } from 'lucide-react';
+import { ClipboardPen, Check, User, Bike, AlertCircle, FileImage, Plus, Loader2, Info, Wrench, Search, ChevronsUpDown, Clock, ExternalLink, Gauge, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
@@ -85,6 +85,7 @@ export function ReparacionDialog({
   }, [availableServices, servicesSearch]);
 
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const token = localStorage.getItem('token');
   const [horarios, setHorarios] = useState<any[]>([]);
@@ -557,8 +558,10 @@ export function ReparacionDialog({
     const price = Number(newRepuesto.precio_unitario);
     if (!newRepuesto.precio_unitario || newRepuesto.precio_unitario === '') {
       errs.precio_unitario = 'El precio es obligatorio.';
-    } else if (price < 5000) {
-      errs.precio_unitario = 'Mínimo $5.000.';
+    } else if (price < 1000) {
+      errs.precio_unitario = 'Mínimo $1.000.';
+    } else if (price > 5000000) {
+      errs.precio_unitario = 'Máximo $5.000.000.';
     } else if (newRepuesto.precio_unitario.length > 7) {
       errs.precio_unitario = 'Máximo 7 dígitos.';
     }
@@ -577,11 +580,17 @@ export function ReparacionDialog({
   }, [newRepuesto]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter((p: any) =>
-      p.Nombre.toLowerCase().includes((search.product || '').toLowerCase()) ||
-      p.ID_Producto.toString().includes(search.product || '')
+    const addedProductIds = new Set(
+      localOrder?.compras?.map((c: any) => c.ID_Producto?.toString() || c.id_producto?.toString()) || []
     );
-  }, [products, search.product]);
+    return products.filter((p: any) => {
+      if (addedProductIds.has(p.ID_Producto.toString())) return false;
+      return (
+        p.Nombre.toLowerCase().includes((search.product || '').toLowerCase()) ||
+        p.ID_Producto.toString().includes(search.product || '')
+      );
+    });
+  }, [products, search.product, localOrder?.compras]);
 
   const selectedProduct = products.find(p => p.ID_Producto.toString() === newRepuesto.id_producto);
 
@@ -597,6 +606,7 @@ export function ReparacionDialog({
   // Modals state
   const [confirmDialog, setConfirmDialog] = useState({ open: false, type: 'start' as 'start' | 'finish', title: '', description: '' });
   const [finalizeServiceDialog, setFinalizeServiceDialog] = useState({ open: false, serviceId: null as number | null, obs: '', serviceName: '' });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; purchaseId: number | null }>({ open: false, purchaseId: null });
 
   const fetchProveedores = useCallback(async () => {
     try {
@@ -764,10 +774,34 @@ export function ReparacionDialog({
       setTouchedRepuesto({ cantidad: false, precio_unitario: false, id_proveedor: false });
       setFacturaFile(null);
       await reloadLocalOrder();
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } catch (e: any) {
       toast.error(e.message);
     } finally {
       setIsSubmittingRepuesto(false);
+    }
+  };
+
+  const handleDeleteRepuesto = async (idReparacionCompra: number) => {
+    if (!localOrder) return;
+    setLoadingAction(`delete-compra-${idReparacionCompra}`);
+    try {
+      const res = await fetch(`${API_URL}/reparaciones/${localOrder.id || localOrder.ID_Reparacion}/compras/${idReparacionCompra}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || 'Error al eliminar repuesto');
+      }
+      toast.success('Repuesto eliminado de la reparación.');
+      await reloadLocalOrder();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setLoadingAction(null);
     }
   };
 
@@ -1480,7 +1514,7 @@ export function ReparacionDialog({
                 </div>
 
 
-                <div className="flex-1 overflow-y-auto p-12 custom-scrollbar text-left relative">
+                <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-12 custom-scrollbar text-left relative">
                   {activeTab === 'servicios' ? (() => {
                     const currentEstado = localOrder?.Estado || localOrder?.estadoBase || 'Esperando motocicleta';
 
@@ -1663,10 +1697,27 @@ export function ReparacionDialog({
                                       </p>
                                     )}
                                   </div>
-                                  <div className="text-right shrink-0">
-                                    <p className="text-lg font-black text-blue-400">
-                                      ${parseFloat(compra.Subtotal).toLocaleString()}
-                                    </p>
+                                  <div className="text-right shrink-0 flex items-center gap-4">
+                                    <div>
+                                      <p className="text-lg font-black text-blue-400">
+                                        ${parseFloat(compra.Subtotal).toLocaleString()}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      disabled={loadingAction === `delete-compra-${compra.ID_Reparacion_Compra}`}
+                                      onClick={() => setDeleteConfirm({ open: true, purchaseId: compra.ID_Reparacion_Compra })}
+                                      className="h-10 w-10 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                                      title="Eliminar repuesto"
+                                    >
+                                      {loadingAction === `delete-compra-${compra.ID_Reparacion_Compra}` ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="w-5 h-5" />
+                                      )}
+                                    </Button>
                                   </div>
                                 </div>
                               </div>
@@ -1698,7 +1749,7 @@ export function ReparacionDialog({
                             </h3>
                             <div className="space-y-4">
                               <div className="space-y-2 text-left">
-                                <Label className="text-[10px] font-black text-slate-500 uppercase">Producto/Repuesto</Label>
+                                <Label className="text-[10px] font-black text-slate-500 uppercase">Repuesto</Label>
                                 <Popover open={popovers.product} onOpenChange={(open) => setPopovers({ ...popovers, product: open })}>
                                   <PopoverTrigger asChild>
                                     <Button
@@ -1967,6 +2018,23 @@ export function ReparacionDialog({
             await handleUpdateEstado('En reparación');
           } else if (confirmDialog.type === 'finish') {
             await handleUpdateEstado('Reparación finalizada');
+          }
+        }}
+      />
+
+      {/* Confirmation Dialog para eliminar repuestos */}
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
+        title="¿Eliminar repuesto?"
+        description="¿Está seguro de eliminar este repuesto de la lista?"
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        loadingText="Eliminando..."
+        variant="delete"
+        onConfirm={async () => {
+          if (deleteConfirm.purchaseId !== null) {
+            await handleDeleteRepuesto(deleteConfirm.purchaseId);
           }
         }}
       />
