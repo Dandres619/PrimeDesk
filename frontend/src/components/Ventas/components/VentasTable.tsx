@@ -1,12 +1,10 @@
-import { Eye, FileText, XCircle, DollarSign } from 'lucide-react';
+import { Eye, FileText, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { Button } from '../../ui/button';
-import { Badge } from '../../ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '../../ui/pagination';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatLocalDate } from '../../../lib/utils';
 
 interface VentasTableProps {
   salesCount: number;
@@ -16,7 +14,6 @@ interface VentasTableProps {
   totalPages: number;
   onView: (id: number) => void;
   onPDF: (id: number) => void;
-  onCancel: (sale: any) => void;
 }
 
 export function VentasTable({
@@ -26,10 +23,9 @@ export function VentasTable({
   setCurrentPage,
   totalPages,
   onView,
-  onPDF,
-  onCancel
+  onPDF
 }: VentasTableProps) {
-  
+
   return (
     <Card data-slot="card">
       <CardHeader>
@@ -42,12 +38,10 @@ export function VentasTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Venta</TableHead>
-              <TableHead>Fecha</TableHead>
               <TableHead>Cliente</TableHead>
-              <TableHead>Reparación</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Estado</TableHead>
+              <TableHead>Motocicleta</TableHead>
+              <TableHead>Total Facturado</TableHead>
+              <TableHead>Fecha de finalización</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -61,28 +55,26 @@ export function VentasTable({
             ) : (
               paginatedSales.map(sale => (
                 <TableRow key={sale.id}>
+                  <TableCell>{sale.clientName}</TableCell>
+                  <TableCell>{sale.motorcycle}</TableCell>
                   <TableCell>
-                    <p className="font-bold text-blue-600 dark:text-blue-400">{sale.invoiceNumber}</p>
+                    {(() => {
+                      const isFromRepair = !!(sale.ID_Reparacion || (sale.serviceOrderNumber && sale.serviceOrderNumber !== 'N/A'));
+                      const partsTotal = sale.parts ? sale.parts.reduce((sum: number, p: any) => sum + (p.quantity * parseFloat(p.unitCost || 0)), 0) : 0;
+                      const serviceCost = parseFloat(sale.serviceCost || 0);
+                      const totalDb = parseFloat(sale.total || 0);
+
+                      let grandTotal = totalDb;
+                      if (isFromRepair) {
+                        const manoObra = Math.max(0, totalDb - partsTotal);
+                        grandTotal = partsTotal + manoObra + serviceCost;
+                      } else {
+                        grandTotal = totalDb;
+                      }
+                      return `$${grandTotal.toLocaleString()}`;
+                    })()}
                   </TableCell>
-                  <TableCell>
-                    <p className="font-medium">{format(new Date(sale.date), 'PPP', { locale: es })}</p>
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-bold">{sale.clientName}</p>
-                  </TableCell>
-                  <TableCell>
-                    <p className="text-sm font-semibold opacity-70">{sale.serviceOrderNumber || 'Sin asociar'}</p>
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-black text-slate-900 dark:text-white">{sale.total.toLocaleString()}</p>
-                  </TableCell>
-                  <TableCell>
-                    {sale.anulada ? (
-                      <Badge variant="destructive" className="bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 border-none font-bold">Anulada</Badge>
-                    ) : (
-                      <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-none font-bold">Activa</Badge>
-                    )}
-                  </TableCell>
+                  <TableCell>{formatLocalDate(sale.date, 'dd/MM/yyyy HH:mm')}</TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
                       <Tooltip>
@@ -102,17 +94,6 @@ export function VentasTable({
                         </TooltipTrigger>
                         <TooltipContent><p>Descargar PDF</p></TooltipContent>
                       </Tooltip>
-
-                      {!sale.anulada && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={() => onCancel(sale)} className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20">
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Anular venta</p></TooltipContent>
-                        </Tooltip>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>

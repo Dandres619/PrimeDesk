@@ -3,19 +3,16 @@ import { useVentas } from './hooks/useVentas';
 import { VentasHeader } from './components/VentasHeader';
 import { VentasTable } from './components/VentasTable';
 import { VentasStyles } from './styles/VentasStyles';
-import { SaleDialog } from './components/SaleDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
-import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { PDFPreviewDialog } from '../shared/PDFPreviewDialog';
 // react-icons/pi imports removed as they were mostly unused or incorrect
-import { DollarSign as LucideDollarSign, Search as LucideSearch, Calendar as LucideCalendar, User as LucideUser, FileText as LucideFileText } from 'lucide-react';
+import { DollarSign as LucideDollarSign, Search as LucideSearch, Calendar as LucideCalendar, User as LucideUser, FileText as LucideFileText, Wrench as LucideWrench, Info as LucideInfo } from 'lucide-react';
 import { Input } from '../ui/input';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { formatLocalDate } from '../../lib/utils';
 
 export function Ventas() {
   const {
@@ -25,18 +22,11 @@ export function Ventas() {
     setCurrentPage,
     isLoading,
     sales,
-    purchases,
-    serviceOrders,
-    saveSale,
-    cancelSale,
     getSaleDetails
   } = useVentas();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewingSale, setViewingSale] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [saleToCancel, setSaleToCancel] = useState<any>(null);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [pdfData, setPdfData] = useState<any>(null);
 
@@ -44,10 +34,10 @@ export function Ventas() {
   const totalPages = Math.max(1, Math.ceil(sales.length / itemsPerPage));
   const paginatedSales = sales.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handleViewDetails = async (id: number) => {
-    const details = await getSaleDetails(id);
-    if (details) {
-      setViewingSale(details);
+  const handleViewDetails = (id: number) => {
+    const sale = sales.find(s => s.id === id);
+    if (sale) {
+      setViewingSale(sale);
       setIsDetailsOpen(true);
     }
   };
@@ -60,12 +50,7 @@ export function Ventas() {
     }
   };
 
-  const onConfirmCancel = async () => {
-    if (saleToCancel) {
-      const success = await cancelSale(saleToCancel);
-      if (success) setShowConfirmDialog(false);
-    }
-  };
+
 
   if (isLoading) {
     return (
@@ -84,17 +69,7 @@ export function Ventas() {
       <VentasStyles />
 
       <div className="ventas-content-animate space-y-6">
-        <ConfirmDialog
-          open={showConfirmDialog}
-          onOpenChange={setShowConfirmDialog}
-          title="Anular Venta"
-          description="¿Está seguro de que desea anular esta venta? Esta acción no se puede deshacer y los repuestos volverán a estar disponibles."
-          confirmText="Anular Venta"
-          onConfirm={onConfirmCancel}
-          variant="delete"
-        />
-
-        <VentasHeader onNewSale={() => setIsDialogOpen(true)} />
+        <VentasHeader />
 
         <div className="flex justify-start">
           <div className="relative w-full sm:w-72">
@@ -116,17 +91,7 @@ export function Ventas() {
           totalPages={totalPages}
           onView={handleViewDetails}
           onPDF={handleShowPDF}
-          onCancel={(s) => { setSaleToCancel(s); setShowConfirmDialog(true); }}
         />
-
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <SaleDialog
-            purchases={purchases}
-            serviceOrders={serviceOrders}
-            onSave={saveSale}
-            onOpenChange={setIsDialogOpen}
-          />
-        </Dialog>
 
         {/* View Details Modal */}
         <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
@@ -141,7 +106,7 @@ export function Ventas() {
               <div className="text-left flex-1">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                    Detalles de Venta {viewingSale?.invoiceNumber}
+                    Detalles de la Venta #{viewingSale?.invoiceNumber}
                   </DialogTitle>
                 </DialogHeader>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-semibold">Resumen de facturación y servicios</p>
@@ -158,105 +123,154 @@ export function Ventas() {
 
             {viewingSale && (
               <div className="p-8 space-y-8 text-left overflow-y-auto max-h-[65vh] custom-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <LucideCalendar className="w-5 h-5 text-blue-600" />
-                        <div>
-                          <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Fecha</Label>
-                          <p className="font-bold text-slate-900 dark:text-white">{format(new Date(viewingSale.date), 'PPP', { locale: es })}</p>
+                {(() => {
+                  const isFromRepair = !!(viewingSale.ID_Reparacion || (viewingSale.serviceOrderNumber && viewingSale.serviceOrderNumber !== 'N/A'));
+                  const partsTotal = viewingSale.parts ? viewingSale.parts.reduce((sum: number, p: any) => sum + (p.quantity * parseFloat(p.unitCost || 0)), 0) : 0;
+                  const serviceCost = parseFloat(viewingSale.serviceCost || 0);
+                  const totalDb = parseFloat(viewingSale.total || 0);
+
+                  let manoObra = 0;
+                  let grandTotal = totalDb;
+
+                  if (isFromRepair) {
+                    manoObra = Math.max(0, totalDb - partsTotal);
+                    grandTotal = partsTotal + manoObra + serviceCost;
+                  } else {
+                    manoObra = Math.max(0, totalDb - partsTotal - serviceCost);
+                    grandTotal = totalDb;
+                  }
+
+                  return (
+                    <>
+                      {/* Single vertical details container */}
+                      <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-5">
+                        {/* 1. Fecha */}
+                        <div className="flex items-start gap-3">
+                          <LucideCalendar className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                          <div>
+                            <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Fecha de facturación</Label>
+                            <p className="font-bold text-slate-900 dark:text-white mt-0.5">
+                              {formatLocalDate(viewingSale.date, 'PPP, p')}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-slate-200/50 dark:border-slate-800/50" />
+
+                        {/* 2. Orden de Reparacion */}
+                        <div className="flex items-start gap-3">
+                          <LucideFileText className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                          <div>
+                            <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Reparación asociada</Label>
+                            <p className="font-bold text-slate-900 dark:text-white mt-0.5">#{viewingSale.serviceOrderNumber}</p>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-slate-200/50 dark:border-slate-800/50" />
+
+                        {/* 3. Cliente */}
+                        <div className="flex items-start gap-3">
+                          <LucideUser className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                          <div>
+                            <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Cliente</Label>
+                            <p className="font-bold text-slate-900 dark:text-white mt-0.5">{viewingSale.clientName}</p>
+                            <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                              {viewingSale.clientPhone && `Teléfono: ${viewingSale.clientPhone}`}
+                              {viewingSale.clientPhone && viewingSale.clientEmail && ' • '}
+                              {viewingSale.clientEmail && `Email: ${viewingSale.clientEmail}`}
+                              {viewingSale.clientDocument && ` • Documento: ${viewingSale.clientDocument}`}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="border-t border-slate-200/50 dark:border-slate-800/50" />
+
+                        {/* 4. Moto */}
+                        <div className="flex items-start gap-3">
+                          <LucideWrench className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                          <div>
+                            <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Motocicleta</Label>
+                            <p className="font-bold text-slate-900 dark:text-white mt-0.5">{viewingSale.motorcycleBrand} {viewingSale.motorcycleModel}</p>
+                            <p className="text-xs text-slate-500 font-semibold mt-0.5">Placa: {viewingSale.motorcyclePlate}</p>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <LucideUser className="w-5 h-5 text-blue-600" />
-                        <div>
-                          <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Cliente</Label>
-                          <p className="font-bold text-slate-900 dark:text-white">{viewingSale.clientName}</p>
-                          <p className="text-xs text-slate-500 font-semibold">{viewingSale.clientPhone} • {viewingSale.clientEmail}</p>
+
+                      {/* Productos y Mano de Obra Table */}
+                      <div className="space-y-4">
+                        <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Repuestos, Servicios y Mano de Obra</Label>
+                        {(!viewingSale.parts || viewingSale.parts.length === 0) && (
+                          <div className="p-4 bg-blue-50/80 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl flex items-center gap-2.5 text-blue-800 dark:text-blue-400 animate-fadeIn">
+                            <LucideInfo className="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-500" />
+                            <span className="text-xs font-semibold">No se agregaron repuestos en esta venta.</span>
+                          </div>
+                        )}
+                        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                          <Table>
+                            <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
+                              <TableRow>
+                                <TableHead className="font-bold">Ítem</TableHead>
+                                <TableHead className="text-center font-bold">Cant.</TableHead>
+                                <TableHead className="text-center font-bold">Precio Unit.</TableHead>
+                                <TableHead className="text-right font-bold">Subtotal</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {viewingSale.parts && viewingSale.parts.map((p: any, i: number) => (
+                                <TableRow key={`part-${i}`}>
+                                  <TableCell className="font-medium">{p.product}</TableCell>
+                                  <TableCell className="text-center font-bold">{p.quantity}</TableCell>
+                                  <TableCell className="text-center">${parseFloat(p.unitCost).toLocaleString()}</TableCell>
+                                  <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">${(p.quantity * parseFloat(p.unitCost)).toLocaleString()}</TableCell>
+                                </TableRow>
+                              ))}
+
+                              {/* Servicios listados de forma individual */}
+                              {viewingSale.servicios && viewingSale.servicios.map((s: any, i: number) => (
+                                <TableRow key={`service-${i}`} className="bg-slate-50/10 dark:bg-slate-900/10">
+                                  <TableCell className="font-semibold">{s.NombreServicio}</TableCell>
+                                  <TableCell className="text-center font-bold">1</TableCell>
+                                  <TableCell className="text-center">${parseFloat(s.CostoServicios || 0).toLocaleString()}</TableCell>
+                                  <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
+                                    ${parseFloat(s.CostoServicios || 0).toLocaleString()}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+
+                              {/* Row: Mano de Obra */}
+                              <TableRow className="bg-slate-50/30 dark:bg-slate-900/20">
+                                <TableCell className="font-semibold">Mano de Obra</TableCell>
+                                <TableCell className="text-center font-bold">1</TableCell>
+                                <TableCell className="text-center text-slate-400 dark:text-slate-600">---</TableCell>
+                                <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
+                                  ${manoObra.toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  <div className="space-y-6">
-                    <div className="p-6 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
-                      <div className="flex items-center gap-3">
-                        <LucideDollarSign className="w-5 h-5 text-blue-600" />
-                        <div>
-                          <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Orden de Reparación</Label>
-                          <p className="font-bold text-slate-900 dark:text-white">{viewingSale.serviceOrderNumber}</p>
+                      {/* Total Facturado (Centered) */}
+                      <div className="flex justify-center pt-4">
+                        <div className="w-full sm:w-72 p-6 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 flex flex-col items-center justify-center text-white">
+                          <span className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-80 mb-1">Total Facturado</span>
+                          <span className="text-3xl font-black">${grandTotal.toLocaleString()}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <LucideDollarSign className="w-5 h-5 text-blue-600" />
-                        <div>
-                          <Label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Motocicleta</Label>
-                          <p className="font-bold text-slate-900 dark:text-white">{viewingSale.motorcycleBrand} {viewingSale.motorcycleModel}</p>
-                          <p className="text-xs text-slate-500 font-semibold">Placa: {viewingSale.motorcyclePlate}</p>
-                        </div>
+
+                      {/* Observaciones (in its own separate full-width row) */}
+                      <div className="space-y-2 pt-6 border-t border-slate-100 dark:border-slate-800 w-full">
+                        <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                          <LucideFileText className="w-3.5 h-3.5" /> Observaciones
+                        </Label>
+                        <p className="text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 min-h-[60px] w-full">
+                          {viewingSale.notes || "Sin observaciones adicionales."}
+                        </p>
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Servicios Realizados</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {viewingSale.serviceTypes.map((s: string, i: number) => (
-                      <Badge key={i} className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border border-blue-100 dark:border-blue-800 font-bold px-4 py-1.5 rounded-xl">
-                        {s}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Productos y Mano de Obra</Label>
-                  <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-                    <Table>
-                      <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
-                        <TableRow>
-                          <TableHead className="font-bold">Ítem</TableHead>
-                          <TableHead className="text-center font-bold">Cant.</TableHead>
-                          <TableHead className="text-right font-bold">Precio Unit.</TableHead>
-                          <TableHead className="text-right font-bold">Total</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {viewingSale.parts.map((p: any, i: number) => (
-                          <TableRow key={i}>
-                            <TableCell className="font-medium">{p.product}</TableCell>
-                            <TableCell className="text-center font-bold">{p.quantity}</TableCell>
-                            <TableCell className="text-right">{parseFloat(p.unitCost).toLocaleString()}</TableCell>
-                            <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">{(p.quantity * parseFloat(p.unitCost)).toLocaleString()}</TableCell>
-                          </TableRow>
-                        ))}
-                        <TableRow className="bg-slate-50/30 dark:bg-slate-900/20">
-                          <TableCell className="font-bold">Mano de Obra (Servicios)</TableCell>
-                          <TableCell className="text-center">1</TableCell>
-                          <TableCell className="text-right">{viewingSale.serviceCost.toLocaleString()}</TableCell>
-                          <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">{viewingSale.serviceCost.toLocaleString()}</TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex-1 space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
-                      <LucideFileText className="w-3.5 h-3.5" /> Observaciones
-                    </Label>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 min-h-[60px]">
-                      {viewingSale.notes || "Sin observaciones adicionales."}
-                    </p>
-                  </div>
-                  <div className="w-full sm:w-64 p-6 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 flex flex-col items-center justify-center text-white">
-                    <span className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-80 mb-1">Total Facturado</span>
-                    <span className="text-3xl font-black">{viewingSale.total.toLocaleString()}</span>
-                  </div>
-                </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
