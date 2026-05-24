@@ -149,7 +149,15 @@ export function ClientAptDetailsDialog({
 
   const totalServices = mappedServices.reduce((acc: number, cur: any) => acc + (cur.Precio || 0), 0);
   const totalPurchases = (data.compras || []).reduce((acc: number, cur: any) => acc + Number(cur.Subtotal || 0), 0);
-  const grandTotal = totalServices + totalPurchases;
+  const associatedSaleTotal = (data.associatedSaleTotal !== undefined && data.associatedSaleTotal !== null)
+    ? Number(data.associatedSaleTotal)
+    : (data.AssociatedSaleTotal !== undefined && data.AssociatedSaleTotal !== null)
+      ? Number(data.AssociatedSaleTotal)
+      : null;
+  const manoObra = (isSaleCompleted && associatedSaleTotal !== null)
+    ? Math.max(0, associatedSaleTotal - totalPurchases)
+    : 0;
+  const grandTotal = totalServices + totalPurchases + manoObra;
 
   const matchedMechanic = mechanics.find((m: any) => {
     if (m.ID_Empleado && apt?.mechanicId && Number(m.ID_Empleado) === Number(apt.mechanicId)) {
@@ -379,7 +387,7 @@ export function ClientAptDetailsDialog({
               <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
                 {!data.compras || data.compras.length === 0 ? (
                   <div className="p-4 bg-slate-50/50 dark:bg-slate-900/10 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center py-6">
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">No se han registrado repuestos</p>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">No se agregaron repuestos</p>
                   </div>
                 ) : (
                   data.compras.map((c: any) => (
@@ -462,7 +470,7 @@ export function ClientAptDetailsDialog({
                   <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Mano de obra</span>
                   <p className={cn("text-sm font-black", isSaleCompleted ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400 italic")}>
                     {isSaleCompleted
-                      ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalServices)
+                      ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(manoObra)
                       : "Por calcular"}
                   </p>
                 </div>
@@ -470,8 +478,8 @@ export function ClientAptDetailsDialog({
                 <div>
                   <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Repuestos</span>
                   <p className={cn("text-sm font-black", totalPurchases === 0 ? "text-slate-500 dark:text-slate-400 italic" : "text-indigo-600 dark:text-indigo-400")}>
-                    {totalPurchases === 0
-                      ? "Por calcular"
+                    {totalPurchases === 0 
+                      ? (isSaleCompleted || data.estadoBase === 'Reparación finalizada' || data.estadoBase === 'Anulada' ? "No requeridos" : "Por calcular")
                       : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalPurchases)}
                   </p>
                 </div>

@@ -924,7 +924,7 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
                     </p>
                   </div>
                   <div className="text-left border-t sm:border-t-0 sm:border-l border-slate-100 dark:border-slate-800/80 pt-3 sm:pt-0 sm:pl-4">
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Precio Total</p>
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Precio de los servicios</p>
                     <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-1">
                       ${totalPrice.toLocaleString('es-CO')}
                     </p>
