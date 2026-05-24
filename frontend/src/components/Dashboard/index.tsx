@@ -1,36 +1,43 @@
 import { useDashboard } from './hooks/useDashboard';
 import { DashboardHeader } from './components/DashboardHeader';
-import { StatCard } from './components/StatCard';
+import { StatsGrid } from './components/StatsGrid';
 import { ChartsSection } from './components/ChartsSection';
 import { RecentActivity } from './components/RecentActivity';
-import { mockStats } from './utils/dashboardUtils';
+import { DashboardStyles } from './styles/DashboardStyles';
 
 export function Dashboard() {
-  const { isMounted, recentActivity } = useDashboard();
+  const { stats, isLoading, isFetching, period, setPeriod } = useDashboard();
 
-  if (!isMounted) {
+  if (isLoading || !stats) {
     return (
-      <div className="p-6 h-[80vh] w-full flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="dashboard-root">
+        <DashboardStyles />
+        <div className="mp-loading">
+          <div className="mp-loading-ring" />
+          <p className="mp-loading-text">Cargando métricas...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-1 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      <DashboardHeader />
-
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {mockStats.map((stat, i) => (
-          <StatCard key={i} stat={stat} index={i} />
-        ))}
-      </div>
-
-      <ChartsSection />
-
-      <div className="grid grid-cols-1 gap-6 pb-4">
-        <RecentActivity activities={recentActivity} />
+    <div className="dashboard-root">
+      <DashboardStyles />
+      
+      <div className="space-y-8 pb-4">
+        <DashboardHeader period={period} setPeriod={setPeriod} isFetching={isFetching} />
+        
+        <div className={`transition-all duration-500 ease-out transform-gpu origin-top ${isFetching ? 'opacity-40 scale-[0.98] blur-[2px] pointer-events-none' : 'opacity-100 scale-100 blur-0'}`}>
+          <StatsGrid stats={stats.kpis} />
+          
+          <div className="mt-8">
+            <ChartsSection charts={stats.charts} period={period} />
+          </div>
+          
+          <div className="mt-8">
+            <RecentActivity activities={stats.recentActivity} />
+          </div>
+        </div>
       </div>
     </div>
   );

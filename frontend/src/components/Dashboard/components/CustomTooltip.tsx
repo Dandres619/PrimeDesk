@@ -1,17 +1,26 @@
-export const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-background/95 backdrop-blur-sm border border-border p-3 rounded-lg shadow-xl shadow-black/10 transition-all">
-        <p className="text-sm font-bold mb-1">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2 text-xs py-0.5">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-            <span className="text-muted-foreground capitalize">{entry.name}:</span>
-            <span className="font-semibold">{entry.name.includes('ingresos') || entry.name.includes('egresos') ? `$${entry.value.toLocaleString()}` : `${entry.value}%`}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  return null;
-};
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+  isCurrency?: boolean;
+}
+
+export function CustomTooltip({ active, payload, label, isCurrency = false }: CustomTooltipProps) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-indigo-500/30 rounded-xl px-4 py-3 shadow-xl">
+      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+        {label}
+      </p>
+      {payload.map((entry: any, index: number) => (
+        <p key={index} className="text-sm font-bold" style={{ color: entry.color || '#3b82f6' }}>
+          {isCurrency
+            ? `$${Number(entry.value).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+            : entry.value
+          }
+        </p>
+      ))}
+    </div>
+  );
+}

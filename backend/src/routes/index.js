@@ -20,5 +20,6 @@ router.use('/novedades', require('./novedades.routes'));
 router.use('/compras', require('./compras.routes'));
 router.use('/ventas', require('./ventas.routes'));
 router.use('/contact', require('./contact.routes'));
+router.use('/dashboard', require('./dashboard.routes'));
 
 module.exports = router;
