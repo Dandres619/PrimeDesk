@@ -32,6 +32,7 @@ const getAll = async (filters = {}) => {
                  e.documento AS "MecanicoDocumento",
                  e.telefono AS "MecanicoTelefono",
                  v_assoc.id_venta AS "AssociatedSaleId",
+                 v_assoc.total AS "AssociatedSaleTotal",
                  (
                    SELECT json_agg(json_build_object(
                      'ID_Servicio', s.id_servicio, 
@@ -90,10 +91,13 @@ const getById = async (id) => {
              rep.nota_estado AS "NotaEstado",
              m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
              a.dia AS "DiaAgendamiento",
-             a.horainicio AS "HoraInicio"
+             a.horainicio AS "HoraInicio",
+             v_assoc.id_venta AS "AssociatedSaleId",
+             v_assoc.total AS "AssociatedSaleTotal"
       FROM reparaciones rep
       INNER JOIN motocicletas m ON rep.id_motocicleta = m.id_motocicleta
       LEFT JOIN agendamientos a ON rep.id_agendamiento = a.id_agendamiento
+      LEFT JOIN ventas v_assoc ON rep.id_reparacion = v_assoc.id_reparacion
       WHERE rep.id_reparacion = ${id}
     `,
     sql`
@@ -218,6 +222,11 @@ const syncComprasForReparacion = async (id_reparacion, estado) => {
         await sql`
             UPDATE compras 
             SET estado = 'Anulado' 
+            WHERE id_reparacion = ${id_reparacion}
+        `;
+        await sql`
+            UPDATE reparaciones_servicios
+            SET estado = 'Anulado'
             WHERE id_reparacion = ${id_reparacion}
         `;
     }
@@ -442,4 +451,115 @@ const removeCompra = async (id_reparacion, id_reparacion_compra) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, addServicio, updateEstado, updateServicioEstado, addCompra, remove, removeCompra };
+const finalizarReparacionConVenta = async (id, { mano_obra, observaciones_venta }) => {
+  const sql = await getPool();
+
+  try {
+    return await sql.begin(async (tx) => {
+      // 1. Update the repair state to 'Reparación finalizada'
+      const [row] = await tx`
+          UPDATE reparaciones 
+          SET estado = 'Reparación finalizada'
+          WHERE id_reparacion = ${id}
+          RETURNING id_reparacion AS "ID_Reparacion", id_agendamiento AS "ID_Agendamiento", id_motocicleta AS "ID_Motocicleta"
+      `;
+      if (!row) throw { status: 404, message: 'Reparación no encontrada.' };
+
+      // 2. Sync agendamiento state if exists
+      if (row.ID_Agendamiento) {
+        await tx`
+            UPDATE agendamientos
+            SET estado = 'Reparación finalizada'
+            WHERE id_agendamiento = ${row.ID_Agendamiento}
+        `;
+      }
+
+      // 3. Sync/Generate compras from reparaciones_compras
+      const purchases = await tx`
+          SELECT id_producto, cantidad, precio_unitario, subtotal, id_proveedor, observaciones, factura
+          FROM reparaciones_compras
+          WHERE id_reparacion = ${id}
+      `;
+
+      const generatedPurchaseIds = [];
+      const grouped = {};
+      
+      if (purchases.length > 0) {
+          for (const p of purchases) {
+              let provId = p.id_proveedor;
+              if (!provId) {
+                  const [firstProv] = await tx`SELECT id_proveedor FROM proveedores WHERE estado = true OR estado = 'Activo' LIMIT 1`;
+                  provId = firstProv ? firstProv.id_proveedor : null;
+              }
+              if (!provId) continue;
+
+              if (!grouped[provId]) {
+                  grouped[provId] = [];
+              }
+              grouped[provId].push(p);
+          }
+
+          for (const [provId, items] of Object.entries(grouped)) {
+              const total = items.reduce((acc, cur) => acc + parseFloat(cur.subtotal || 0), 0);
+              
+              const [compra] = await tx`
+                  INSERT INTO compras (id_proveedor, id_motocicleta, fechacompra, total, notas, estado, id_reparacion)
+                  VALUES (${provId}, ${row.ID_Motocicleta}, timezone('America/Bogota', NOW()), ${total}, ${`Compra registrada automáticamente al finalizar la reparación #${id}`}, 'Compra finalizada', ${id})
+                  RETURNING id_compra
+              `;
+
+              generatedPurchaseIds.push({ id_compra: compra.id_compra, total });
+
+              const detailInserts = items.map(item => ({
+                  id_compra: compra.id_compra,
+                  id_producto: item.id_producto,
+                  cantidad: item.cantidad,
+                  preciounitario: item.precio_unitario,
+                  subtotal: item.subtotal,
+                  factura: item.factura
+              }));
+
+              await tx`
+                  INSERT INTO detalle_compras ${tx(detailInserts, 'id_compra', 'id_producto', 'cantidad', 'preciounitario', 'subtotal', 'factura')}
+              `;
+          }
+      }
+
+      // 4. Retrieve repair services
+      const services = await tx`
+          SELECT id_servicio 
+          FROM reparaciones_servicios
+          WHERE id_reparacion = ${id}
+      `;
+
+      // 5. Get employee/mechanic from agendamiento or first employee as fallback
+      let id_empleado = null;
+      if (row.ID_Agendamiento) {
+        const [agend] = await tx`SELECT id_empleado FROM agendamientos WHERE id_agendamiento = ${row.ID_Agendamiento}`;
+        id_empleado = agend ? agend.id_empleado : null;
+      }
+      if (!id_empleado) {
+        const [firstEmp] = await tx`SELECT id_empleado FROM empleados LIMIT 1`;
+        id_empleado = firstEmp ? firstEmp.id_empleado : null;
+      }
+
+      // 6. Calculate total for the sale (parts total + labor cost)
+      const partsTotal = generatedPurchaseIds.reduce((sum, p) => sum + parseFloat(p.total), 0);
+      const saleTotal = partsTotal + parseFloat(mano_obra || 0);
+
+      // 7. Create the Venta (Sale)
+      const [venta] = await tx`
+          INSERT INTO ventas (id_reparacion, id_empleado, id_motocicleta, fecha, total, observaciones, estado)
+          VALUES (${id}, ${id_empleado}, ${row.ID_Motocicleta}, timezone('America/Bogota', NOW()), ${saleTotal}, ${observaciones_venta || 'Venta registrada automáticamente al finalizar la reparación'}, true)
+          RETURNING id_venta AS "ID_Venta"
+      `;
+
+      return { ID_Reparacion: id, ID_Venta: venta.ID_Venta };
+    });
+  } catch (err) {
+    console.error('❌ Error en finalizarReparacionConVenta:', err);
+    throw err;
+  }
+};
+
+module.exports = { getAll, getById, create, update, addServicio, updateEstado, updateServicioEstado, addCompra, remove, removeCompra, finalizarReparacionConVenta };

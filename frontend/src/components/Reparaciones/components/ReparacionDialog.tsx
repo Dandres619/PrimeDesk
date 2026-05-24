@@ -541,6 +541,30 @@ export function ReparacionDialog({
     }
   };
 
+  const handleManoObraKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ([46, 8, 9, 27, 13].indexOf(e.keyCode) !== -1 ||
+      (e.keyCode === 65 && e.ctrlKey === true) ||
+      (e.keyCode === 67 && e.ctrlKey === true) ||
+      (e.keyCode === 86 && e.ctrlKey === true) ||
+      (e.keyCode === 88 && e.ctrlKey === true) ||
+      (e.keyCode >= 35 && e.keyCode <= 39)) {
+      return;
+    }
+    const isDigit = (!e.shiftKey && e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105);
+    if (!isDigit) {
+      e.preventDefault();
+      return;
+    }
+    const currentValue = e.currentTarget.value || '';
+    const selectionStart = e.currentTarget.selectionStart;
+    const selectionEnd = e.currentTarget.selectionEnd;
+    const isTextSelected = selectionStart !== null && selectionEnd !== null && (selectionEnd - selectionStart > 0);
+
+    if (currentValue.length >= 7 && !isTextSelected) {
+      e.preventDefault();
+    }
+  };
+
   const repuestoErrors = useMemo(() => {
     const errs: Record<string, string> = {};
 
@@ -608,6 +632,7 @@ export function ReparacionDialog({
   const [confirmDialog, setConfirmDialog] = useState({ open: false, type: 'start' as 'start' | 'finish', title: '', description: '' });
   const [finalizeServiceDialog, setFinalizeServiceDialog] = useState({ open: false, serviceId: null as number | null, obs: '', serviceName: '' });
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; purchaseId: number | null }>({ open: false, purchaseId: null });
+  const [finalizeRepairDialog, setFinalizeRepairDialog] = useState({ open: false, manoObra: '', observaciones: '', error: '' });
 
   const fetchProveedores = useCallback(async () => {
     try {
@@ -689,19 +714,26 @@ export function ReparacionDialog({
     }
   };
 
-  const handleUpdateEstado = async (nuevoEstado: string) => {
+  const handleUpdateEstado = async (nuevoEstado: string, manoObra?: number, observacionesVenta?: string) => {
     if (!localOrder || localOrder.Estado === nuevoEstado) return;
     setLoadingAction(`estado-${nuevoEstado}`);
     try {
+      const bodyPayload: any = { estado: nuevoEstado };
+      if (nuevoEstado === 'Reparación finalizada') {
+        bodyPayload.mano_obra = manoObra || 0;
+        bodyPayload.observaciones_venta = observacionesVenta || '';
+      }
+
       const res = await fetch(`${API_URL}/reparaciones/${localOrder.id || localOrder.ID_Reparacion}/estado`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ estado: nuevoEstado })
+        body: JSON.stringify(bodyPayload)
       });
-      if (!res.ok) throw new Error('Error al actualizar estado');
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.message || 'Error al actualizar estado');
 
       if (nuevoEstado === 'Reparación finalizada') {
-        toast.success('¡La reparación ha sido finalizada con éxito!');
+        toast.success('¡La reparación ha sido finalizada con éxito y la venta registrada!');
         onOpenChange(false);
       } else {
         toast.success(`Estado actualizado a "${nuevoEstado}"`);
@@ -713,6 +745,22 @@ export function ReparacionDialog({
     } finally {
       setLoadingAction(null);
     }
+  };
+
+  const handleFinalizeRepairConfirm = async () => {
+    if (!localOrder) return;
+    const manoObraNum = parseFloat(finalizeRepairDialog.manoObra);
+    if (isNaN(manoObraNum) || manoObraNum < 0) {
+      setFinalizeRepairDialog(prev => ({ ...prev, error: 'Ingrese un valor válido mayor o igual a 0.' }));
+      return;
+    }
+    if (manoObraNum > 1000000) {
+      setFinalizeRepairDialog(prev => ({ ...prev, error: 'Máximo $1.000.000.' }));
+      return;
+    }
+
+    await handleUpdateEstado('Reparación finalizada', manoObraNum, finalizeRepairDialog.observaciones);
+    setFinalizeRepairDialog(prev => ({ ...prev, open: false }));
   };
 
   const handleFinalizeService = async () => {
@@ -1732,7 +1780,7 @@ export function ReparacionDialog({
                               <div className="pt-10 border-t border-slate-800 flex justify-end">
                                 <Button
                                   type="button"
-                                  onClick={() => setConfirmDialog({ open: true, type: 'finish', title: 'Finalizar Reparación', description: '¿Está seguro de finalizar? Verifique los repuestos y facturas registradas. Una vez finalizada, esta reparación quedará cerrada y no podrá modificarse.' })}
+                                  onClick={() => setFinalizeRepairDialog({ open: true, manoObra: '', observaciones: '', error: '' })}
                                   className="h-14 px-12 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95"
                                 >
                                   Finalizar reparación
@@ -2066,6 +2114,109 @@ export function ReparacionDialog({
               {loadingAction ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Guardar y Finalizar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para finalizar la reparación con mano de obra y observaciones de venta */}
+      <Dialog open={finalizeRepairDialog.open} onOpenChange={(open) => setFinalizeRepairDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-0 overflow-hidden rounded-2xl flex flex-col text-left">
+          <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex items-center gap-4 shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none shrink-0">
+              <Check className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-left">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  Finalizar Reparación
+                </DialogTitle>
+              </DialogHeader>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-semibold">Completar orden y registrar venta</p>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar text-left">
+            <div className="p-4 rounded-xl bg-blue-50/80 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-left flex items-start gap-3">
+              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-blue-800 dark:text-blue-300">
+                  Advertencia
+                </p>
+                <p className="text-[11px] font-medium text-blue-600/95 dark:text-blue-400/80 leading-relaxed">
+                  Esta acción finalizará la reparación de forma definitiva y registrará la venta automáticamente en el sistema. Por favor, asegúrese de haber subido todas las facturas de los repuestos en caso de haber sido necesario, ya que no se podrá modificar después.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Costo de Mano de Obra ($) *</Label>
+                {finalizeRepairDialog.error && (
+                  <p className="text-xs font-bold text-red-500">{finalizeRepairDialog.error}</p>
+                )}
+              </div>
+              <Input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={finalizeRepairDialog.manoObra}
+                onKeyDown={handleManoObraKeyDown}
+                onChange={(e) => {
+                  let val = e.target.value.replace(/[^0-9]/g, '');
+                  if (val.length > 7) {
+                    val = val.slice(0, 7);
+                  }
+                  setFinalizeRepairDialog(prev => {
+                    const nextState = { ...prev, manoObra: val };
+                    const numericVal = parseFloat(val);
+                    if (val === '') {
+                      nextState.error = 'Ingrese un valor válido mayor o igual a 0.';
+                    } else if (isNaN(numericVal) || numericVal < 0) {
+                      nextState.error = 'Ingrese un valor válido mayor o igual a 0.';
+                    } else if (numericVal > 1000000) {
+                      nextState.error = 'Máximo $1.000.000.';
+                    } else {
+                      nextState.error = '';
+                    }
+                    return nextState;
+                  });
+                }}
+                placeholder="Ej. 50000"
+                className={cn(
+                  "bg-transparent border-slate-200 dark:border-slate-800 rounded-xl transition-colors",
+                  finalizeRepairDialog.error && "border-red-500 focus-visible:ring-red-500/20"
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">Observaciones de la Venta (Opcional)</Label>
+              <Textarea
+                value={finalizeRepairDialog.observaciones}
+                onChange={(e) => setFinalizeRepairDialog(prev => ({ ...prev, observaciones: e.target.value }))}
+                placeholder="Ej. Reparación y mantenimiento general..."
+                className="h-24 bg-transparent border-slate-200 dark:border-slate-800 rounded-xl resize-none"
+              />
+            </div>
+          </div>
+
+          <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-900/10 flex flex-col sm:flex-row justify-end gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setFinalizeRepairDialog(prev => ({ ...prev, open: false }))}
+              className="h-11 px-6 text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleFinalizeRepairConfirm}
+              disabled={!!finalizeRepairDialog.error || !finalizeRepairDialog.manoObra || loadingAction !== null}
+              className="h-11 px-8 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 text-white font-black rounded-xl shadow-xl transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+            >
+              {loadingAction ? <Loader2 className="w-4 h-4 animate-spin mr-2 inline-block" /> : null} Finalizar Reparación
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </DialogContent>

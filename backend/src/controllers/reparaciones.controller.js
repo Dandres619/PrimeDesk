@@ -14,7 +14,17 @@ const addServicio = async (req, res) => {
 
 const updateEstado = async (req, res) => {
     try {
-        const data = await reparacionesService.updateEstado(parseInt(req.params.id), req.body.estado, req.body.nota_estado);
+        const id = parseInt(req.params.id);
+        const { estado, nota_estado, mano_obra, observaciones_venta } = req.body;
+        let data;
+        if (estado === 'Reparación finalizada') {
+            data = await reparacionesService.finalizarReparacionConVenta(id, {
+                mano_obra: parseFloat(mano_obra || 0),
+                observaciones_venta
+            });
+        } else {
+            data = await reparacionesService.updateEstado(id, estado, nota_estado);
+        }
         res.status(200).json(data);
     } catch (err) {
         res.status(err.status || 500).json({ message: err.message || 'Error interno.' });

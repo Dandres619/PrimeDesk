@@ -75,7 +75,9 @@ export function useReparaciones() {
           return acc + (isNaN(parsed) ? 0 : parsed);
         }, 0);
 
-        const totalCost = totalServices + totalPurchases;
+        const associatedSaleTotal = r.AssociatedSaleTotal ? parseFloat(r.AssociatedSaleTotal) : null;
+        const manoObra = associatedSaleTotal !== null ? Math.max(0, associatedSaleTotal - totalPurchases) : 0;
+        const totalCost = totalServices + totalPurchases + manoObra;
 
         return {
           id: r.ID_Reparacion,
@@ -88,6 +90,7 @@ export function useReparaciones() {
           clientId,
           observations: r.Observaciones,
           associatedSaleId: r.AssociatedSaleId || null,
+          associatedSaleTotal: r.AssociatedSaleTotal ? parseFloat(r.AssociatedSaleTotal) : null,
           anulada: r.Estado === 'Anulada',
           estadoBase: r.Estado,
           mecanico: r.Mecanico || 'No asignado',

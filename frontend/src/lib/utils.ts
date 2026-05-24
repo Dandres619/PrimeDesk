@@ -1,8 +1,41 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+export function formatLocalDate(dateInput: any, formatStr = 'dd/MM/yyyy'): string {
+  if (!dateInput) return '';
+  try {
+    if (typeof dateInput === 'string') {
+      const match = dateInput.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}):(\d{2}))?/);
+      if (match) {
+        const [_, year, month, day, hour, minute, second] = match;
+        const hasTime = hour !== undefined && minute !== undefined && second !== undefined;
+        const isMidnight = hasTime && parseInt(hour) === 0 && parseInt(minute) === 0 && parseInt(second) === 0;
+
+        if (!hasTime || isMidnight) {
+          const localDate = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            0,
+            0,
+            0
+          );
+          return format(localDate, formatStr, { locale: es });
+        }
+      }
+    }
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return '';
+    return format(d, formatStr, { locale: es });
+  } catch {
+    return '';
+  }
 }
 
 export function isColombianHoliday(date: Date): boolean {
