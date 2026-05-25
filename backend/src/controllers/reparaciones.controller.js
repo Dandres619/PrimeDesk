@@ -15,7 +15,7 @@ const addServicio = async (req, res) => {
 const updateEstado = async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const { estado, nota_estado, mano_obra, observaciones_venta } = req.body;
+        const { estado, mano_obra, observaciones_venta } = req.body;
         let data;
         if (estado === 'Reparación finalizada') {
             data = await reparacionesService.finalizarReparacionConVenta(id, {
@@ -23,7 +23,7 @@ const updateEstado = async (req, res) => {
                 observaciones_venta
             });
         } else {
-            data = await reparacionesService.updateEstado(id, estado, nota_estado);
+            data = await reparacionesService.updateEstado(id, estado);
         }
         res.status(200).json(data);
     } catch (err) {

@@ -23,13 +23,13 @@ export function DashboardHeader({ period, setPeriod, isFetching }: DashboardHead
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <select 
-          value={period} 
+        <select
+          value={period}
           onChange={(e) => setPeriod(e.target.value)}
           className="bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
         >
-          <option value="day" className="dark:bg-slate-800 dark:text-white">Hoy</option>
-          <option value="week" className="dark:bg-slate-800 dark:text-white">Esta Semana</option>
+          <option value="day" className="dark:bg-slate-800 dark:text-white">Diario ()</option>
+          <option value="week" className="dark:bg-slate-800 dark:text-white">Semanal</option>
           <option value="month" className="dark:bg-slate-800 dark:text-white">Mensual</option>
           <option value="quarter" className="dark:bg-slate-800 dark:text-white">Trimestral</option>
           <option value="semester" className="dark:bg-slate-800 dark:text-white">Semestral</option>

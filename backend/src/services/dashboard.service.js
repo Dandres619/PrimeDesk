@@ -6,10 +6,18 @@ const generateDateRange = (period) => {
   const now = new Date();
   
   if (period === 'day') {
+    const nowUtc = new Date();
+    const bogotaTime = new Date(nowUtc.getTime() - (5 * 60 * 60 * 1000));
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      dates.push({ label: d.toLocaleDateString('es-CO', { weekday: 'short' }), dateStr: d.toISOString().split('T')[0], total: 0 });
+      const d = new Date(bogotaTime);
+      d.setUTCDate(d.getUTCDate() - i);
+      const weekdays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      const dayLabel = weekdays[d.getUTCDay()];
+      const year = d.getUTCFullYear();
+      const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      dates.push({ label: dayLabel, dateStr, total: 0 });
     }
   } else if (period === 'week') {
     for (let i = 3; i >= 0; i--) {
@@ -52,48 +60,102 @@ const getStats = async (period = 'month') => {
   
   // Rango de fechas dinámico según el periodo
   if (period === 'day') {
-    startDateActual = sql`CURRENT_DATE`;
-    startDateAnterior = sql`CURRENT_DATE - interval '1 day'`;
-    endDateAnterior = sql`CURRENT_DATE`;
-    chartQuery = sql`SELECT to_char(fecha, 'YYYY-MM-DD') as grouping, ${ingresosFormula}::numeric as total FROM ventas v WHERE fecha >= CURRENT_DATE - interval '6 days' GROUP BY grouping ORDER BY grouping`;
+    startDateActual = sql`timezone('America/Bogota', NOW())::date`;
+    startDateAnterior = sql`timezone('America/Bogota', NOW())::date - interval '1 day'`;
+    endDateAnterior = sql`timezone('America/Bogota', NOW())::date`;
+    chartQuery = sql`
+      SELECT 
+        to_char(v.fecha, 'YYYY-MM-DD') as grouping, 
+        ${ingresosFormula}::numeric as total 
+      FROM ventas v 
+      WHERE v.fecha >= timezone('America/Bogota', NOW())::date - interval '6 days'
+        AND v.fecha < timezone('America/Bogota', NOW())::date + interval '1 day'
+      GROUP BY grouping 
+      ORDER BY grouping
+    `;
   } else if (period === 'week') {
     startDateActual = sql`date_trunc('week', timezone('America/Bogota', NOW()))`;
     startDateAnterior = sql`date_trunc('week', timezone('America/Bogota', NOW())) - interval '1 week'`;
     endDateAnterior = sql`date_trunc('week', timezone('America/Bogota', NOW()))`;
-    chartQuery = sql`SELECT (EXTRACT(WEEK FROM timezone('America/Bogota', NOW())) - EXTRACT(WEEK FROM fecha))::int as idx, ${ingresosFormula}::numeric as total FROM ventas v WHERE fecha >= date_trunc('week', timezone('America/Bogota', NOW())) - interval '3 weeks' GROUP BY idx`;
+    chartQuery = sql`SELECT (EXTRACT(WEEK FROM timezone('America/Bogota', NOW())) - EXTRACT(WEEK FROM v.fecha))::int as idx, ${ingresosFormula}::numeric as total FROM ventas v WHERE v.fecha >= date_trunc('week', timezone('America/Bogota', NOW())) - interval '3 weeks' GROUP BY idx`;
   } else if (period === 'quarter') {
     startDateActual = sql`date_trunc('quarter', timezone('America/Bogota', NOW()))`;
     startDateAnterior = sql`date_trunc('quarter', timezone('America/Bogota', NOW())) - interval '3 months'`;
     endDateAnterior = sql`date_trunc('quarter', timezone('America/Bogota', NOW()))`;
-    chartQuery = sql`SELECT (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) - EXTRACT(QUARTER FROM fecha) + (EXTRACT(YEAR FROM timezone('America/Bogota', NOW())) - EXTRACT(YEAR FROM fecha)) * 4)::int as idx, ${ingresosFormula}::numeric as total FROM ventas v WHERE fecha >= date_trunc('quarter', timezone('America/Bogota', NOW())) - interval '9 months' GROUP BY idx`;
+    chartQuery = sql`SELECT (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) - EXTRACT(QUARTER FROM v.fecha) + (EXTRACT(YEAR FROM timezone('America/Bogota', NOW())) - EXTRACT(YEAR FROM v.fecha)) * 4)::int as idx, ${ingresosFormula}::numeric as total FROM ventas v WHERE v.fecha >= date_trunc('quarter', timezone('America/Bogota', NOW())) - interval '9 months' GROUP BY idx`;
   } else if (period === 'semester') {
     startDateActual = sql`date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int`;
     startDateAnterior = sql`date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int - interval '6 months'`;
     endDateAnterior = sql`date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int`;
-    chartQuery = sql`SELECT CASE WHEN fecha >= date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int THEN 0 ELSE 1 END as idx, ${ingresosFormula}::numeric as total FROM ventas v WHERE fecha >= date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int - interval '6 months' GROUP BY idx`;
+    chartQuery = sql`SELECT CASE WHEN v.fecha >= date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int THEN 0 ELSE 1 END as idx, ${ingresosFormula}::numeric as total FROM ventas v WHERE v.fecha >= date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int - interval '6 months' GROUP BY idx`;
   } else { // month
     startDateActual = sql`date_trunc('month', timezone('America/Bogota', NOW()))`;
     startDateAnterior = sql`date_trunc('month', timezone('America/Bogota', NOW())) - interval '1 month'`;
     endDateAnterior = sql`date_trunc('month', timezone('America/Bogota', NOW()))`;
-    chartQuery = sql`SELECT to_char(fecha, 'YYYY-MM') as grouping, ${ingresosFormula}::numeric as total FROM ventas v WHERE fecha >= (date_trunc('month', timezone('America/Bogota', NOW())) - interval '5 months') GROUP BY grouping ORDER BY grouping`;
+    chartQuery = sql`SELECT to_char(v.fecha, 'YYYY-MM') as grouping, ${ingresosFormula}::numeric as total FROM ventas v WHERE v.fecha >= (date_trunc('month', timezone('America/Bogota', NOW())) - interval '5 months') GROUP BY grouping ORDER BY grouping`;
   }
 
   // Ejecutamos secuencialmente
   const clientesCount = await sql`SELECT COUNT(*)::int as total FROM clientes`;
   const motosCount = await sql`SELECT COUNT(*)::int as total FROM motocicletas`;
-  const reparacionesActivas = await sql`SELECT COUNT(*)::int as total FROM reparaciones WHERE estado NOT IN ('Reparación finalizada', 'Anulado', 'Anulada')`;
+
+  let reparacionesQuery;
+  const activeStatesFilter = sql`r.estado NOT IN ('Reparación finalizada', 'Anulado', 'Anulada')`;
+  
+  if (period === 'day') {
+    reparacionesQuery = sql`
+      SELECT COUNT(*)::int as total 
+      FROM reparaciones r 
+      LEFT JOIN agendamientos a ON r.id_agendamiento = a.id_agendamiento 
+      WHERE ${activeStatesFilter} 
+        AND (a.dia = timezone('America/Bogota', NOW())::date OR r.id_agendamiento IS NULL)
+    `;
+  } else if (period === 'week') {
+    reparacionesQuery = sql`
+      SELECT COUNT(*)::int as total 
+      FROM reparaciones r 
+      LEFT JOIN agendamientos a ON r.id_agendamiento = a.id_agendamiento 
+      WHERE ${activeStatesFilter} 
+        AND (date_trunc('week', a.dia) = date_trunc('week', timezone('America/Bogota', NOW())::date) OR r.id_agendamiento IS NULL)
+    `;
+  } else if (period === 'quarter') {
+    reparacionesQuery = sql`
+      SELECT COUNT(*)::int as total 
+      FROM reparaciones r 
+      LEFT JOIN agendamientos a ON r.id_agendamiento = a.id_agendamiento 
+      WHERE ${activeStatesFilter} 
+        AND (date_trunc('quarter', a.dia) = date_trunc('quarter', timezone('America/Bogota', NOW())::date) OR r.id_agendamiento IS NULL)
+    `;
+  } else if (period === 'semester') {
+    reparacionesQuery = sql`
+      SELECT COUNT(*)::int as total 
+      FROM reparaciones r 
+      LEFT JOIN agendamientos a ON r.id_agendamiento = a.id_agendamiento 
+      WHERE ${activeStatesFilter} 
+        AND (date_trunc('year', a.dia) + interval '6 months' * (EXTRACT(QUARTER FROM a.dia) > 2)::int = date_trunc('year', timezone('America/Bogota', NOW())::date) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())::date) > 2)::int OR r.id_agendamiento IS NULL)
+    `;
+  } else { // month
+    reparacionesQuery = sql`
+      SELECT COUNT(*)::int as total 
+      FROM reparaciones r 
+      LEFT JOIN agendamientos a ON r.id_agendamiento = a.id_agendamiento 
+      WHERE ${activeStatesFilter} 
+        AND (date_trunc('month', a.dia) = date_trunc('month', timezone('America/Bogota', NOW())::date) OR r.id_agendamiento IS NULL)
+    `;
+  }
+  const reparacionesActivas = await reparacionesQuery;
 
   let agendamientosQuery;
   if (period === 'day') {
-    agendamientosQuery = sql`SELECT COUNT(*)::int as total FROM agendamientos WHERE dia = CURRENT_DATE`;
+    agendamientosQuery = sql`SELECT COUNT(*)::int as total FROM agendamientos WHERE dia = timezone('America/Bogota', NOW())::date`;
   } else if (period === 'week') {
-    agendamientosQuery = sql`SELECT COUNT(*)::int as total FROM agendamientos WHERE date_trunc('week', dia) = date_trunc('week', CURRENT_DATE)`;
+    agendamientosQuery = sql`SELECT COUNT(*)::int as total FROM agendamientos WHERE date_trunc('week', dia) = date_trunc('week', timezone('America/Bogota', NOW())::date)`;
   } else if (period === 'quarter') {
-    agendamientosQuery = sql`SELECT COUNT(*)::int as total FROM agendamientos WHERE date_trunc('quarter', dia) = date_trunc('quarter', CURRENT_DATE)`;
+    agendamientosQuery = sql`SELECT COUNT(*)::int as total FROM agendamientos WHERE date_trunc('quarter', dia) = date_trunc('quarter', timezone('America/Bogota', NOW())::date)`;
   } else if (period === 'semester') {
-    agendamientosQuery = sql`SELECT COUNT(*)::int as total FROM agendamientos WHERE date_trunc('year', dia) + interval '6 months' * (EXTRACT(QUARTER FROM dia) > 2)::int = date_trunc('year', CURRENT_DATE) + interval '6 months' * (EXTRACT(QUARTER FROM CURRENT_DATE) > 2)::int`;
+    agendamientosQuery = sql`SELECT COUNT(*)::int as total FROM agendamientos WHERE date_trunc('year', dia) + interval '6 months' * (EXTRACT(QUARTER FROM dia) > 2)::int = date_trunc('year', timezone('America/Bogota', NOW())::date) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())::date) > 2)::int`;
   } else {
-    agendamientosQuery = sql`SELECT COUNT(*)::int as total FROM agendamientos WHERE date_trunc('month', dia) = date_trunc('month', CURRENT_DATE)`;
+    agendamientosQuery = sql`SELECT COUNT(*)::int as total FROM agendamientos WHERE date_trunc('month', dia) = date_trunc('month', timezone('America/Bogota', NOW())::date)`;
   }
   const agendamientosPeriodo = await agendamientosQuery;
   
@@ -102,12 +164,12 @@ const getStats = async (period = 'month') => {
   const ventasMesActual = await sql`
     SELECT COUNT(*)::int as cantidad, 
     COALESCE(${ingresosFormula}, 0)::numeric as ingresos 
-    FROM ventas v WHERE fecha >= ${startDateActual}
+    FROM ventas v WHERE v.fecha >= ${startDateActual}
   `;
   const ventasMesAnterior = await sql`
     SELECT COUNT(*)::int as cantidad, 
     COALESCE(${ingresosFormula}, 0)::numeric as ingresos 
-    FROM ventas v WHERE fecha >= ${startDateAnterior} AND fecha < ${endDateAnterior}
+    FROM ventas v WHERE v.fecha >= ${startDateAnterior} AND v.fecha < ${endDateAnterior}
   `;
   
   const clientesNuevosSemana = await sql`SELECT COUNT(*)::int as total FROM clientes WHERE id_cliente > (SELECT COALESCE(MAX(id_cliente), 0) - 10 FROM clientes) AND id_usuario IS NOT NULL`;
@@ -119,9 +181,17 @@ const getStats = async (period = 'month') => {
     FROM ventas v LEFT JOIN motocicletas m ON v.id_motocicleta = m.id_motocicleta LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
     ORDER BY v.fecha DESC LIMIT 3
   ) UNION ALL (
-    SELECT 'reparacion' as tipo, CONCAT('Reparación #', r.id_reparacion, ' - ', m.placa, ' (', m.marca, ' ', m.modelo, ')') as descripcion, COALESCE((SELECT MAX(rs.fecha_finalizacion) FROM reparaciones_servicios rs WHERE rs.id_reparacion = r.id_reparacion), timezone('America/Bogota', NOW())) as fecha
-    FROM reparaciones r LEFT JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta
-    ORDER BY r.id_reparacion DESC LIMIT 3
+    SELECT 
+      'reparacion' as tipo, 
+      CONCAT('Reparación #', r.id_reparacion, ' - ', m.placa, ' (', m.marca, ' ', m.modelo, ')') as descripcion, 
+      COALESCE(
+        (SELECT MAX(rs.fecha_finalizacion) FROM reparaciones_servicios rs WHERE rs.id_reparacion = r.id_reparacion),
+        (SELECT (a.dia::date + a.horainicio::time)::timestamp FROM agendamientos a WHERE a.id_agendamiento = r.id_agendamiento),
+        '1970-01-01'::timestamp
+      ) as fecha
+    FROM reparaciones r 
+    LEFT JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta
+    ORDER BY fecha DESC LIMIT 3
   ) UNION ALL (
     SELECT 'agendamiento' as tipo, CONCAT('Agendamiento #', a.id_agendamiento, ' - ', e.nombre, ' ', e.apellido) as descripcion, (a.dia::date + a.horainicio::time)::timestamp as fecha
     FROM agendamientos a LEFT JOIN empleados e ON a.id_empleado = e.id_empleado
@@ -141,7 +211,9 @@ const getStats = async (period = 'month') => {
     }
     return {
       mes: pad.label,
-      total: match ? parseFloat(match.total) : 0
+      total: match ? parseFloat(match.total) : 0,
+      dateStr: pad.dateStr || null,
+      offset: pad.offset !== undefined ? pad.offset : null
     };
   });
 
@@ -167,4 +239,61 @@ const getStats = async (period = 'month') => {
   };
 };
 
-module.exports = { getStats };
+const getPeriodSales = async (period, dateStr, offset) => {
+  const sql = await getPool();
+  let filter = sql``;
+
+  if (period === 'day') {
+    filter = sql`WHERE v.fecha::date = ${dateStr}::date`;
+  } else if (period === 'month') {
+    filter = sql`WHERE to_char(v.fecha, 'YYYY-MM') = ${dateStr}`;
+  } else if (period === 'week') {
+    const off = parseInt(offset) || 0;
+    filter = sql`WHERE v.fecha >= date_trunc('week', timezone('America/Bogota', NOW())) - interval '1 week' * ${off}
+                   AND v.fecha < date_trunc('week', timezone('America/Bogota', NOW())) - interval '1 week' * ${off - 1}`;
+  } else if (period === 'quarter') {
+    const off = parseInt(offset) || 0;
+    filter = sql`WHERE v.fecha >= date_trunc('quarter', timezone('America/Bogota', NOW())) - interval '3 months' * ${off}
+                   AND v.fecha < date_trunc('quarter', timezone('America/Bogota', NOW())) - interval '3 months' * ${off - 1}`;
+  } else if (period === 'semester') {
+    const off = parseInt(offset) || 0;
+    const semesterStart = sql`date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int`;
+    filter = sql`WHERE v.fecha >= ${semesterStart} - interval '6 months' * ${off}
+                   AND v.fecha < ${semesterStart} - interval '6 months' * ${off - 1}`;
+  }
+
+  const sales = await sql`
+    SELECT v.id_venta AS "ID_Venta", v.fecha AS "Fecha", v.total AS "Total", v.observaciones AS "Observaciones",
+           e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado",
+           m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "ModeloMoto",
+           c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente",
+           (
+             SELECT COALESCE(json_agg(s.nombre), '[]'::json)
+             FROM reparaciones_servicios rs
+             JOIN servicios s ON rs.id_servicio = s.id_servicio
+             WHERE rs.id_reparacion = v.id_reparacion
+           ) AS "servicios",
+           (
+             SELECT COALESCE(json_agg(json_build_object(
+               'product', p.nombre, 
+               'quantity', dc.cantidad, 
+               'unitCost', dc.preciounitario, 
+               'total', dc.subtotal
+             )), '[]'::json)
+             FROM compras c_ref
+             JOIN detalle_compras dc ON c_ref.id_compra = dc.id_compra
+             JOIN productos p ON dc.id_producto = p.id_producto
+             WHERE c_ref.id_reparacion = v.id_reparacion AND c_ref.estado != 'Anulado'
+           ) AS "repuestos"
+    FROM ventas v
+    LEFT JOIN empleados e ON v.id_empleado = e.id_empleado
+    LEFT JOIN motocicletas m ON v.id_motocicleta = m.id_motocicleta
+    LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
+    ${filter}
+    ORDER BY v.fecha DESC
+  `;
+
+  return sales;
+};
+
+module.exports = { getStats, getPeriodSales };

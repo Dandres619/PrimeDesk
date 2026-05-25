@@ -17,4 +17,15 @@ router.get('/stats', verifyToken, async (req, res) => {
   }
 });
 
+router.get('/period-sales', verifyToken, async (req, res) => {
+  try {
+    const { period, dateStr, offset } = req.query;
+    const sales = await dashboardService.getPeriodSales(period, dateStr, offset);
+    res.json(sales);
+  } catch (error) {
+    console.error('Error al obtener ventas del periodo:', error);
+    res.status(500).json({ error: 'Error al obtener ventas del periodo.' });
+  }
+});
+
 module.exports = router;

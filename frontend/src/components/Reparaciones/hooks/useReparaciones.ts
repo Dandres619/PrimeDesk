@@ -98,7 +98,6 @@ export function useReparaciones() {
           mecanicoTelefono: r.MecanicoTelefono || '',
           diaAgendamiento: r.DiaAgendamiento || '',
           horaInicio: r.HoraInicio || '',
-          notaEstado: r.NotaEstado || '',
           servicios: r.servicios || [],
           compras: r.compras || [],
           selectedServices: [],

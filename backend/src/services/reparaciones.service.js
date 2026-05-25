@@ -23,7 +23,6 @@ const getAll = async (filters = {}) => {
                  rep.id_agendamiento AS "ID_Agendamiento", 
                  rep.observaciones AS "Observaciones", 
                  rep.estado AS "Estado",
-                 rep.nota_estado AS "NotaEstado",
                  m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
                  c.id_cliente AS "ID_Cliente", CONCAT(c.nombre, ' ', c.apellido) AS "NombreCliente",
                  a.dia AS "DiaAgendamiento",
@@ -88,7 +87,6 @@ const getById = async (id) => {
              rep.id_agendamiento AS "ID_Agendamiento", 
              rep.observaciones AS "Observaciones", 
              rep.estado AS "Estado",
-             rep.nota_estado AS "NotaEstado",
              m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo", m.anio AS "Anio",
              a.dia AS "DiaAgendamiento",
              a.horainicio AS "HoraInicio",
@@ -242,13 +240,12 @@ const syncAgendamientoState = async (id_agendamiento, repairEstado) => {
     `;
 };
 
-const update = async (id, { observaciones, estado, nota_estado }) => {
+const update = async (id, { observaciones, estado }) => {
   const sql = await getPool();
   const [row] = await sql`
         UPDATE reparaciones 
         SET observaciones = ${observaciones || null}, 
-            estado = ${estado},
-            nota_estado = ${nota_estado || null}
+            estado = ${estado}
         WHERE id_reparacion = ${id}
         RETURNING id_reparacion AS "ID_Reparacion", id_agendamiento AS "ID_Agendamiento"
     `;
@@ -276,11 +273,11 @@ const addServicio = async (id_reparacion, id_servicio) => {
   return { message: 'Servicio agregado a la reparación.' };
 };
 
-const updateEstado = async (id, estado, nota_estado) => {
+const updateEstado = async (id, estado) => {
     const sql = await getPool();
     const [row] = await sql`
         UPDATE reparaciones 
-        SET estado = ${estado}, nota_estado = ${nota_estado || null}
+        SET estado = ${estado}
         WHERE id_reparacion = ${id}
         RETURNING id_reparacion AS "ID_Reparacion", id_agendamiento AS "ID_Agendamiento"
     `;

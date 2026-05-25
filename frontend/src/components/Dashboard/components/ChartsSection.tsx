@@ -2,18 +2,19 @@ import { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, Legend } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
 import { CustomTooltip } from './CustomTooltip';
-import { TrendingUp, PieChart as PieChartIcon, BarChart3 } from 'lucide-react';
+import { TrendingUp, PieChart as PieChartIcon, BarChart3, Info } from 'lucide-react';
 
 interface ChartsSectionProps {
   charts: {
-    ingresosMensuales: { mes: string; total: number }[];
+    ingresosMensuales: { mes: string; total: number; dateStr?: string | null; offset?: number | null }[];
     estadoReparaciones: { estado: string; cantidad: number }[];
     topServicios: { nombre: string; cantidad: number }[];
   };
   period: string;
+  onPointClick: (point: any) => void;
 }
 
-export function ChartsSection({ charts, period }: ChartsSectionProps) {
+export function ChartsSection({ charts, period, onPointClick }: ChartsSectionProps) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -36,16 +37,22 @@ export function ChartsSection({ charts, period }: ChartsSectionProps) {
 
       {/* Ingresos Area Chart (Toma 2 columnas en lg, o 1 si prefieres que comparta) */}
       <Card className="lg:col-span-2 dashboard-chart-card border-slate-200 dark:border-indigo-500/20 bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl">
-        <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-500" />
-            <CardTitle className="text-lg font-bold">
-              {period === 'day' ? 'Ingresos de Hoy' :
-                period === 'week' ? 'Ingresos Semanales' :
-                  period === 'quarter' ? 'Ingresos Trimestrales' :
-                    period === 'semester' ? 'Ingresos Semestrales' :
-                      'Ingresos Mensuales'}
-            </CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-slate-100 dark:border-slate-800 gap-2">
+          <div className="flex flex-col gap-1 text-left">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-500" />
+              <CardTitle className="text-lg font-bold">
+                {period === 'day' ? 'Ingresos Diarios (Últimos 7 días)' :
+                  period === 'week' ? 'Ingresos Semanales' :
+                    period === 'quarter' ? 'Ingresos Trimestrales' :
+                      period === 'semester' ? 'Ingresos Semestrales' :
+                        'Ingresos Mensuales'}
+              </CardTitle>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5">
+              <Info className="w-3.5 h-3.5 text-blue-500 dark:text-indigo-400 shrink-0" />
+              <span>Al dar clic en un periodo donde hubo ingresos, se verán todas las ventas de ese periodo.</span>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6">
@@ -53,7 +60,36 @@ export function ChartsSection({ charts, period }: ChartsSectionProps) {
             {charts.ingresosMensuales && charts.ingresosMensuales.length > 0 && charts.ingresosMensuales.some(item => item.total > 0) ? (
               isMounted ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={charts.ingresosMensuales} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
+                  <AreaChart 
+                    data={charts.ingresosMensuales} 
+                    margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+                    style={{ cursor: 'pointer' }}
+                    onClick={(data: any) => {
+                      console.log("Chart onClick triggered. Data:", data);
+                      if (data) {
+                        let point = null;
+                        if (data.activePayload && data.activePayload[0]) {
+                          point = data.activePayload[0].payload;
+                        } else if (data.activeTooltipIndex !== undefined && data.activeTooltipIndex !== null) {
+                          const idx = parseInt(String(data.activeTooltipIndex), 10);
+                          if (!isNaN(idx) && charts.ingresosMensuales[idx]) {
+                            point = charts.ingresosMensuales[idx];
+                          }
+                        }
+
+                        if (point) {
+                          console.log("Point clicked payload:", point);
+                          if (point.total > 0) {
+                            onPointClick(point);
+                          } else {
+                            console.log("Point ignored because total is 0 or less");
+                          }
+                        } else {
+                          console.log("No active payload or tooltip index found in click data");
+                        }
+                      }
+                    }}
+                  >
                     <defs>
                       <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
@@ -82,6 +118,19 @@ export function ChartsSection({ charts, period }: ChartsSectionProps) {
                       strokeWidth={3}
                       fillOpacity={1}
                       fill="url(#colorIngresos)"
+                      activeDot={{
+                        r: 6,
+                        style: { cursor: 'pointer' },
+                        onClick: (_e: any, payload: any) => {
+                          console.log("activeDot clicked. Payload:", payload);
+                          if (payload && payload.payload) {
+                            const point = payload.payload;
+                            if (point.total > 0) {
+                              onPointClick(point);
+                            }
+                          }
+                        }
+                      }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>

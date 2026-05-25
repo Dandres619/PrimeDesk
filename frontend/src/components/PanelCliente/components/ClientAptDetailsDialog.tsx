@@ -68,7 +68,6 @@ export function ClientAptDetailsDialog({
         mecanicoTelefono: data.mecanicoTelefono || data.MecanicoTelefono || '',
         diaAgendamiento: data.diaAgendamiento || data.DiaAgendamiento || '',
         horaInicio: data.horaInicio || data.HoraInicio || '',
-        notaEstado: data.notaEstado || data.NotaEstado || '',
         estadoBase: data.estadoBase || data.Estado || 'Confirmado',
         motorcyclePlate: data.motorcyclePlate || data.Placa || '',
         motorcycleBrand: data.motorcycleBrand || data.Marca || '',
@@ -99,7 +98,6 @@ export function ClientAptDetailsDialog({
       mecanico: apt.mechanicName || '',
       mecanicoDocumento: '',
       mecanicoTelefono: '',
-      notaEstado: '',
       observations: apt.notes || '',
       servicios: (apt.serviceTypes || []).map((srvName: string, idx: number) => {
         const matched = availableServices.find((s: any) => (s.Nombre || s.nombre) === srvName);
@@ -320,16 +318,6 @@ export function ClientAptDetailsDialog({
                 </div>
               </div>
             </div>
-
-            {data.notaEstado && (
-              <div className="p-4 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 text-left flex items-start gap-2.5">
-                <Info className="w-4.5 h-4.5 text-amber-500 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">Nota de Estado</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">{data.notaEstado}</p>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="lg:col-span-7 space-y-6">

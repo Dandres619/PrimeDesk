@@ -1,4 +1,4 @@
-import { DollarSign, Wrench, CalendarClock, Users, ShoppingCart, TrendingUp, TrendingDown } from 'lucide-react';
+import { DollarSign, Wrench, CalendarClock, Users, ShoppingCart } from 'lucide-react';
 import { PiMotorcycle } from 'react-icons/pi';
 import { Card } from '../../ui/card';
 
@@ -19,13 +19,13 @@ interface StatsGridProps {
 }
 
 export function StatsGrid({ stats }: StatsGridProps) {
-  const formatCurrency = (val: number) => 
+  const formatCurrency = (val: number) =>
     `$${val.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   const period = stats?.period || 'month';
 
   const getTitleIngreso = () => {
-    switch(period) {
+    switch (period) {
       case 'day': return 'Ingresos Hoy';
       case 'week': return 'Ingresos Semanales';
       case 'quarter': return 'Ingresos Trimestre';
@@ -36,7 +36,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
   };
 
   const getTitleVentas = () => {
-    switch(period) {
+    switch (period) {
       case 'day': return 'Ventas Hoy';
       case 'week': return 'Ventas Semanales';
       case 'quarter': return 'Ventas Trimestre';
@@ -47,13 +47,24 @@ export function StatsGrid({ stats }: StatsGridProps) {
   };
 
   const getTitleAgendamientos = () => {
-    switch(period) {
+    switch (period) {
       case 'day': return 'Agendamientos Hoy';
       case 'week': return 'Agendamientos Semanales';
       case 'quarter': return 'Agendamientos Trimestre';
       case 'semester': return 'Agendamientos Semestre';
       case 'month':
       default: return 'Agendamientos del Mes';
+    }
+  };
+
+  const getTitleReparaciones = () => {
+    switch (period) {
+      case 'day': return 'Reparaciones Activas Hoy';
+      case 'week': return 'Reparaciones Activas Semanales';
+      case 'quarter': return 'Reparaciones Activas Trimestre';
+      case 'semester': return 'Reparaciones Activas Semestre';
+      case 'month':
+      default: return 'Reparaciones Activas del Mes';
     }
   };
 
@@ -68,7 +79,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
       iconColor: 'text-blue-600 dark:text-blue-400'
     },
     {
-      title: 'Reparaciones Activas',
+      title: getTitleReparaciones(),
       value: (stats?.reparacionesActivas ?? 0).toString(),
       icon: Wrench,
       trendText: 'En proceso actualmente',
@@ -95,7 +106,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
       iconColor: 'text-violet-600 dark:text-violet-400'
     },
     {
-      title: 'Clientes Registrados',
+      title: 'Clientes Registrados (Total)',
       value: (stats?.totalClientes ?? 0).toString(),
       icon: Users,
       trendText: 'Total de clientes',
@@ -104,7 +115,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
       iconColor: 'text-indigo-600 dark:text-indigo-400'
     },
     {
-      title: 'Motos en Sistema',
+      title: 'Motos en Sistema (Total)',
       value: (stats?.totalMotos ?? 0).toString(),
       icon: PiMotorcycle,
       trendText: 'Motos registradas',
@@ -117,8 +128,8 @@ export function StatsGrid({ stats }: StatsGridProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
       {cards.map((card, i) => (
-        <Card 
-          key={i} 
+        <Card
+          key={i}
           className={`dashboard-stat-card ${card.gradientClass} stat-card-animate border-none bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl shadow-lg ring-1 ring-border/50`}
         >
           <div className="p-6 flex flex-col gap-4">
