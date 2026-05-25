@@ -1,11 +1,83 @@
 const authService = require('../services/auth.service');
 
+// Store failed login attempts in memory
+// Key: ip:IP_ADDR or serial:DEVICE_SERIAL
+// Value: { count: number, lockUntil: number }
+const attemptsStore = new Map();
+
 const login = async (req, res) => {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+    const deviceSerial = req.headers['x-device-serial'] || req.body.deviceSerial || 'unknown_device';
+    const ipKey = `ip:${ip}`;
+    const serialKey = `serial:${deviceSerial}`;
+
     try {
         const { correo, contrasena } = req.body;
+        const now = Date.now();
+
+        const ipLock = attemptsStore.get(ipKey);
+        const serialLock = deviceSerial !== 'unknown_device' ? attemptsStore.get(serialKey) : null;
+
+        let activeLock = null;
+        if (ipLock && ipLock.lockUntil > now) {
+            activeLock = ipLock;
+        } else if (serialLock && serialLock.lockUntil > now) {
+            activeLock = serialLock;
+        }
+
+        if (activeLock) {
+            const timeLeft = Math.ceil((activeLock.lockUntil - now) / 1000);
+            return res.status(429).json({
+                message: `Demasiados intentos fallidos. Intenta nuevamente en ${Math.ceil(timeLeft / 60)} minutos.`,
+                locked: true,
+                timeLeft
+            });
+        }
+
         const data = await authService.login(correo, contrasena);
+
+        // Login success: clear attempts
+        attemptsStore.delete(ipKey);
+        if (deviceSerial !== 'unknown_device') {
+            attemptsStore.delete(serialKey);
+        }
+
         res.status(200).json(data);
     } catch (err) {
+        if (err.status === 401) {
+            const now = Date.now();
+            
+            // Increment IP attempts
+            const ipAttempt = attemptsStore.get(ipKey) || { count: 0, lockUntil: 0 };
+            ipAttempt.count += 1;
+            if (ipAttempt.count >= 5) {
+                ipAttempt.lockUntil = now + 5 * 60 * 1000; // 5 minutes
+            }
+            attemptsStore.set(ipKey, ipAttempt);
+
+            // Increment Serial attempts
+            if (deviceSerial !== 'unknown_device') {
+                const serialAttempt = attemptsStore.get(serialKey) || { count: 0, lockUntil: 0 };
+                serialAttempt.count += 1;
+                if (serialAttempt.count >= 5) {
+                    serialAttempt.lockUntil = now + 5 * 60 * 1000; // 5 minutes
+                }
+                attemptsStore.set(serialKey, serialAttempt);
+            }
+
+            const currentAttemptCount = Math.max(ipAttempt.count, deviceSerial !== 'unknown_device' ? attemptsStore.get(serialKey).count : 0);
+            if (currentAttemptCount >= 5) {
+                return res.status(429).json({
+                    message: 'Demasiados intentos fallidos. Acceso bloqueado temporalmente por 5 minutos.',
+                    locked: true,
+                    timeLeft: 300
+                });
+            }
+
+            const attemptsLeft = 5 - currentAttemptCount;
+            const msg = `Credenciales incorrectas. Te ${attemptsLeft === 1 ? 'queda' : 'quedan'} ${attemptsLeft} ${attemptsLeft === 1 ? 'intento' : 'intentos'}.`;
+            return res.status(401).json({ message: msg });
+        }
         res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
     }
 };

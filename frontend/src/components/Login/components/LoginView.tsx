@@ -347,20 +347,8 @@ export function LoginView({
           overflow: hidden;
         }
 
-        .lv-submit-btn::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, #4338ca, #6d28d9);
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        }
-
-        .lv-submit-btn:hover::before {
-          opacity: 1;
-        }
-
         .lv-submit-btn:hover {
+          background: linear-gradient(135deg, #4338ca, #6d28d9) !important;
           transform: translateY(-2px) !important;
           box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4) !important;
         }

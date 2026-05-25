@@ -7,6 +7,7 @@ import { useForgotPassword } from './hooks/useForgotPassword';
 import { LoginView } from './components/LoginView';
 import { RegisterView } from './components/RegisterView';
 import { ForgotPasswordModal } from './components/ForgotPasswordModal';
+import { Dialog, DialogContent } from '../ui/dialog';
 
 interface LoginProps {
   onLogin: (userData: any) => void;
@@ -42,7 +43,9 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     loginData,
     setLoginData,
     isLoading: isLoadingLogin,
-    handleLogin
+    handleLogin,
+    lockoutTimeLeft,
+    setLockoutTimeLeft
   } = useLogin(onLogin);
 
   const {
@@ -210,6 +213,35 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
         isLoading={isLoadingForgot}
         onSubmit={handleForgotPassword}
       />
+
+      {/* Lockout Dialog/Modal */}
+      <Dialog open={lockoutTimeLeft !== null} onOpenChange={(open) => { if (!open) setLockoutTimeLeft(null); }}>
+        <DialogContent className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl text-center space-y-5 max-w-md w-[90vw] animate-modal border-none">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center text-red-600 dark:text-red-400 border border-red-100/50 dark:border-red-500/10 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+          </div>
+          <div className="space-y-2 text-center">
+            <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Acceso Bloqueado</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
+              Has superado el límite de 5 intentos fallidos. Tu dirección IP y este navegador han sido bloqueados temporalmente por seguridad.
+            </p>
+          </div>
+          <div className="py-3 px-5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl inline-block border border-slate-200/50 dark:border-slate-800/50 mx-auto">
+            <p className="text-[10px] uppercase font-extrabold tracking-widest text-slate-400 dark:text-slate-500">Volver a intentar en</p>
+            <p className="text-3xl font-black text-slate-900 dark:text-white mt-0.5 tracking-tight font-mono">
+              {lockoutTimeLeft !== null ? `${Math.floor(lockoutTimeLeft / 60)}:${String(lockoutTimeLeft % 60).padStart(2, '0')}` : '5:00'}
+            </p>
+          </div>
+          <button
+            onClick={() => setLockoutTimeLeft(null)}
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-200 dark:shadow-none active:scale-95"
+          >
+            Entendido
+          </button>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         /* ===== LOGIN PAGE STYLES ===== */

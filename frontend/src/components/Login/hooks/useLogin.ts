@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { toast } from 'sonner';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
@@ -6,6 +6,22 @@ const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000
 export function useLogin(onLogin: (userData: any) => void) {
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [lockoutTimeLeft, setLockoutTimeLeft] = useState<number | null>(null);
+
+  // Enforce countdown timer for lockout
+  useEffect(() => {
+    if (lockoutTimeLeft === null || lockoutTimeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutTimeLeft((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(timer);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutTimeLeft]);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -47,18 +63,33 @@ export function useLogin(onLogin: (userData: any) => void) {
 
     setIsLoading(true);
     try {
+      // Get or generate unique device identifier (acting as PC serial)
+      let deviceSerial = localStorage.getItem('device_serial');
+      if (!deviceSerial) {
+        deviceSerial = window.crypto && (window.crypto as any).randomUUID 
+          ? (window.crypto as any).randomUUID() 
+          : Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem('device_serial', deviceSerial || '');
+      }
+
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           correo: loginData.email,
-          contrasena: loginData.password
+          contrasena: loginData.password,
+          deviceSerial: deviceSerial || ''
         })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 429 && data.locked) {
+          setLockoutTimeLeft(data.timeLeft || 300);
+        }
         throw new Error(data.message || 'Error al iniciar sesión');
       }
 
@@ -109,6 +140,8 @@ export function useLogin(onLogin: (userData: any) => void) {
     loginData,
     setLoginData,
     isLoading,
-    handleLogin
+    handleLogin,
+    lockoutTimeLeft,
+    setLockoutTimeLeft
   };
 }
