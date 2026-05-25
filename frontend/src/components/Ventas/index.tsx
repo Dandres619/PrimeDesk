@@ -198,13 +198,7 @@ export function Ventas() {
 
                       {/* Productos y Mano de Obra Table */}
                       <div className="space-y-4">
-                        <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Repuestos, Servicios y Mano de Obra</Label>
-                        {(!viewingSale.parts || viewingSale.parts.length === 0) && (
-                          <div className="p-4 bg-blue-50/80 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl flex items-center gap-2.5 text-blue-800 dark:text-blue-400 animate-fadeIn">
-                            <LucideInfo className="w-4 h-4 shrink-0 text-blue-600 dark:text-blue-500" />
-                            <span className="text-xs font-semibold">No se agregaron repuestos en esta venta.</span>
-                          </div>
-                        )}
+                        <Label className="text-xs font-bold uppercase tracking-widest text-slate-500">Detalle de la Venta</Label>
                         <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
                           <Table>
                             <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
@@ -216,32 +210,66 @@ export function Ventas() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {viewingSale.parts && viewingSale.parts.map((p: any, i: number) => (
-                                <TableRow key={`part-${i}`}>
-                                  <TableCell className="font-medium">{p.product}</TableCell>
-                                  <TableCell className="text-center font-bold">{p.quantity}</TableCell>
-                                  <TableCell className="text-center">${parseFloat(p.unitCost).toLocaleString()}</TableCell>
-                                  <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">${(p.quantity * parseFloat(p.unitCost)).toLocaleString()}</TableCell>
-                                </TableRow>
-                              ))}
-
-                              {/* Servicios listados de forma individual */}
-                              {viewingSale.servicios && viewingSale.servicios.map((s: any, i: number) => (
-                                <TableRow key={`service-${i}`} className="bg-slate-50/10 dark:bg-slate-900/10">
-                                  <TableCell className="font-semibold">{s.NombreServicio}</TableCell>
-                                  <TableCell className="text-center font-bold">1</TableCell>
-                                  <TableCell className="text-center">${parseFloat(s.CostoServicios || 0).toLocaleString()}</TableCell>
-                                  <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
-                                    ${parseFloat(s.CostoServicios || 0).toLocaleString()}
+                              {/* SECCIÓN: SERVICIOS */}
+                              <TableRow className="bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800">
+                                <TableCell colSpan={4} className="py-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 bg-slate-50/20 dark:bg-slate-950/20">
+                                  Servicios
+                                </TableCell>
+                              </TableRow>
+                              {viewingSale.servicios && viewingSale.servicios.length > 0 ? (
+                                viewingSale.servicios.map((s: any, i: number) => (
+                                  <TableRow key={`service-${i}`}>
+                                    <TableCell className="font-semibold text-slate-700 dark:text-slate-300">{s.NombreServicio || s.Nombre}</TableCell>
+                                    <TableCell className="text-center font-bold">1</TableCell>
+                                    <TableCell className="text-center">${parseFloat(s.CostoServicios || 0).toLocaleString()}</TableCell>
+                                    <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
+                                      ${parseFloat(s.CostoServicios || 0).toLocaleString()}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              ) : (
+                                <TableRow>
+                                  <TableCell colSpan={4} className="text-center py-3 text-xs text-slate-400 dark:text-slate-500 italic">
+                                    No se realizaron servicios en esta venta.
                                   </TableCell>
                                 </TableRow>
-                              ))}
+                              )}
 
-                              {/* Row: Mano de Obra */}
-                              <TableRow className="bg-slate-50/30 dark:bg-slate-900/20">
-                                <TableCell className="font-semibold">Mano de Obra</TableCell>
+                              {/* SECCIÓN: REPUESTOS */}
+                              <TableRow className="bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 border-t border-b border-slate-100 dark:border-slate-800">
+                                <TableCell colSpan={4} className="py-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 bg-slate-50/20 dark:bg-slate-950/20">
+                                  Repuestos
+                                </TableCell>
+                              </TableRow>
+                              {viewingSale.parts && viewingSale.parts.length > 0 ? (
+                                viewingSale.parts.map((p: any, i: number) => (
+                                  <TableRow key={`part-${i}`}>
+                                    <TableCell className="font-medium text-slate-700 dark:text-slate-300">{p.product}</TableCell>
+                                    <TableCell className="text-center font-bold">{p.quantity}</TableCell>
+                                    <TableCell className="text-center">${parseFloat(p.unitCost).toLocaleString()}</TableCell>
+                                    <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
+                                      ${(p.quantity * parseFloat(p.unitCost)).toLocaleString()}
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              ) : (
+                                <TableRow>
+                                  <TableCell colSpan={4} className="text-center py-4 text-xs text-slate-400 dark:text-slate-500 italic">
+                                    No se agregaron repuestos en esta venta.
+                                  </TableCell>
+                                </TableRow>
+                              )}
+
+                              {/* SECCIÓN: MANO DE OBRA */}
+                              <TableRow className="bg-slate-50/50 dark:bg-slate-900/30 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 border-t border-b border-slate-100 dark:border-slate-800">
+                                <TableCell colSpan={4} className="py-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 bg-slate-50/20 dark:bg-slate-950/20">
+                                  Mano de Obra
+                                </TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-semibold text-slate-700 dark:text-slate-300">Mano de Obra de Reparación</TableCell>
                                 <TableCell className="text-center font-bold">1</TableCell>
-                                <TableCell className="text-center text-slate-400 dark:text-slate-600">---</TableCell>
+                                <TableCell className="text-center text-slate-400 dark:text-slate-650">---</TableCell>
                                 <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">
                                   ${manoObra.toLocaleString()}
                                 </TableCell>

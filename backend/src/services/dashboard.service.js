@@ -268,10 +268,22 @@ const getPeriodSales = async (period, dateStr, offset) => {
            m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "ModeloMoto",
            c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente",
            (
+             SELECT COALESCE(SUM(s.precio), 0)::numeric
+             FROM reparaciones_servicios rs
+             JOIN servicios s ON rs.id_servicio = s.id_servicio
+             WHERE rs.id_reparacion = v.id_reparacion AND rs.estado != 'Anulado'
+           ) AS "CostoServicios",
+           (
+             SELECT COALESCE(SUM(dc.subtotal), 0)::numeric
+             FROM compras c_ref
+             JOIN detalle_compras dc ON c_ref.id_compra = dc.id_compra
+             WHERE c_ref.id_reparacion = v.id_reparacion AND c_ref.estado != 'Anulado'
+           ) AS "CostoRepuestos",
+           (
              SELECT COALESCE(json_agg(s.nombre), '[]'::json)
              FROM reparaciones_servicios rs
              JOIN servicios s ON rs.id_servicio = s.id_servicio
-             WHERE rs.id_reparacion = v.id_reparacion
+             WHERE rs.id_reparacion = v.id_reparacion AND rs.estado != 'Anulado'
            ) AS "servicios",
            (
              SELECT COALESCE(json_agg(json_build_object(

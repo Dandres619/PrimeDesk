@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
-import { ShoppingBag, Calendar, User, Wrench, Package, FileText } from 'lucide-react';
+import { ShoppingBag, Calendar, User, Wrench, Package, FileText, CheckCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SalesDetailDialogProps {
@@ -72,29 +72,59 @@ export function SalesDetailDialog({ isOpen, onOpenChange, sales, isLoading, peri
               <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Cargando detalles de ventas...</p>
             </div>
           ) : sales && sales.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-6 text-left">
+              {/* Informative banner about repuestos vs net income */}
+              <div className="flex gap-3 items-start p-4 rounded-2xl bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100/30 dark:border-indigo-900/20 text-xs text-slate-600 dark:text-slate-300 font-semibold">
+                <Info className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-extrabold text-slate-900 dark:text-white">Nota sobre la facturación e ingresos:</p>
+                  <p className="leading-relaxed font-medium">
+                    El <strong>Total de la Venta</strong> refleja el cobro total al cliente (incluyendo repuestos). El <strong>Ingreso Real</strong> (reflejado en las gráficas) excluye el costo de los repuestos, contemplando únicamente la mano de obra y los servicios realizados.
+                  </p>
+                </div>
+              </div>
+
               {sales.map((sale, idx) => (
-                <div
-                  key={sale.ID_Venta || idx}
+                <div 
+                  key={sale.ID_Venta || idx} 
                   className="p-6 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-slate-100 dark:border-slate-800/80 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 transition-all flex flex-col gap-4 shadow-sm"
                 >
                   {/* Top Sale Info */}
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="space-y-1">
-                      <h4 className="font-bold text-slate-900 dark:text-white text-base">
-                        Venta #{sale.ID_Venta}
-                      </h4>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {formatDate(sale.Fecha)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">
-                        {formatCurrency(sale.Total)}
-                      </span>
-                    </div>
-                  </div>
+                  {(() => {
+                    const totalBase = parseFloat(sale.Total || 0);
+                    const costoServicios = parseFloat(sale.CostoServicios || 0);
+                    const costoRepuestos = parseFloat(sale.CostoRepuestos || 0);
+                    const totalCompleto = totalBase + costoServicios;
+                    const ingresoReal = totalBase - costoRepuestos + costoServicios;
+
+                    return (
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-slate-100/30 dark:bg-slate-900/10 p-4 rounded-xl border border-slate-200/20 dark:border-slate-800/10">
+                        <div className="space-y-1">
+                          <h4 className="font-extrabold text-slate-900 dark:text-white text-base">
+                            Venta #{sale.ID_Venta}
+                          </h4>
+                          <p className="text-xs text-slate-400 dark:text-slate-500 font-bold flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                            {formatDate(sale.Fecha)}
+                          </p>
+                        </div>
+                        <div className="flex gap-6 text-left sm:text-right">
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Total Venta</p>
+                            <p className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                              {formatCurrency(totalCompleto)}
+                            </p>
+                          </div>
+                          <div className="space-y-0.5 border-l border-slate-200 dark:border-slate-800 pl-4 sm:pl-6">
+                            <p className="text-[10px] uppercase font-bold tracking-widest text-indigo-400">Ingreso Real</p>
+                            <p className="text-sm sm:text-base font-black text-indigo-600 dark:text-indigo-400">
+                              {formatCurrency(ingresoReal)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="w-full h-px bg-slate-200/50 dark:bg-slate-800/50" />
 
