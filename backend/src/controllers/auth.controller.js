@@ -11,29 +11,46 @@ const login = async (req, res) => {
     const ipKey = `ip:${ip}`;
     const serialKey = `serial:${deviceSerial}`;
 
+    const now = Date.now();
+
+    // 1. Check if locked out
+    const ipLock = attemptsStore.get(ipKey);
+    const serialLock = deviceSerial !== 'unknown_device' ? attemptsStore.get(serialKey) : null;
+
+    let activeLock = null;
+    if (ipLock && ipLock.lockUntil > now) {
+        activeLock = ipLock;
+    } else if (serialLock && serialLock.lockUntil > now) {
+        activeLock = serialLock;
+    }
+
+    if (activeLock) {
+        const timeLeft = Math.ceil((activeLock.lockUntil - now) / 1000);
+        return res.status(429).json({
+            message: `Demasiados intentos fallidos. Intenta nuevamente en ${Math.ceil(timeLeft / 60)} minutos.`,
+            locked: true,
+            timeLeft
+        });
+    }
+
+    // 2. Increment attempts synchronously BEFORE the async login call to prevent race conditions
+    const ipAttempt = attemptsStore.get(ipKey) || { count: 0, lockUntil: 0 };
+    ipAttempt.count += 1;
+    
+    let serialAttempt = null;
+    if (deviceSerial !== 'unknown_device') {
+        serialAttempt = attemptsStore.get(serialKey) || { count: 0, lockUntil: 0 };
+        serialAttempt.count += 1;
+    }
+
+    // Save the incremented count in the store
+    attemptsStore.set(ipKey, ipAttempt);
+    if (deviceSerial !== 'unknown_device' && serialAttempt) {
+        attemptsStore.set(serialKey, serialAttempt);
+    }
+
     try {
         const { correo, contrasena } = req.body;
-        const now = Date.now();
-
-        const ipLock = attemptsStore.get(ipKey);
-        const serialLock = deviceSerial !== 'unknown_device' ? attemptsStore.get(serialKey) : null;
-
-        let activeLock = null;
-        if (ipLock && ipLock.lockUntil > now) {
-            activeLock = ipLock;
-        } else if (serialLock && serialLock.lockUntil > now) {
-            activeLock = serialLock;
-        }
-
-        if (activeLock) {
-            const timeLeft = Math.ceil((activeLock.lockUntil - now) / 1000);
-            return res.status(429).json({
-                message: `Demasiados intentos fallidos. Intenta nuevamente en ${Math.ceil(timeLeft / 60)} minutos.`,
-                locked: true,
-                timeLeft
-            });
-        }
-
         const data = await authService.login(correo, contrasena);
 
         // Login success: clear attempts
@@ -45,28 +62,17 @@ const login = async (req, res) => {
         res.status(200).json(data);
     } catch (err) {
         if (err.status === 401) {
-            const now = Date.now();
-            
-            // Increment IP attempts
-            const ipAttempt = attemptsStore.get(ipKey) || { count: 0, lockUntil: 0 };
-            ipAttempt.count += 1;
-            if (ipAttempt.count >= 5) {
-                ipAttempt.lockUntil = now + 5 * 60 * 1000; // 5 minutes
-            }
-            attemptsStore.set(ipKey, ipAttempt);
-
-            // Increment Serial attempts
-            if (deviceSerial !== 'unknown_device') {
-                const serialAttempt = attemptsStore.get(serialKey) || { count: 0, lockUntil: 0 };
-                serialAttempt.count += 1;
-                if (serialAttempt.count >= 5) {
-                    serialAttempt.lockUntil = now + 5 * 60 * 1000; // 5 minutes
-                }
-                attemptsStore.set(serialKey, serialAttempt);
-            }
-
-            const currentAttemptCount = Math.max(ipAttempt.count, deviceSerial !== 'unknown_device' ? attemptsStore.get(serialKey).count : 0);
+            const currentAttemptCount = Math.max(ipAttempt.count, serialAttempt ? serialAttempt.count : 0);
             if (currentAttemptCount >= 5) {
+                const lockTime = Date.now() + 5 * 60 * 1000;
+                ipAttempt.lockUntil = lockTime;
+                attemptsStore.set(ipKey, ipAttempt);
+
+                if (serialAttempt) {
+                    serialAttempt.lockUntil = lockTime;
+                    attemptsStore.set(serialKey, serialAttempt);
+                }
+
                 return res.status(429).json({
                     message: 'Demasiados intentos fallidos. Acceso bloqueado temporalmente por 5 minutos.',
                     locked: true,
@@ -77,6 +83,14 @@ const login = async (req, res) => {
             const attemptsLeft = 5 - currentAttemptCount;
             const msg = `Credenciales incorrectas. Te ${attemptsLeft === 1 ? 'queda' : 'quedan'} ${attemptsLeft} ${attemptsLeft === 1 ? 'intento' : 'intentos'}.`;
             return res.status(401).json({ message: msg });
+        } else {
+            // Revert increment for non-auth errors (e.g. account inactive or unverified)
+            ipAttempt.count = Math.max(0, ipAttempt.count - 1);
+            attemptsStore.set(ipKey, ipAttempt);
+            if (serialAttempt) {
+                serialAttempt.count = Math.max(0, serialAttempt.count - 1);
+                attemptsStore.set(serialKey, serialAttempt);
+            }
         }
         res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
     }
