@@ -58,7 +58,7 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
     handleNextStep,
     prevStep,
     setTouchedFields,
-  } = useRegister(() => handleModeSwitch(true));
+  } = useRegister(() => handleModeSwitch(true), setLockoutTimeLeft);
 
   const {
     forgotEmail,

@@ -4,7 +4,7 @@ import { validateField } from '../utils/validation';
 
 const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
 
-export function useRegister(onSuccess: () => void) {
+export function useRegister(onSuccess: () => void, onLockout?: (time: number) => void) {
   const [isLoading, setIsLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [registerData, setRegisterData] = useState({
@@ -33,6 +33,17 @@ export function useRegister(onSuccess: () => void) {
     setRegisterErrors(newErrors);
   }, [registerData, activeStep]);
 
+  const getDeviceSerial = () => {
+    let deviceSerial = localStorage.getItem('device_serial');
+    if (!deviceSerial) {
+      deviceSerial = window.crypto && (window.crypto as any).randomUUID 
+        ? (window.crypto as any).randomUUID() 
+        : Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('device_serial', deviceSerial || '');
+    }
+    return deviceSerial || '';
+  };
+
   const handleNextStep = async () => {
     const currentFields = activeStep === 1 
       ? ['nombre', 'apellido', 'documento', 'fecha_nacimiento']
@@ -60,17 +71,28 @@ export function useRegister(onSuccess: () => void) {
         const response = await fetch(`${API_URL}/auth/check-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ correo: registerData.email.toLowerCase().trim() })
+          body: JSON.stringify({ 
+            correo: registerData.email.toLowerCase().trim(),
+            deviceSerial: getDeviceSerial()
+          })
         });
-        if (!response.ok) throw new Error('Error al verificar correo');
+
         const data = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 429 && data.locked) {
+            if (onLockout) onLockout(data.timeLeft || 300);
+          }
+          throw new Error(data.message || 'Error al verificar correo');
+        }
+
         if (data.exists) {
           setRegisterErrors(prev => ({ ...prev, email: 'Correo ya registrado' }));
           toast.error('Este correo electrónico ya está registrado.');
           return;
         }
       } catch (error: any) {
-        toast.error(error.message);
+        toast.error(error.message || 'Error de conexión');
         return;
       } finally {
         setIsLoading(false);
@@ -101,19 +123,24 @@ export function useRegister(onSuccess: () => void) {
           telefono: registerData.telefono || '',
           barrio: registerData.barrio,
           direccion: registerData.direccion,
-          fecha_nacimiento: registerData.fecha_nacimiento
+          fecha_nacimiento: registerData.fecha_nacimiento,
+          deviceSerial: getDeviceSerial()
         }),
       });
 
+      const errorData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
+        if (response.status === 429 && errorData.locked) {
+          if (onLockout) onLockout(errorData.timeLeft || 300);
+        }
         throw new Error(errorData.message || 'Error en el registro');
       }
 
       toast.success('Cuenta creada exitosamente. Por favor verifica tu correo.');
       onSuccess();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'Error de conexión');
     } finally {
       setIsLoading(false);
     }
