@@ -1,5 +1,5 @@
 import { Shield, CheckCircle } from 'lucide-react';
-import expertiseImg from '@/assets/landing/expertise-img.jpg';
+import expertiseImg from '@/assets/landing/image.png';
 import user1 from '@/assets/landing/user-1.jpg';
 import user2 from '@/assets/landing/user-2.jpg';
 import user3 from '@/assets/landing/user-3.jpg';
@@ -14,13 +14,13 @@ export function Expertise({ onRegisterClick }: ExpertiseProps) {
   return (
     <section id="nosotros" className="py-24 bg-white overflow-hidden">
       <div className="container mx-auto px-4 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
           <div className="relative">
             <div className="relative z-10 rounded-[2.5rem] overflow-hidden shadow-2xl">
               <img
                 src={expertiseImg}
                 alt="Mecánico trabajando"
-                className="w-full h-[600px] object-cover"
+                className="w-full h-auto max-h-[600px] object-contain mx-auto"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-indigo-900/40 to-transparent"></div>
             </div>
@@ -76,7 +76,7 @@ export function Expertise({ onRegisterClick }: ExpertiseProps) {
             <div className="pt-6">
               <blockquote className="border-l-4 border-indigo-600 pl-6 py-2 italic text-slate-700 text-lg">
                 "Nuestro objetivo no es solo arreglar motos, es garantizar que cada cliente sienta la misma confianza que nosotros al salir a la ruta."
-                <footer className="mt-4 not-italic font-bold text-slate-900">— Rafael S., Fundador</footer>
+                <footer className="mt-4 not-italic font-bold text-slate-900">— Johan Castillo, Fundador</footer>
               </blockquote>
             </div>
 

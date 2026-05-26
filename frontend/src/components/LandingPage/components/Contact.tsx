@@ -1,4 +1,4 @@
-import { MapPin, Clock, Phone, Instagram, Facebook, Bike } from 'lucide-react';
+import { MapPin, Clock, Phone, Bike } from 'lucide-react';
 import contactImg from '@/assets/landing/contact-img.jpg';
 
 export function Contact() {
@@ -29,7 +29,7 @@ export function Contact() {
                   </div>
                   <div>
                     <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-1">Horario de Operación</h4>
-                    <p className="text-lg text-slate-600 font-medium">Lunes - Viernes: 8:30 AM - 6:30 PM</p>
+                    <p className="text-lg text-slate-600 font-medium">Lunes - Viernes: 8:00 AM - 6:00 PM</p>
                     <p className="text-sm text-slate-400">Sábados, Domingos y festivos: Cerrado</p>
                   </div>
                 </div>
@@ -44,15 +44,6 @@ export function Contact() {
                     <p className="text-sm text-slate-400">WhatsApp activo para agendamientos</p>
                   </div>
                 </div>
-              </div>
-
-              <div className="mt-12 pt-12 border-t border-slate-100 flex gap-6">
-                <a href="#" className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors font-bold text-sm uppercase tracking-widest">
-                  <Instagram className="w-5 h-5" /> Instagram
-                </a>
-                <a href="#" className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors font-bold text-sm uppercase tracking-widest">
-                  <Facebook className="w-5 h-5" /> Facebook
-                </a>
               </div>
             </div>
 

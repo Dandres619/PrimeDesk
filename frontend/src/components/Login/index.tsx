@@ -108,16 +108,11 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
             <div className="login-hero-content">
               {/* Logo */}
               <div className="login-hero-logo">
-                <div className="login-logo-icon overflow-hidden p-1.5 bg-white/10">
-                  <img
-                    src="/favicon/rafamotos-logo.png"
-                    alt="Rafa Motos Logo"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <div className="login-logo-badge">
-                  <Sparkles className="w-3 h-3" />
-                </div>
+                <img
+                  src="/favicon/rafamotos-logo.png"
+                  alt="Rafa Motos Logo"
+                  className="w-32 h-auto object-contain transition-transform duration-300 hover:scale-105 hover:-rotate-3 drop-shadow-2xl"
+                />
               </div>
 
               <h1 className="login-hero-title">
@@ -399,44 +394,6 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
           position: relative;
           display: inline-flex;
           margin-bottom: 1.5rem;
-        }
-
-        .login-logo-icon {
-          width: 56px;
-          height: 56px;
-          background: rgba(255, 255, 255, 0.15);
-          backdrop-filter: blur(12px);
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .login-logo-icon:hover {
-          transform: rotate(-5deg) scale(1.05);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-        }
-
-        .login-logo-badge {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          width: 20px;
-          height: 20px;
-          background: linear-gradient(135deg, #fbbf24, #f59e0b);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          animation: loginPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes loginPulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.15); }
         }
 
         .login-hero-title {
