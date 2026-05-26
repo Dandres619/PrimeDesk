@@ -2,7 +2,7 @@ import React from 'react';
 import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Button } from '../../ui/button';
-import { ClipboardPen, Wrench, User, FileText, Info, Calendar, Clock, Phone, FileImage, ExternalLink, Loader2 } from 'lucide-react';
+import { ClipboardPen, Wrench, User, FileText, Calendar, Clock, Phone, FileImage, ExternalLink, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function FacturaImage({ src }: { src: string }) {
@@ -268,7 +268,7 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
               </div>
             </div>
 
-           </div>
+          </div>
 
           {/* RIGHT COLUMN: SERVICES, PARTS & FINANCE */}
           <div className="lg:col-span-7 space-y-6">
@@ -422,7 +422,7 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
                 <div>
                   <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Repuestos</span>
                   <p className={cn("text-sm font-black", totalPurchases === 0 ? "text-slate-500 dark:text-slate-400 italic" : "text-indigo-600 dark:text-indigo-400")}>
-                    {totalPurchases === 0 
+                    {totalPurchases === 0
                       ? (isSaleCompleted || data.estadoBase === 'Reparación finalizada' || data.estadoBase === 'Anulada' ? "No requeridos" : "Por calcular")
                       : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalPurchases)}
                   </p>
