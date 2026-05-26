@@ -108,8 +108,12 @@ export function Login({ onLogin, initialMode = 'login' }: LoginProps) {
             <div className="login-hero-content">
               {/* Logo */}
               <div className="login-hero-logo">
-                <div className="login-logo-icon">
-                  <Bike className="w-8 h-8 text-white" />
+                <div className="login-logo-icon overflow-hidden p-1.5 bg-white/10">
+                  <img
+                    src="/favicon/rafamotos-logo.png"
+                    alt="Rafa Motos Logo"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div className="login-logo-badge">
                   <Sparkles className="w-3 h-3" />
