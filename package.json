@@ -1,0 +1,13 @@
+{
+  "name": "primedesk",
+  "version": "1.0.0",
+  "description": "Root workspace to run PrimeDesk frontend and backend concurrently",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "concurrently --names \"backend,frontend\" -c \"yellow,blue\" \"npm:dev:backend\" \"npm:dev:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.0"
+  }
+}
