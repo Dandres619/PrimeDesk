@@ -1,5 +1,5 @@
 # <img src="https://api.iconify.design/lucide:bike.svg?color=%234f46e5" width="32" height="32" align="center" /> PrimeDesk
-### **Sistema Integral de Gestión y Automatización para Talleres de Motocicletas**
+### **Sistema de Gestión y Automatización para un Taller de Motocicletas**
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat-square&logo=typescript&logoColor=white)
@@ -21,16 +21,6 @@
 
 ---
 
-## <img src="https://api.iconify.design/lucide:book-open.svg?color=%234f46e5" width="22" height="22" align="center" /> Descripción del Proyecto
-
-**PrimeDesk** es una solución de software diseñada a medida para optimizar, digitalizar y automatizar los procesos operativos y administrativos del taller *Rafa Motos*. El sistema fue desarrollado con una arquitectura modular enfocada en la mantenibilidad, escalabilidad y rendimiento óptimo en entornos concurrentes.
-
-La plataforma cubre todo el ciclo de vida del negocio, incluyendo el registro y control de vehículos, la reserva inteligente de turnos mecánicos, la facturación directa de servicios y compras bajo demanda, y reportes analíticos en tiempo real.
-
-![Dashboard Hero](./docs/dashboard.png)
-
----
-
 ## <img src="https://api.iconify.design/lucide:zap.svg?color=%234f46e5" width="22" height="22" align="center" /> Stack Principal
 
 *   **Frontend:** React 19 + TypeScript + Vite + TailwindCSS + Radix UI
@@ -38,6 +28,18 @@ La plataforma cubre todo el ciclo de vida del negocio, incluyendo el registro y 
 *   **Base de Datos:** PostgreSQL + Supabase
 *   **Autenticación:** JWT (JSON Web Tokens)
 *   **Envío de Correos:** Resend API
+
+---
+
+## <img src="https://api.iconify.design/lucide:book-open.svg?color=%234f46e5" width="22" height="22" align="center" /> Descripción del Proyecto
+
+**PrimeDesk** es una aplicación web creada para digitalizar la gestión del taller Rafa Motos.
+
+Permite registrar motocicletas, reservar agendamientos para clientes, gestionar reparaciones y registro de facturas para repuestos desde una sola plataforma. Además, incluye reportes en tiempo real para facilitar el control del negocio.
+
+El sistema fue desarrollado pensando en una estructura limpia, escalable y fácil de mantener.
+
+![Dashboard Hero](./docs/dashboard.png)
 
 ---
 
@@ -57,7 +59,7 @@ La plataforma cubre todo el ciclo de vida del negocio, incluyendo el registro y 
 ## <img src="https://api.iconify.design/lucide:layers.svg?color=%234f46e5" width="22" height="22" align="center" /> Detalles de los Módulos del Sistema
 
 ### 1. Dashboard de Analítica Comercial
-*   **Métricas en Tiempo Real:** Cálculo de ingresos mensuales netos con indicadores de variación porcentual.
+*   **Métricas en Tiempo Real:** Cálculo de ingresos netos por periodo.
 *   **Gráficos Interactivos:** Visualización de tendencias con gráficos de área para ingresos, gráficos de torta para el estado de reparaciones y listados de servicios solicitados.
 *   **Feed de Actividad:** Consolidación de eventos clave (ventas realizadas, agendamientos registrados y reparaciones finalizadas) en un panel único.
 
@@ -71,7 +73,7 @@ La plataforma cubre todo el ciclo de vida del negocio, incluyendo el registro y 
 ### 3. Control del Taller y Reparaciones
 *   **Trazabilidad del Servicio:** Seguimiento interactivo del estado de reparación en tiempo real (Esperando motocicleta, En Reparación, Reparación Finalizada, Anulada).
 *   **Asignación Dinámica:** Hoja de servicios con desglose de tareas técnicas aplicadas, repuestos utilizados y mano de obra cobrada.
-*   **Historial de reparaciones del Vehículo:** Tabla de reparaciones organizadas por fecha, de mas actual a menos actual, manteniendo las ya finalizadas o anuladas.
+*   **Historial de reparaciones del Vehículo:** Tabla de reparaciones organizadas por fecha, de mas reciente a menos actual, manteniendo las ya finalizadas o anuladas.
 
 ![Reparaciones](./docs/repairs.png)
 
@@ -83,11 +85,11 @@ La plataforma cubre todo el ciclo de vida del negocio, incluyendo el registro y 
 ![Ventas y Compras](./docs/repair_detail.png)
 
 ### 5. Gestión de Clientes, Motocicletas y Proveedores
-*   **Fichero Maestro:** Registro y vinculación directa de clientes y sus motocicletas (Marca, Modelo, Placa, Kilometraje, Año, Cilindrada).
-*   **Directorio de Proveedores:** Módulo de proveedores del taller con información fiscal y el historial de compras directas a cada proveedor visible desde el modulo de Compras.
+*   **Registro de Clientes y Motocicletas:** Registro y vinculación directa de clientes y sus motocicletas (Marca, Modelo, Placa, Kilometraje, Año, Cilindrada).
+*   **Módulo de Proveedores:** Módulo de proveedores del taller con información fiscal y el historial de compras directas a cada proveedor visible desde el modulo de Compras.
 
 ### 6. Control de Usuarios, Roles y Permisos (RBAC)
-*   **Acceso Basado en Roles:** Jerarquía de perfiles de acceso (Administrador, Empleado, Mecánico, Cliente) con permisos granulares.
+*   **Acceso Basado en Roles:** Jerarquía de perfiles de acceso (Administrador, Mecánico, Cliente) con permisos específicos para cada tipo de usuario.
 *   **Middlewares de Ruta:** Protección de endpoints mediante tokens de sesión y validación de rol autorizador en el backend.
 
 ---
@@ -191,7 +193,7 @@ npm run preview   # Previsualiza localmente el build de producción del frontend
 
 *   **Clean Code & Refactorización:** Reestructuración de la base de código inicial, abstrayendo componentes gigantescos en archivos modulares limpios (reemplazo de enrutamiento lineal por sistemas de enrutamiento desacoplados con layouts y contextos lógicos bien definidos).
 *   **Optimización de Consultas SQL:** Escritura de consultas parametrizadas optimizadas para evitar inyecciones SQL, y uso de agregaciones paralelas (`Promise.all`) para el dashboard, reduciendo la latencia de la base de datos.
-*   **Manejo de Zona Horaria (`America/Bogota`):** Tratamiento riguroso de fechas y horas tanto en base de datos PostgreSQL como en la interfaz gráfica para evitar inconsistencias de 1 día causadas por las conversiones automáticas de UTC a nivel de servidor o base de datos.
+*   **Manejo de Zona Horaria (`America/Bogota`):** Manejo consistente de zonas horarias para evitar errores de fechas entre frontend, backend y PostgreSQL a nivel de servidor o base de datos.
 *   **Configuración de Entorno de Desarrollo Concurrente:** Creación de un script automatizado que ejecuta tanto el frontend como el backend al mismo tiempo para optimizar los tiempos de trabajo locales.
 *   **Seguridad en Rutas y Control de Acceso (RBAC):** Implementación de guardias de rutas protegidas en el frontend y middlewares verificadores de tokens JWT en el backend, garantizando que los clientes y diferentes tipos de empleados solo interactúen con recursos autorizados.
 *   **Generación Dinámica de Archivos en Cliente:** Integración de `jspdf` y `html2pdf.js` para renderizar y descargar reportes y facturas en PDF en tiempo real directamente desde la interfaz de usuario, optimizando el consumo de recursos en el backend.
@@ -204,9 +206,12 @@ npm run preview   # Previsualiza localmente el build de producción del frontend
 ## <img src="https://api.iconify.design/lucide:compass.svg?color=%234f46e5" width="22" height="22" align="center" /> Roadmap de Desarrollo
 
 - [ ] Notificaciones automáticas por WhatsApp para avisos de entrega del vehículo.
+- [ ] Integración de pasarelas de pago para que el cliente pueda pagar su factura digitalmente antes de ir a recoger su motocicleta.
+- [ ] Envío de correos o notificaciones basadas en el historial de la motocicleta (ej. "Han pasado 3 meses desde tu último cambio de aceite, agenda tu cita aquí").
+- [ ] Generar un código QR en el recibo de ingreso que se pega a la moto. Al ser escaneado con la cámara del celular del mecánico, abre directamente la orden de servicio en su tablet o celular para actualizar tareas.
 
 ---
 
 ## <img src="https://api.iconify.design/lucide:file-text.svg?color=%234f46e5" width="22" height="22" align="center" /> Licencia
 
-Este proyecto se distribuye bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
+Este proyecto fue desarrollado con fines educativos y de aprendizaje en desarrollo de software.
