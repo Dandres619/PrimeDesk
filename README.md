@@ -45,11 +45,11 @@ La plataforma cubre todo el ciclo de vida del negocio, incluyendo el registro y 
 
 | Módulo | Funcionalidades Principales |
 | :--- | :--- |
-| **Dashboard** | Visualización de ingresos, KPIs mensuales, estadísticas de servicios y feed de actividades recientes. |
-| **Reparaciones** | Control de estados del taller, asignación de mecánicos, desglose de tareas e historial por placa. |
+| **Dashboard** | Visualización de ingresos, métricas por periodo de tiempo (diario, semanal, mensual, trimestral, semestral), estadísticas de servicios y feed de actividades recientes. |
+| **Reparaciones** | Control de estados de cada reparación, completar servicios de la reparación, asignación de repuestos y facturas, aplicar mano de obra a cobrar y finalización de la reparación |
 | **Agendamientos** | Reserva inteligente de turnos con validación de disponibilidad y gestión de horarios del personal. |
-| **Ventas y Compras** | Facturación de servicios, compras específicas Just-in-Time y exportación de facturas a PDF. |
-| **CRM (Contactos)** | Ficheros maestros de clientes, vinculación de vehículos y directorio fiscal de proveedores. |
+| **Ventas y Compras** | Historial de facturación de reparaciones, compras de repuestos, y exportación de facturas a PDF. |
+| **Empleados, Clientes y Motos** | Modulos para visualizar, crear y eliminar/inactivar empleados, clientes y sus motocicletas. |
 | **RBAC (Seguridad)** | Autenticación y control de acceso basado en roles con rutas y endpoints protegidos. |
 
 ---
@@ -57,7 +57,7 @@ La plataforma cubre todo el ciclo de vida del negocio, incluyendo el registro y 
 ## <img src="https://api.iconify.design/lucide:layers.svg?color=%234f46e5" width="22" height="22" align="center" /> Detalles de los Módulos del Sistema
 
 ### 1. Dashboard de Analítica Comercial
-*   **KPIs en Tiempo Real:** Cálculo de ingresos mensuales netos con indicadores de variación porcentual.
+*   **Métricas en Tiempo Real:** Cálculo de ingresos mensuales netos con indicadores de variación porcentual.
 *   **Gráficos Interactivos:** Visualización de tendencias con gráficos de área para ingresos, gráficos de torta para el estado de reparaciones y listados de servicios solicitados.
 *   **Feed de Actividad:** Consolidación de eventos clave (ventas realizadas, agendamientos registrados y reparaciones finalizadas) en un panel único.
 
@@ -84,7 +84,7 @@ La plataforma cubre todo el ciclo de vida del negocio, incluyendo el registro y 
 
 ### 5. Gestión de Clientes, Motocicletas y Proveedores
 *   **Fichero Maestro:** Registro y vinculación directa de clientes y sus motocicletas (Marca, Modelo, Placa, Kilometraje, Año, Cilindrada).
-*   **Directorio de Proveedores:** Base de datos de proveedores asociados con información fiscal y el historial de compras directas vinculadas.
+*   **Directorio de Proveedores:** Módulo de proveedores del taller con información fiscal y el historial de compras directas a cada proveedor visible desde el modulo de Compras.
 
 ### 6. Control de Usuarios, Roles y Permisos (RBAC)
 *   **Acceso Basado en Roles:** Jerarquía de perfiles de acceso (Administrador, Empleado, Mecánico, Cliente) con permisos granulares.
@@ -141,6 +141,24 @@ cd PrimeDesk
 
 ### **Paso 2: Configurar Variables de Envío**
 Crea un archivo `.env` tanto en la carpeta `frontend/` como en `backend/` tomando como referencia los archivos `.env.example` incluidos en cada una.
+
+- #### Backend (`.env`)
+
+```env
+SENDER_NAME="Nombre del taller"
+SENDER_EMAIL=no-reply@tudominio.com
+SUPABASE_URL=https://xxxxxxxxxxxxxxxxxxxx.supabase.co
+service_role=eyJhbGciOiJIUzI1NiIs...xxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxx
+DATABASE_URL=postgresql://usuario_bd:contraseña_bd@host-del-servidor.pooler.supabase.com:6543/postgres
+JWT_SECRET=tu_firma_secreta_altamente_segura_y_larga
+```
+
+- #### Frontend (`.env`)
+```env
+VITE_API_URL=http://localhost:3000/api
+VITE_SUPABASE_URL=https://xxxxxxxxxxxxxxxxxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJ.xxxxxxxxxxxxxx-xxxxxxxxxxxxxx
+```
 
 ### **Paso 3: Instalar Dependencias del Proyecto**
 Ejecuta la instalación desde el directorio raíz. El gestor descargará las dependencias de manera paralela:
