@@ -70,23 +70,21 @@ La plataforma cubre todo el ciclo de vida del negocio, incluyendo el registro y 
 
 ### 3. Control del Taller y Reparaciones
 *   **Trazabilidad del Servicio:** Seguimiento interactivo del estado de reparación en tiempo real (Esperando motocicleta, En Reparación, Reparación Finalizada, Anulada).
-*   **Asignación Dinámica:** Hoja de servicios con desglose de tareas técnicas aplicadas y repuestos utilizados.
-*   **Historial Clínico del Vehículo:** Expediente de mantenimientos históricos de cada motocicleta asociado a su placa.
+*   **Asignación Dinámica:** Hoja de servicios con desglose de tareas técnicas aplicadas, repuestos utilizados y mano de obra cobrada.
+*   **Historial de reparaciones del Vehículo:** Tabla de reparaciones organizadas por fecha, de mas actual a menos actual, manteniendo las ya finalizadas o anuladas.
 
 ![Reparaciones](./docs/repairs.png)
 
 ### 4. Compras, Ventas y Repuestos Bajo Demanda
-*   **Facturación de Servicios y Repuestos:** Registro de ventas asociadas a las reparaciones y mantenimientos realizados en el taller.
-*   **Compras Just-in-Time (Sin Stock ni Inventario):** Siguiendo el modelo operativo del taller *Rafa Motos*, el sistema no gestiona inventario físico ni stock de productos. Las compras a proveedores se realizan y asocian exclusivamente a reparaciones específicas; todo repuesto adquirido se consume de manera inmediata en la motocicleta correspondiente.
+*   **Facturación de Servicios y Repuestos:** Registro de ventas asociadas a las reparaciones y mantenimientos realizados en el taller desde el modulo de Reparaciones.
+*   **Compras por demanda (Sin Stock ni Inventario):** Siguiendo el modelo operativo del taller *Rafa Motos*, el sistema no gestiona inventario físico ni stock de productos. Las compras a proveedores se realizan y asocian exclusivamente a reparaciones específicas; todo repuesto adquirido se consume de manera inmediata en la motocicleta correspondiente.
 *   **Generador Automático de Facturas:** Exportación automática de facturas y órdenes de servicio en PDF de diseño limpio, listas para enviar al cliente o imprimir.
 
-![Ventas y Compras](./docs/pos.png)
+![Ventas y Compras](./docs/repair_detail.png)
 
-### 5. Gestión de Clientes, Motocicletas y Proveedores (CRM)
+### 5. Gestión de Clientes, Motocicletas y Proveedores
 *   **Fichero Maestro:** Registro y vinculación directa de clientes y sus motocicletas (Marca, Modelo, Placa, Kilometraje, Año, Cilindrada).
 *   **Directorio de Proveedores:** Base de datos de proveedores asociados con información fiscal y el historial de compras directas vinculadas.
-
-![Clientes y Vehículos](./docs/crm.png)
 
 ### 6. Control de Usuarios, Roles y Permisos (RBAC)
 *   **Acceso Basado en Roles:** Jerarquía de perfiles de acceso (Administrador, Empleado, Mecánico, Cliente) con permisos granulares.
@@ -188,9 +186,6 @@ npm run preview   # Previsualiza localmente el build de producción del frontend
 ## <img src="https://api.iconify.design/lucide:compass.svg?color=%234f46e5" width="22" height="22" align="center" /> Roadmap de Desarrollo
 
 - [ ] Notificaciones automáticas por WhatsApp para avisos de entrega del vehículo.
-- [ ] Soporte multi-sucursal con base de datos distribuida y unificada.
-- [ ] Módulo avanzado de métricas financieras e historial de compras.
-- [ ] Integración PWA (Progressive Web App) para soporte y accesibilidad en dispositivos móviles.
 
 ---
 
