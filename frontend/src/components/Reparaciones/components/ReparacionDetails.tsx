@@ -85,6 +85,7 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
     ? Math.max(0, associatedSaleTotal - totalPurchases)
     : 0;
   const grandTotal = totalServices + totalPurchases + manoObra;
+  const isEstimatedState = ['esperando motocicleta', 'en reparación', 'en reparacion'].includes(data.estadoBase?.toLowerCase());
 
   // Resolve mechanic document by cross-referencing name or using direct db field
   const matchedMechanic = mechanics.find((m: any) => {
@@ -297,9 +298,13 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
-                          {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(s.Precio || 0)}
-                        </p>
+                        {data.estadoBase === 'Anulada' || data.estadoBase === 'Anulado' ? (
+                          <p className="text-sm font-bold text-slate-400 dark:text-slate-500 italic">Sin costo</p>
+                        ) : (
+                          <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(s.Precio || 0)}
+                          </p>
+                        )}
                         <span className={cn(
                           "inline-block text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full mt-1.5",
                           s.Estado === 'Finalizado'
@@ -364,8 +369,13 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
                             {c.NombreProducto || c.Nombre || 'Repuesto'}
                           </p>
                           <p className="text-xs text-slate-400 dark:text-slate-500 font-bold mt-1">
-                            {c.Cantidad} {c.Cantidad === 1 ? 'unidad' : 'unidades'} x{' '}
-                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(c.PrecioUnitario || 0)}
+                            {c.Cantidad} {c.Cantidad === 1 ? 'unidad' : 'unidades'}
+                            {!(data.estadoBase === 'Anulada' || data.estadoBase === 'Anulado') && (
+                              <>
+                                {' '}x{' '}
+                                {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(c.PrecioUnitario || 0)}
+                              </>
+                            )}
                           </p>
                           {c.Observaciones && (
                             <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium italic mt-1 leading-relaxed truncate max-w-[280px]">
@@ -378,9 +388,13 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
                       <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 dark:border-slate-800/60 shrink-0">
                         <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest md:hidden">Subtotal</span>
                         <div className="text-right">
-                          <p className="text-base font-black text-indigo-600 dark:text-indigo-400">
-                            {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(c.Subtotal || 0)}
-                          </p>
+                          {data.estadoBase === 'Anulada' || data.estadoBase === 'Anulado' ? (
+                            <p className="text-sm font-bold text-slate-400 dark:text-slate-500 italic">Sin costo</p>
+                          ) : (
+                            <p className="text-base font-black text-indigo-600 dark:text-indigo-400">
+                              {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(c.Subtotal || 0)}
+                            </p>
+                          )}
                           {c.Factura && (
                             <a
                               href={c.Factura}
@@ -400,41 +414,57 @@ export function ReparacionDetails({ reparacion, availableServices = [], mechanic
               </div>
             </div>
 
-            {/* Financial Summary */}
-            <div className="p-4 bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-sm text-left">
-              <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto text-left justify-between items-center">
-                <div>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Servicios</span>
-                  <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
-                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalServices)}
-                  </p>
+            {/* Financial Summary or Cancelled Banner */}
+            {data.estadoBase === 'Anulada' || data.estadoBase === 'Anulado' ? (
+              <div className="p-5 bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-400 rounded-2xl border border-red-100/50 dark:border-red-900/30 flex items-center gap-4 shadow-sm w-full text-left">
+                <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                  <Wrench className="w-5 h-5 text-red-600 dark:text-red-400" />
                 </div>
-                <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-800" />
-                <div>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Mano de obra</span>
-                  <p className={cn("text-sm font-black", isSaleCompleted ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400 italic")}>
-                    {isSaleCompleted
-                      ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(manoObra)
-                      : "Por calcular"}
-                  </p>
-                </div>
-                <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-800" />
-                <div>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Repuestos</span>
-                  <p className={cn("text-sm font-black", totalPurchases === 0 ? "text-slate-500 dark:text-slate-400 italic" : "text-indigo-600 dark:text-indigo-400")}>
-                    {totalPurchases === 0
-                      ? (isSaleCompleted || data.estadoBase === 'Reparación finalizada' || data.estadoBase === 'Anulada' ? "No requeridos" : "Por calcular")
-                      : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalPurchases)}
+                <div className="text-left">
+                  <p className="text-sm font-extrabold uppercase tracking-wider">Reparación Anulada</p>
+                  <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1 leading-relaxed">
+                    Esta orden de trabajo ha sido anulada. No se aplican cobros de servicios, repuestos ni mano de obra para este registro.
                   </p>
                 </div>
               </div>
-              <div className="text-right w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-200 dark:border-slate-800 flex sm:flex-col justify-between sm:justify-start items-center sm:items-end">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Total de la Reparación</span>
-                <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
-                  {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(grandTotal)}
-                </p>
+            ) : (
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 shadow-sm text-left">
+                <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto text-left justify-between items-center">
+                  <div>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Servicios</span>
+                    <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                      {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalServices)}
+                    </p>
+                  </div>
+                  <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-800" />
+                  <div>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Mano de obra</span>
+                    <p className={cn("text-sm font-black", isSaleCompleted ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400 italic")}>
+                      {isSaleCompleted
+                        ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(manoObra)
+                        : "Por calcular"}
+                    </p>
+                  </div>
+                  <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-800" />
+                  <div>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Repuestos</span>
+                    <p className={cn("text-sm font-black", totalPurchases === 0 ? "text-slate-500 dark:text-slate-400 italic" : "text-indigo-600 dark:text-indigo-400")}>
+                      {totalPurchases === 0
+                        ? (isSaleCompleted || data.estadoBase === 'Reparación finalizada' || data.estadoBase === 'Anulada' ? "No requeridos" : "Por calcular")
+                        : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalPurchases)}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-200 dark:border-slate-800 flex sm:flex-col justify-between sm:justify-start items-center sm:items-end">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                    {isEstimatedState ? "Subtotal de la Reparación" : "Total de la Reparación"}
+                  </span>
+                  <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
+                    {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(grandTotal)}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
         </div>

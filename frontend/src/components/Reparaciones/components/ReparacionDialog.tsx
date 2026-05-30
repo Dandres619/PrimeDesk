@@ -190,6 +190,7 @@ export function ReparacionDialog({
             handleNumberKeyDown={mutations.handleNumberKeyDown}
             scrollContainerRef={scrollContainerRef}
             handleUpdateEstado={mutations.handleUpdateEstado}
+            setConfirmDialog={state.setConfirmDialog}
           />
         )}
       </form>

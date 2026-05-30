@@ -41,6 +41,7 @@ interface EditRepairCommandCenterProps {
   handleNumberKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   handleUpdateEstado: (nuevoEstado: string) => void;
+  setConfirmDialog: React.Dispatch<React.SetStateAction<any>>;
 }
 
 export function EditRepairCommandCenter({
@@ -75,7 +76,7 @@ export function EditRepairCommandCenter({
   handleProductSelect,
   handleNumberKeyDown,
   scrollContainerRef,
-  handleUpdateEstado,
+  setConfirmDialog,
 }: EditRepairCommandCenterProps) {
   const currentEstado = localOrder?.Estado || localOrder?.estadoBase || 'Esperando motocicleta';
 
@@ -192,17 +193,12 @@ export function EditRepairCommandCenter({
               }}
               disabled={isRepuestosLocked}
               className={cn(
-                "py-5 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2",
+                "py-5 text-xs font-black uppercase tracking-widest border-b-2 transition-all",
                 activeTab === 'repuestos' ? "border-blue-500 text-blue-400" : "border-transparent text-slate-500 hover:text-slate-400",
                 isRepuestosLocked && "opacity-45 cursor-not-allowed hover:text-slate-500"
               )}
             >
               Compras de repuestos ({localOrder?.compras?.length || 0})
-              {isRepuestosLocked && (
-                <span className="text-[9px] font-bold text-yellow-500/80 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 tracking-normal shrink-0">
-                  Bloqueado
-                </span>
-              )}
             </button>
           </div>
 
@@ -210,97 +206,153 @@ export function EditRepairCommandCenter({
           <div className="flex-1 overflow-y-auto p-10 custom-scrollbar" ref={scrollContainerRef}>
             {activeTab === 'servicios' ? (
               <div className="max-w-4xl mx-auto space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest">
-                    Servicios Requeridos
-                  </h3>
+                {currentEstado === 'Esperando motocicleta' ? (
+                  <div className="flex flex-col items-center justify-center text-center py-16 px-6 max-w-xl mx-auto space-y-8 bg-slate-900/30 border border-slate-900 rounded-[2rem] shadow-xl">
+                    <style>{`
+                      @keyframes needle-wiggle {
+                        0%, 100% { transform: rotate(-40deg); }
+                        20% { transform: rotate(40deg); }
+                        40% { transform: rotate(10deg); }
+                        60% { transform: rotate(80deg); }
+                        80% { transform: rotate(50deg); }
+                      }
+                      .animate-needle {
+                        transform-origin: 12px 12px;
+                        animation: needle-wiggle 4s infinite ease-in-out;
+                      }
+                    `}</style>
 
-                  {currentEstado === 'Esperando motocicleta' && (
-                    <Button
-                      type="button"
-                      onClick={() => handleUpdateEstado('En reparación')}
-                      disabled={loadingAction === 'estado-En reparación'}
-                      className="h-11 px-6 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-blue-500/10 hover:scale-[1.02]"
-                    >
-                      {loadingAction === 'estado-En reparación' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      Iniciar Reparación
-                    </Button>
-                  )}
-                </div>
+                    {/* Animated Speedometer Icon */}
+                    <div className="relative w-24 h-24 flex items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-[0_0_50px_rgba(59,130,246,0.15)] overflow-hidden group">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="w-12 h-12 text-blue-400 animate-pulse"
+                      >
+                        <path d="M12 2a10 10 0 0 0-10 10c0 2.2.7 4.3 2 6" />
+                        <path d="M12 22a10 10 0 0 0 10-10c0-2.2-.7-4.3-2-6" />
+                        <circle cx="12" cy="12" r="1" />
+                        <path d="m12 12 5-5" className="animate-needle" />
+                        <path d="M12 2v2" />
+                        <path d="M19 12h2" />
+                        <path d="M3 12h2" />
+                        <path d="m18.4 5.6-1.4 1.4" />
+                        <path d="m5.6 5.6 1.4 1.4" />
+                      </svg>
+                    </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                  {localOrder?.servicios?.map((s: any) => {
-                    const matchService = availableServices.find((as: any) =>
-                      Number(as.ID_Servicio || as.id_servicio) === Number(s.ID_Servicio || s.id_servicio)
-                    );
-                    const servicePrice = parseFloat(s.Precio || matchService?.Precio || matchService?.precio || 0);
+                    <div className="space-y-3">
+                      <h3 className="text-xl font-extrabold text-white tracking-tight leading-none uppercase">
+                        Esperando Motocicleta
+                      </h3>
+                      <p className="text-xs text-slate-400 leading-relaxed font-semibold max-w-sm mx-auto">
+                        Los servicios y repuestos se podrán gestionar una vez que la motocicleta ingrese al taller y se inicie formalmente el proceso.
+                      </p>
 
-                    return (
-                      <div key={s.ID_Servicio} className="bg-slate-950 border border-slate-800 rounded-[1.2rem] overflow-hidden group hover:border-blue-500/40 transition-all text-left">
-                        <div className="p-6 flex items-center justify-between">
-                          <div className="flex items-center gap-6">
-                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center border border-slate-800", s.Estado === 'Finalizado' ? "bg-green-600/20 text-green-500" : "bg-slate-900 text-slate-600")}>
-                              <Check className="w-6 h-6" />
-                            </div>
-                            <div className="text-left">
-                              <h4 className="text-base font-black text-white tracking-tight uppercase">{s.NombreServicio || s.Nombre}</h4>
-                              <div className="flex items-center gap-3 mt-1">
-                                <p className="text-[9px] font-black text-slate-500 uppercase">{s.Estado || 'PENDIENTE'}</p>
-                                <span className="text-slate-800">•</span>
-                                <p className="text-xs font-bold text-blue-400/90">
-                                  {!isNaN(servicePrice) && servicePrice > 0 ? `$${servicePrice.toLocaleString()}` : 'Sin costo'}
-                                </p>
+                      <Button
+                        type="button"
+                        onClick={() => setConfirmDialog({
+                          open: true,
+                          type: 'start',
+                          title: '¿Iniciar reparación?',
+                          description: 'Una vez iniciada se registrará el ingreso del vehículo y no podrá volver al estado anterior.'
+                        })}
+                        disabled={loadingAction === 'estado-En reparación'}
+                        className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-blue-500/20 hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-2"
+                      >
+                        {loadingAction === 'estado-En reparación' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wrench className="w-4 h-4" />}
+                        Iniciar Reparación
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <h3 className="text-sm font-black text-white uppercase tracking-widest">
+                        Servicios Requeridos
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {localOrder?.servicios?.map((s: any) => {
+                        const matchService = availableServices.find((as: any) =>
+                          Number(as.ID_Servicio || as.id_servicio) === Number(s.ID_Servicio || s.id_servicio)
+                        );
+                        const servicePrice = parseFloat(s.Precio || matchService?.Precio || matchService?.precio || 0);
+
+                        return (
+                          <div key={s.ID_Servicio} className="bg-slate-950 border border-slate-800 rounded-[1.2rem] overflow-hidden group hover:border-blue-500/40 transition-all text-left">
+                            <div className="p-6 flex items-center justify-between">
+                              <div className="flex items-center gap-6">
+                                <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center border border-slate-800", s.Estado === 'Finalizado' ? "bg-green-600/20 text-green-500" : "bg-slate-900 text-slate-600")}>
+                                  <Check className="w-6 h-6" />
+                                </div>
+                                <div className="text-left">
+                                  <h4 className="text-base font-black text-white tracking-tight uppercase">{s.NombreServicio || s.Nombre}</h4>
+                                  <div className="flex items-center gap-3 mt-1">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase">{s.Estado || 'PENDIENTE'}</p>
+                                    <span className="text-slate-800">•</span>
+                                    <p className="text-xs font-bold text-blue-400/90">
+                                      {!isNaN(servicePrice) && servicePrice > 0 ? `$${servicePrice.toLocaleString()}` : 'Sin costo'}
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
+                              {s.Estado !== 'Finalizado' && currentEstado === 'En reparación' && (
+                                <Button
+                                  type="button"
+                                  onClick={() => setFinalizeServiceDialog({ open: true, serviceId: s.ID_Servicio, obs: '', serviceName: s.NombreServicio || s.Nombre })}
+                                  disabled={loadingAction === `servicio-${s.ID_Servicio}`}
+                                  size="sm"
+                                  variant="outline"
+                                  className="rounded-lg h-10 border-slate-800 font-black text-[10px] uppercase text-blue-400 hover:text-blue-300 hover:bg-slate-900"
+                                >
+                                  {loadingAction === `servicio-${s.ID_Servicio}` ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Finalizar servicio'}
+                                </Button>
+                              )}
+                            </div>
+                            {s.Observaciones && s.Estado === 'Finalizado' && (
+                              <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/30">
+                                <p className="text-xs font-medium text-slate-400"><span className="font-bold text-slate-500 mr-2">OBSERVACIÓN:</span>{s.Observaciones}</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {currentEstado === 'En reparación' && (
+                        <div className="space-y-6 mt-8">
+                          <div className="p-6 rounded-2xl border border-blue-500/10 bg-blue-500/5 flex items-start gap-4">
+                            <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                            <div className="space-y-1.5 text-left">
+                              <p className="text-xs font-black text-blue-300 uppercase tracking-wider">Pasos para completar la orden</p>
+                              <p className="text-xs font-semibold text-slate-400 leading-relaxed">
+                                Para completar la reparación, primero finaliza todos los servicios de esta lista. Una vez completados, podrás acceder a la pestaña de <strong>"Compras de repuestos"</strong> para registrar los repuestos utilizados (en caso de haberlos) y agregar el costo de la mano de obra para finalizar la reparación.
+                              </p>
                             </div>
                           </div>
-                          {s.Estado !== 'Finalizado' && currentEstado === 'En reparación' && (
-                            <Button
-                              type="button"
-                              onClick={() => setFinalizeServiceDialog({ open: true, serviceId: s.ID_Servicio, obs: '', serviceName: s.NombreServicio || s.Nombre })}
-                              disabled={loadingAction === `servicio-${s.ID_Servicio}`}
-                              size="sm"
-                              variant="outline"
-                              className="rounded-lg h-10 border-slate-800 font-black text-[10px] uppercase text-blue-400 hover:text-blue-300 hover:bg-slate-900"
-                            >
-                              {loadingAction === `servicio-${s.ID_Servicio}` ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Finalizar servicio'}
-                            </Button>
+
+                          {allServicesFinalized && (
+                            <div className="flex justify-center pt-2">
+                              <Button
+                                type="button"
+                                onClick={() => setActiveTab('repuestos')}
+                                className="h-14 px-10 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
+                              >
+                                Continuar a registrar Repuestos ➜
+                              </Button>
+                            </div>
                           )}
-                        </div>
-                        {s.Observaciones && s.Estado === 'Finalizado' && (
-                          <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/30">
-                            <p className="text-xs font-medium text-slate-400"><span className="font-bold text-slate-500 mr-2">OBSERVACIÓN:</span>{s.Observaciones}</p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {currentEstado === 'En reparación' && (
-                    <div className="space-y-6 mt-8">
-                      <div className="p-6 rounded-2xl border border-blue-500/10 bg-blue-500/5 flex items-start gap-4">
-                        <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                        <div className="space-y-1.5 text-left">
-                          <p className="text-xs font-black text-blue-300 uppercase tracking-wider">Pasos para completar la orden</p>
-                          <p className="text-xs font-semibold text-slate-400 leading-relaxed">
-                            Para completar la reparación, primero finaliza todos los servicios de esta lista. Una vez completados, podrás acceder a la pestaña de <strong>"Compras de repuestos"</strong> para registrar los repuestos utilizados y terminar la reparación.
-                          </p>
-                        </div>
-                      </div>
-
-                      {allServicesFinalized && (
-                        <div className="flex justify-center pt-2">
-                          <Button
-                            type="button"
-                            onClick={() => setActiveTab('repuestos')}
-                            className="h-14 px-10 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
-                          >
-                            Continuar a registrar Repuestos ➜
-                          </Button>
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             ) : (
               <div className="max-w-5xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-10">
@@ -510,8 +562,8 @@ export function EditRepairCommandCenter({
                               <span className="truncate">
                                 {proveedores.find(p => (p.ID_Proveedor || p.id_proveedor || '').toString() === newRepuesto.id_proveedor)
                                   ? (proveedores.find(p => (p.ID_Proveedor || p.id_proveedor || '').toString() === newRepuesto.id_proveedor).nombreempresa ||
-                                     proveedores.find(p => (p.ID_Proveedor || p.id_proveedor || '').toString() === newRepuesto.id_proveedor).NombreEmpresa ||
-                                     proveedores.find(p => (p.ID_Proveedor || p.id_proveedor || '').toString() === newRepuesto.id_proveedor).nombre)
+                                    proveedores.find(p => (p.ID_Proveedor || p.id_proveedor || '').toString() === newRepuesto.id_proveedor).NombreEmpresa ||
+                                    proveedores.find(p => (p.ID_Proveedor || p.id_proveedor || '').toString() === newRepuesto.id_proveedor).nombre)
                                   : "Seleccionar proveedor..."}
                               </span>
                               <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2 text-slate-400" />
