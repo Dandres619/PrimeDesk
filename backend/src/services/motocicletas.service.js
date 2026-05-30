@@ -94,7 +94,7 @@ const update = async (id, { id_cliente, marca, modelo, anio, placa, color, motor
 
   // Si intentan inactivar, verificar dependencias
   if (estado === false) {
-    const agendamientos = await sql`SELECT 1 FROM agendamientos WHERE id_motocicleta = ${id} LIMIT 1`;
+    const agendamientos = await sql`SELECT 1 FROM agendamientos a LEFT JOIN reparaciones r ON a.id_reparacion = r.id_reparacion WHERE r.id_motocicleta = ${id} LIMIT 1`;
     const reparaciones = await sql`SELECT 1 FROM reparaciones WHERE id_motocicleta = ${id} LIMIT 1`;
     if (agendamientos.length > 0 || reparaciones.length > 0) {
       // Revertir estado si hay dependencias? O mejor lanzar error antes.
@@ -111,7 +111,7 @@ const update = async (id, { id_cliente, marca, modelo, anio, placa, color, motor
 const remove = async (id) => {
   const sql = await getPool();
 
-  const agendamientos = await sql`SELECT 1 FROM agendamientos WHERE id_motocicleta = ${id} LIMIT 1`;
+  const agendamientos = await sql`SELECT 1 FROM agendamientos a LEFT JOIN reparaciones r ON a.id_reparacion = r.id_reparacion WHERE r.id_motocicleta = ${id} LIMIT 1`;
   const reparaciones = await sql`SELECT 1 FROM reparaciones WHERE id_motocicleta = ${id} LIMIT 1`;
 
   if (agendamientos.length > 0 || reparaciones.length > 0) {

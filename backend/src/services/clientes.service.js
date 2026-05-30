@@ -222,7 +222,7 @@ const remove = async (id) => {
   }
 
   // 3. Verificar agendamientos
-  const agendamientos = await sql`SELECT COUNT(*) FROM agendamientos a INNER JOIN motocicletas m ON a.id_motocicleta = m.id_motocicleta WHERE m.id_cliente = ${id}`;
+  const agendamientos = await sql`SELECT COUNT(*) FROM agendamientos a LEFT JOIN reparaciones r ON a.id_reparacion = r.id_reparacion INNER JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta WHERE m.id_cliente = ${id}`;
   if (parseInt(agendamientos[0].count) > 0) {
     throw { status: 400, message: `No se puede eliminar al cliente ${cli.nombre} ${cli.apellido} porque tiene agendamientos registrados.` };
   }

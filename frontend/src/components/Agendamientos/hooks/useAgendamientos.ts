@@ -49,6 +49,7 @@ export function useAgendamientos() {
           startTime: a.HoraInicio ? a.HoraInicio.substring(0, 5) : '',
           endTime: a.HoraFin ? a.HoraFin.substring(0, 5) : '',
           motorcycleId: a.ID_Motocicleta,
+          repairId: a.ID_Reparacion,
           motorcyclePlate: a.Placa,
           motorcycleBrand: a.Marca,
           motorcycleModel: a.Modelo,

@@ -1,6 +1,7 @@
 const { getPool } = require('../config/db');
 const supabase = require('../config/supabase');
 const path = require('path');
+const emailService = require('./email.service');
 
 const getAll = async (filters = {}) => {
   const sql = await getPool();
@@ -240,6 +241,46 @@ const syncAgendamientoState = async (id_agendamiento, repairEstado) => {
     `;
 };
 
+const sendCancellationMailIfAnulada = async (id) => {
+  const sql = await getPool();
+  try {
+    const [aptInfo] = await sql`
+      SELECT a.dia AS "Dia", a.horainicio AS "HoraInicio",
+             c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente",
+             u.correo AS "CorreoCliente"
+      FROM reparaciones r
+      LEFT JOIN agendamientos a ON r.id_agendamiento = a.id_agendamiento
+      INNER JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta
+      INNER JOIN clientes c ON m.id_cliente = c.id_cliente
+      LEFT JOIN usuarios u ON c.id_usuario = u.id_usuario
+      WHERE r.id_reparacion = ${id}
+    `;
+
+    if (aptInfo && aptInfo.CorreoCliente) {
+      let dateStr = aptInfo.Dia;
+      if (aptInfo.Dia instanceof Date) {
+        dateStr = aptInfo.Dia.toISOString().split('T')[0];
+      } else if (dateStr && typeof dateStr === 'object') {
+        dateStr = String(dateStr);
+      }
+      
+      let timeStr = aptInfo.HoraInicio;
+      if (timeStr && typeof timeStr === 'string') {
+        const parts = timeStr.split(':');
+        if (parts.length >= 2) {
+          timeStr = `${parts[0]}:${parts[1]}`;
+        }
+      }
+      
+      const fullName = `${aptInfo.NombreCliente || ''} ${aptInfo.ApellidoCliente || ''}`.trim();
+      await emailService.sendCancellationEmail(aptInfo.CorreoCliente, fullName, dateStr, timeStr);
+      console.log(`📧 Reparación: Correo de cancelación enviado a ${aptInfo.CorreoCliente}`);
+    }
+  } catch (emailErr) {
+    console.error(`❌ Reparación: Error al enviar correo de cancelación:`, emailErr.message || emailErr);
+  }
+};
+
 const update = async (id, { observaciones, estado }) => {
   const sql = await getPool();
   const [row] = await sql`
@@ -254,6 +295,10 @@ const update = async (id, { observaciones, estado }) => {
 
   await syncComprasForReparacion(id, estado);
   await syncAgendamientoState(row.ID_Agendamiento, estado);
+
+  if (estado === 'Anulada' || estado === 'Anulado') {
+    await sendCancellationMailIfAnulada(id);
+  }
 
   return row;
 };
@@ -285,6 +330,10 @@ const updateEstado = async (id, estado) => {
 
     await syncComprasForReparacion(id, estado);
     await syncAgendamientoState(row.ID_Agendamiento, estado);
+
+    if (estado === 'Anulada' || estado === 'Anulado') {
+      await sendCancellationMailIfAnulada(id);
+    }
 
     return row;
 };

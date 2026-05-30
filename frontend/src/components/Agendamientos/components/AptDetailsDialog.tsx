@@ -105,7 +105,7 @@ export function AptDetailsDialog({ selectedApt, onEdit, onDelete, onOpenChange }
             <div className="col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
               <Label className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3 block">Servicios Requeridos</Label>
               <TooltipProvider>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-4 bg-slate-50/50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800 max-h-48 overflow-y-auto custom-scrollbar">
                   {selectedApt.serviceTypes.map((s: any, idx: number) => {
                     const nombre = typeof s === 'object' ? s.Nombre || s.nombre : s;
                     const duracion = typeof s === 'object' ? s.Duracion || s.duracion : null;
@@ -115,25 +115,31 @@ export function AptDetailsDialog({ selectedApt, onEdit, onDelete, onOpenChange }
                       <Tooltip key={idx}>
                         <TooltipTrigger asChild>
                           <div
-                            className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center justify-between gap-3 shadow-xs hover:border-indigo-400 dark:hover:border-indigo-600 transition-colors cursor-help"
+                            className="flex items-center gap-3 p-3 rounded-lg border transition-all min-w-0 bg-indigo-50 border-indigo-400 dark:bg-indigo-900/20 dark:border-indigo-500 shadow-sm cursor-help"
                           >
-                            <div className="min-w-0 flex-1 flex flex-col gap-0.5">
-                              <span className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">
-                                {nombre}
-                              </span>
-                              {duracion !== null && (
-                                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                                  Duración: {duracion} min
+                            <input
+                              type="checkbox"
+                              checked={true}
+                              readOnly
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 shrink-0 pointer-events-none cursor-default"
+                            />
+                            <div className="flex items-center justify-between gap-3 min-w-0 flex-1">
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span className="font-bold text-sm truncate text-indigo-900 dark:text-indigo-100">
+                                  {nombre}
+                                </span>
+                                {duracion !== null && (
+                                  <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400">
+                                    {duracion} min
+                                  </span>
+                                )}
+                              </div>
+                              {precio !== null && (
+                                <span className="text-xs font-black shrink-0 text-indigo-700 dark:text-indigo-300">
+                                  ${Number(precio).toLocaleString('es-CO')}
                                 </span>
                               )}
                             </div>
-                            {precio !== null && (
-                              <div className="shrink-0 text-right">
-                                <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">
-                                  ${Number(precio).toLocaleString('es-CO')}
-                                </span>
-                              </div>
-                            )}
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -163,7 +169,7 @@ export function AptDetailsDialog({ selectedApt, onEdit, onDelete, onOpenChange }
               <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-              Este agendamiento ha sido finalizado, por lo que no se permiten más modificaciones. Para ver más detalles, consulta el módulo de reparaciones.
+              Este agendamiento ha sido finalizado, por lo que no se permiten más modificaciones. Para ver más detalles, consulta la reparación #{selectedApt.repairId} en el módulo de reparaciones.
             </p>
           </div>
         ) : isEnReparacion ? (
@@ -172,7 +178,7 @@ export function AptDetailsDialog({ selectedApt, onEdit, onDelete, onOpenChange }
               <Wrench className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             </div>
             <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
-              Este agendamiento está actualmente en reparación, por lo que no se permiten más modificaciones. Para anularla, dirijase al modulo de Reparaciones.
+              Este agendamiento está actualmente en reparación (#{selectedApt.repairId}), por lo que no se permiten más modificaciones. Para anularla, diríjase al módulo de Reparaciones.
             </p>
           </div>
         ) : isAnulado ? (
@@ -190,7 +196,7 @@ export function AptDetailsDialog({ selectedApt, onEdit, onDelete, onOpenChange }
               <Wrench className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             </div>
             <p className="text-xs font-semibold text-indigo-800 dark:text-indigo-300">
-              Este agendamiento generó automáticamente una reparación asociada en el módulo principal.
+              Este agendamiento generó automáticamente la reparación asociada #{selectedApt.repairId} en el módulo principal.
             </p>
           </div>
         )}
