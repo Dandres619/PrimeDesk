@@ -40,11 +40,11 @@ const sendWelcomeEmail = async (to, name, options = {}) => {
                     .wrapper { width: 100%; background-color: #020617; padding-bottom: 40px; }
                     .container { max-width: 600px; margin: 40px auto; background-color: #0b1426; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); overflow: hidden; }
                     .header { padding: 40px 0; text-align: center; background: linear-gradient(135deg, #0b1426, #161e31); }
-                    .logo-box { display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #ef4444, #f97316); border-radius: 14px; line-height: 64px; font-weight: 800; font-size: 24px; color: #fff; margin-bottom: 16px; }
+                    .logo-box { display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #4f46e5, #9333ea); border-radius: 14px; line-height: 64px; font-weight: 800; font-size: 24px; color: #fff; margin-bottom: 16px; }
                     .content { padding: 40px 32px; text-align: center; }
                     h1 { font-size: 28px; margin: 0 0 16px 0; color: #fff; }
                     p { font-size: 16px; line-height: 1.6; color: #94a3b8; margin: 0 0 24px 0; }
-                    .btn { display: inline-block; padding: 16px 40px; background: linear-gradient(90deg, #ef4444, #f97316); color: #fff !important; text-decoration: none; font-weight: 700; border-radius: 12px; }
+                    .btn { display: inline-block; padding: 16px 40px; background: linear-gradient(90deg, #4f46e5, #9333ea); color: #fff !important; text-decoration: none; font-weight: 700; border-radius: 12px; }
                     .footer { padding: 32px; text-align: center; background-color: rgba(0,0,0,0.2); font-size: 13px; color: #64748b; }
                 </style>
             </head>
@@ -209,11 +209,11 @@ const sendCancellationEmail = async (to, name, date, time, options = {}) => {
                     .wrapper { width: 100%; background-color: #020617; padding-bottom: 40px; }
                     .container { max-width: 600px; margin: 40px auto; background-color: #0b1426; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
                     .header { padding: 40px 0; text-align: center; background: linear-gradient(135deg, #0b1426, #161e31); }
-                    .logo-box { display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #ef4444, #f97316); border-radius: 14px; line-height: 64px; text-align: center; font-weight: 800; font-size: 24px; color: #fff; margin-bottom: 16px; }
+                    .logo-box { display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #4f46e5, #9333ea); border-radius: 14px; line-height: 64px; text-align: center; font-weight: 800; font-size: 24px; color: #fff; margin-bottom: 16px; }
                     .content { padding: 40px 32px; text-align: center; }
                     h1 { font-size: 28px; font-weight: 700; margin: 0 0 16px 0; color: #fff; }
                     p { font-size: 16px; line-height: 1.6; color: #94a3b8; margin: 0 0 24px 0; }
-                    .btn { display: inline-block; padding: 16px 40px; background: linear-gradient(90deg, #ef4444, #f97316); color: #fff !important; text-decoration: none; font-weight: 700; font-size: 16px; border-radius: 12px; }
+                    .btn { display: inline-block; padding: 16px 40px; background: linear-gradient(90deg, #4f46e5, #9333ea); color: #fff !important; text-decoration: none; font-weight: 700; font-size: 16px; border-radius: 12px; }
                     .footer { padding: 32px; text-align: center; background-color: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); }
                     .footer p { font-size: 13px; margin: 4px 0; }
                     .accent { color: #f97316; font-weight: 600; }
@@ -262,7 +262,7 @@ const sendRepairCompletedEmail = async (to, name, plate, brandModel, options = {
                     .wrapper { width: 100%; background-color: #020617; padding-bottom: 40px; }
                     .container { max-width: 600px; margin: 40px auto; background-color: #0b1426; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
                     .header { padding: 40px 0; text-align: center; background: linear-gradient(135deg, #0b1426, #161e31); }
-                    .logo-box { display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #ef4444, #f97316); border-radius: 14px; line-height: 64px; text-align: center; font-weight: 800; font-size: 24px; color: #fff; margin-bottom: 16px; }
+                    .logo-box { display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #4f46e5, #9333ea); border-radius: 14px; line-height: 64px; text-align: center; font-weight: 800; font-size: 24px; color: #fff; margin-bottom: 16px; }
                     .content { padding: 40px 32px; text-align: center; }
                     h1 { font-size: 28px; font-weight: 700; margin: 0 0 16px 0; color: #fff; }
                     p { font-size: 16px; line-height: 1.6; color: #94a3b8; margin: 0 0 24px 0; }
@@ -301,4 +301,57 @@ const sendRepairCompletedEmail = async (to, name, plate, brandModel, options = {
     return sendMail({ to, subject, html, ...options });
 };
 
-module.exports = { sendMail, sendWelcomeEmail, sendResetPasswordEmail, sendContactEmail, sendVerificationEmail, sendCancellationEmail, sendRepairCompletedEmail };
+const sendPasswordChangedEmail = async (to, name, options = {}) => {
+    const subject = 'Contraseña cambiada exitosamente 🔐 | Rafa Motos';
+    const html = `
+        <!doctype html>
+        <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Contraseña Cambiada - Rafa Motos</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+                    body { margin: 0; padding: 0; background-color: #020617; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc; }
+                    .wrapper { width: 100%; background-color: #020617; padding-bottom: 40px; }
+                    .container { max-width: 600px; margin: 40px auto; background-color: #0b1426; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+                    .header { padding: 40px 0; text-align: center; background: linear-gradient(135deg, #0b1426, #161e31); }
+                    .content { padding: 40px 32px; text-align: center; }
+                    h1 { font-size: 28px; font-weight: 700; margin: 0 0 16px 0; color: #fff; }
+                    p { font-size: 16px; line-height: 1.6; color: #94a3b8; margin: 0 0 24px 0; }
+                    .btn { display: inline-block; padding: 16px 40px; background: linear-gradient(90deg, #4f46e5, #9333ea); color: #fff !important; text-decoration: none; font-weight: 700; font-size: 16px; border-radius: 12px; }
+                    .footer { padding: 32px; text-align: center; background-color: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); }
+                    .footer p { font-size: 13px; margin: 4px 0; }
+                    .accent { color: #6366f1; font-weight: 600; }
+                    @media screen and (max-width: 600px) { .container { margin-top: 20px; border-radius: 0; } }
+                </style>
+            </head>
+            <body>
+                <div class="wrapper">
+                    <div class="container">
+                        <div class="header">
+                            <img src="https://ynigfdldjybizqysmnaf.supabase.co/storage/v1/object/public/profiles/rafamotos-logo.png" alt="Rafa Motos Logo" style="height: 64px; width: auto; display: block; margin: 0 auto 12px auto; object-fit: contain;" />
+                            <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; text-transform: uppercase;">RAFA MOTOS</div>
+                        </div>
+                        <div class="content">
+                            <h1>Contraseña Actualizada</h1>
+                            <p>Hola <span class="accent">${name || 'Usuario'}</span>,</p>
+                            <p>Te informamos que la contraseña de tu cuenta en <strong>Rafa Motos</strong> ha sido cambiada exitosamente.</p>
+                            <p>Si has realizado este cambio, no necesitas tomar ninguna acción adicional.</p>
+                            <p style="color: #f87171; font-size: 14px; margin-top: 24px;">Si NO realizaste este cambio, por favor ponte en contacto con la administración o restablece tu contraseña inmediatamente.</p>
+                            <a href="${FRONTEND_URL}/login" class="btn" style="margin-top: 16px;">INICIAR SESIÓN</a>
+                        </div>
+                        <div class="footer">
+                            <p><strong>Rafa Motos</strong></p>
+                            <p>Servicio Técnico Profesional para Motocicletas</p>
+                            <p>© 2026 Rafa Motos. Todos los derechos reservados.</p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+        </html>
+    `;
+    return sendMail({ to, subject, html, ...options });
+};
+
+module.exports = { sendMail, sendWelcomeEmail, sendResetPasswordEmail, sendContactEmail, sendVerificationEmail, sendCancellationEmail, sendRepairCompletedEmail, sendPasswordChangedEmail };

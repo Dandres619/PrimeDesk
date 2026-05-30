@@ -290,24 +290,39 @@ const updateProfile = async (id_usuario, data, file) => {
 const changePassword = async (id_usuario, contrasenaActual, nuevaContrasena) => {
     const sql = await getPool();
 
-    const users = await sql`SELECT contrasena FROM usuarios WHERE id_usuario = ${id_usuario} `;
+    const users = await sql`
+        SELECT u.contrasena, u.correo, COALESCE(e.nombre, c.nombre) AS nombre
+        FROM usuarios u
+        LEFT JOIN empleados e ON e.id_usuario = u.id_usuario
+        LEFT JOIN clientes c ON c.id_usuario = u.id_usuario
+        WHERE u.id_usuario = ${id_usuario}
+    `;
 
     if (users.length === 0) {
         throw { status: 404, message: 'Usuario no encontrado.' };
     }
 
-    const match = await bcrypt.compare(contrasenaActual, users[0].contrasena);
+    const user = users[0];
+
+    const match = await bcrypt.compare(contrasenaActual, user.contrasena);
     if (!match) {
         throw { status: 401, message: 'La contraseña actual es incorrecta.' };
     }
 
-    const isSamePassword = await bcrypt.compare(nuevaContrasena, users[0].contrasena);
+    const isSamePassword = await bcrypt.compare(nuevaContrasena, user.contrasena);
     if (isSamePassword) {
         throw { status: 400, message: 'La nueva contraseña no puede ser igual a la actual.' };
     }
 
     const hashed = await bcrypt.hash(nuevaContrasena, 10);
     await sql`UPDATE usuarios SET contrasena = ${hashed} WHERE id_usuario = ${id_usuario} `;
+
+    // Enviar correo de notificación
+    try {
+        await emailService.sendPasswordChangedEmail(user.correo, user.nombre);
+    } catch (err) {
+        console.warn('No se pudo enviar el correo de confirmación de cambio de contraseña:', err.message || err);
+    }
 
     return { message: 'Contraseña actualizada correctamente.' };
 };
