@@ -23,6 +23,7 @@ import { Horarios } from '@/components/Horarios/index';
 import { Categorias } from '@/components/Categorias/index';
 import { Productos } from '@/components/Productos/index';
 import { Reparaciones } from '@/components/Reparaciones';
+import { MiHorario } from '@/components/MiHorario/index';
 import { Login } from '@/components/Login';
 import LandingPage from '@/components/LandingPage';
 import { ClientPanel } from '@/components/PanelCliente';
@@ -155,6 +156,7 @@ export const AppRoutes: React.FC = () => {
                                 item.id === 'servicios' ? <Servicios /> :
                                 item.id === 'reparaciones' ? <Reparaciones /> :
                                 item.id === 'horarios' ? <Horarios /> :
+                                item.id === 'mi-horario' ? <MiHorario /> :
                                 item.id === 'agendamientos' ? <Agendamientos /> :
                                 item.id === 'categorias-productos' ? <Categorias /> :
                                 item.id === 'productos' ? <Productos /> :

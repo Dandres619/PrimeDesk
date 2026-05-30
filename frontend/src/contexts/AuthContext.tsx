@@ -5,6 +5,7 @@ import { getPrefix, menuItems } from '@/config/menu';
 export interface User {
     id?: number;
     id_cliente?: number;
+    id_empleado?: number;
     username: string;
     name: string;
     last_name: string;
@@ -64,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setCurrentUser({
                         id: profileData.id_usuario,
                         id_cliente: profileData.ID_Cliente,
+                        id_empleado: profileData.ID_Empleado,
                         username: profileData.correo,
                         name: profileData.NombreCliente || profileData.NombreEmpleado || profileData.correo,
                         last_name: profileData.ApellidoCliente || profileData.ApellidoEmpleado || '',

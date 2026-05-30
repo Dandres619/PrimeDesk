@@ -27,6 +27,7 @@ export const menuItems: any[] = [
     { id: 'servicios', label: 'Servicios', icon: PiWrench, permission: 'gestionar_servicios' },
     { id: 'reparaciones', label: 'Reparaciones', icon: ClipboardPen, permission: 'gestionar_reparaciones' },
     { id: 'horarios', label: 'Horarios', icon: AlarmClock, permission: 'gestionar_horarios' },
+    { id: 'mi-horario', label: 'Mi Horario', icon: AlarmClock, permission: 'ver_horario' },
     { id: 'agendamientos', label: 'Agendamientos', icon: CalendarClock, permission: 'gestionar_agendamientos' },
     { id: 'categorias-productos', label: 'Categorías', icon: Tags, permission: 'gestionar_categorias' },
     { id: 'productos', label: 'Productos', icon: PackageSearch, permission: 'gestionar_productos' },
