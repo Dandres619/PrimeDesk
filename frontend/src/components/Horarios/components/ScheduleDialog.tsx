@@ -202,7 +202,7 @@ export function ScheduleDialog({ schedule, employees, daysOfWeek, onSave, onOpen
                 >
                   {filteredEmployees.length === 0 ? (
                     <div className="py-6 px-2 text-center">
-                      <p className="text-sm text-slate-500">No se encontraron mecánicos.</p>
+                      <p className="text-sm text-slate-500">No se encontraron mecánicos sin horario asignado.</p>
                     </div>
                   ) : (
                     filteredEmployees.map((emp: any) => (

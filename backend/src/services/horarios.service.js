@@ -90,6 +90,20 @@ const upsertHorarios = async (id_empleado, diasHorarios) => {
  */
 const toggleEstado = async (id_empleado, estado) => {
   const sql = await getPool();
+
+  if (!estado) {
+    const activeRepairs = await sql`
+      SELECT COUNT(*)::int as count 
+      FROM agendamientos a
+      LEFT JOIN reparaciones r ON r.id_agendamiento = a.id_agendamiento
+      WHERE a.id_empleado = ${id_empleado} 
+        AND (a.estado = 'En reparación' OR r.estado = 'En reparación')
+    `;
+    if (activeRepairs[0].count > 0) {
+      throw { status: 400, message: 'No se puede inactivar el horario del mecánico porque tiene una reparación o agendamiento en estado "En reparación".' };
+    }
+  }
+
   await sql`
     UPDATE horarios
     SET estado = ${estado}, updated_at = timezone('America/Bogota', NOW())
@@ -103,6 +117,18 @@ const toggleEstado = async (id_empleado, estado) => {
  */
 const remove = async (id_empleado) => {
   const sql = await getPool();
+
+  const activeRepairs = await sql`
+    SELECT COUNT(*)::int as count 
+    FROM agendamientos a
+    LEFT JOIN reparaciones r ON r.id_agendamiento = a.id_agendamiento
+    WHERE a.id_empleado = ${id_empleado} 
+      AND (a.estado = 'En reparación' OR r.estado = 'En reparación')
+  `;
+  if (activeRepairs[0].count > 0) {
+    throw { status: 400, message: 'No se puede eliminar el horario del mecánico porque tiene una reparación o agendamiento en estado "En reparación".' };
+  }
+
   await sql`DELETE FROM horarios WHERE id_empleado = ${id_empleado}`;
   return { message: 'Horarios eliminados exitosamente.' };
 };

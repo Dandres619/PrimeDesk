@@ -74,8 +74,7 @@ export function useHorarios() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleSave = async (data: any) => {
-    const isEditing = !!editingSchedule;
+  const handleSave = async (data: any, isEditing: boolean = false) => {
     const id_empleado = parseInt(data.employeeId);
     const dias = Object.entries(data.daySchedules)
       .filter(([, ds]: any) => ds.enabled)
@@ -97,11 +96,11 @@ export function useHorarios() {
         throw new Error(err.message || 'Error al guardar horario');
       }
       toast.success(`Horario ${isEditing ? 'actualizado' : 'creado'} exitosamente`);
-      setIsDialogOpen(false);
-      setEditingSchedule(null);
       fetchData(true);
+      return true;
     } catch (err: any) {
       toast.error(err.message);
+      return false;
     }
   };
 
@@ -113,7 +112,10 @@ export function useHorarios() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ estado: newEstado })
       });
-      if (!res.ok) throw new Error('Error al cambiar el estado');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Error al cambiar el estado');
+      }
       toast.success('Estado del horario actualizado');
       fetchData(true);
     } catch (err: any) {

@@ -106,11 +106,17 @@ export function Horarios() {
           <Dialog open={editDialog.open} onOpenChange={(open) => setEditDialog(prev => ({ ...prev, open }))}>
             <ScheduleDialog
               schedule={editDialog.schedule}
-              employees={employees}
+              employees={
+                editDialog.schedule
+                  ? employees
+                  : employees.filter(emp => !schedules.some(s => s.id === emp.ID_Empleado))
+              }
               daysOfWeek={DAYS_OF_WEEK}
-              onSave={(data) => {
-                handleSave(data);
-                setEditDialog(prev => ({ ...prev, open: false }));
+              onSave={async (data) => {
+                const success = await handleSave(data, !!editDialog.schedule);
+                if (success) {
+                  setEditDialog(prev => ({ ...prev, open: false }));
+                }
               }}
               onOpenChange={(open) => setEditDialog(prev => ({ ...prev, open }))}
             />
