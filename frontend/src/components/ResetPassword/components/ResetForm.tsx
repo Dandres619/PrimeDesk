@@ -74,11 +74,11 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                         return (
                             <div key={i} className="flex items-center gap-2 text-[10px] transition-all duration-300">
                                 {isMet ? (
-                                    <Check className="h-3 w-3 text-green-600" />
+                                    <Check className="h-3 w-3 text-green-400 font-bold" />
                                 ) : (
-                                    <div className="h-3 w-3 rounded-full border border-gray-300" />
+                                    <div className="h-3 w-3 rounded-full border border-slate-600" />
                                 )}
-                                <span className={isMet ? "text-green-600 font-bold" : "text-gray-500"}>
+                                <span className={isMet ? "text-green-400 font-bold" : "text-slate-400"}>
                                     {req.label}
                                 </span>
                             </div>
@@ -92,7 +92,7 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                     <Label className="lv-label">Confirmar Nueva Contraseña</Label>
                 </div>
                 <div className={`lv-input-wrapper ${focusedField === 'confirm' ? 'lv-input-focused' : ''} ${confirm.length > 0 ? (passwordsMatch ? 'border-green-500/50' : 'border-red-500/50') : ''}`}>
-                    <ShieldCheck className={`lv-input-icon ${confirm.length > 0 ? (passwordsMatch ? 'text-green-600' : 'text-red-500') : ''}`} />
+                    <ShieldCheck className={`lv-input-icon ${confirm.length > 0 ? (passwordsMatch ? 'text-green-400' : 'text-red-400') : ''}`} />
                     <Input
                         type={showConfirm ? "text" : "password"}
                         placeholder="Repite tu contraseña"
@@ -157,7 +157,7 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                 .lv-label {
                     font-size: 0.8rem;
                     font-weight: 600;
-                    color: #374151 !important;
+                    color: #cbd5e1 !important;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
                 }
@@ -171,8 +171,8 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                 .lv-input-wrapper {
                     position: relative;
                     border-radius: 12px;
-                    background: #f8fafc;
-                    border: 2px solid #e2e8f0;
+                    background: rgba(15, 23, 42, 0.6);
+                    border: 2px solid rgba(255, 255, 255, 0.1);
                     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
                     overflow: hidden;
                     display: flex;
@@ -181,9 +181,9 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                 }
 
                 .lv-input-focused {
-                    border-color: #4f46e5 !important;
-                    background: #f8fafc !important;
-                    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.05) !important;
+                    border-color: #6366f1 !important;
+                    background: rgba(15, 23, 42, 0.8) !important;
+                    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15) !important;
                 }
 
                 .lv-input-icon {
@@ -193,13 +193,13 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                     transform: translateY(-50%);
                     width: 16px;
                     height: 16px;
-                    color: #9ca3af;
+                    color: #94a3b8;
                     z-index: 1;
                     transition: color 0.3s ease;
                 }
 
                 .lv-input-focused .lv-input-icon {
-                    color: #6366f1;
+                    color: #818cf8;
                 }
 
                 .lv-input {
@@ -210,7 +210,7 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                     border: none !important;
                     background: transparent !important;
                     font-size: 0.9rem !important;
-                    color: #1f2937 !important;
+                    color: white !important;
                     box-shadow: none !important;
                     outline: none !important;
                 }
@@ -230,7 +230,7 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                     top: 50%;
                     transform: translateY(-50%);
                     z-index: 10;
-                    color: #9ca3af;
+                    color: #94a3b8;
                     background: none;
                     border: none;
                     cursor: pointer;
@@ -243,8 +243,8 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                 }
 
                 .lv-toggle-password:hover {
-                    color: #6366f1;
-                    background: rgba(99, 102, 241, 0.08);
+                    color: #818cf8;
+                    background: rgba(99, 102, 241, 0.15);
                 }
 
                 .lv-submit-btn {
@@ -288,7 +288,7 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
 
                 .lv-create-btn {
                     width: 100%;
-                    color: #6366f1 !important;
+                    color: #a5b4fc !important;
                     font-weight: 600 !important;
                     font-size: 0.85rem !important;
                     background: transparent !important;
@@ -297,7 +297,7 @@ export function ResetForm({ onSubmit, loading }: ResetFormProps) {
                 }
 
                 .lv-create-btn:hover {
-                    color: #4338ca !important;
+                    color: #818cf8 !important;
                     text-decoration: underline;
                 }
             `}</style>

@@ -273,4 +273,17 @@ const checkEmail = async (req, res) => {
     }
 };
 
-module.exports = { login, register, getMe, updateProfile, changePassword, forgotPassword, resetPassword, verify, checkEmail };
+const validateResetToken = async (req, res) => {
+    try {
+        const { token } = req.query;
+        if (!token) {
+            return res.status(400).json({ message: 'Token requerido.' });
+        }
+        const data = await authService.validateResetToken(token);
+        res.status(200).json(data);
+    } catch (err) {
+        res.status(err.status || 500).json({ message: err.message || 'Error interno.' });
+    }
+};
+
+module.exports = { login, register, getMe, updateProfile, changePassword, forgotPassword, resetPassword, validateResetToken, verify, checkEmail };

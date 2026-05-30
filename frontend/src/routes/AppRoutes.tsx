@@ -183,8 +183,6 @@ export const AppRoutes: React.FC = () => {
                     <>
                         {mainContent()}
 
-                        <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} toastOptions={{ className: 'pointer-events-auto', style: { zIndex: 99999 } }} />
-
                         {/* Transition Overlay for Login/Logout - PERSISTENT AT TOP LEVEL */}
                         {(isLoggingOut || isLoggingIn) && (
                             <div className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-700 ease-in-out pointer-events-none ${theme === 'dark' ? 'bg-slate-950' : 'bg-white'
@@ -201,6 +199,7 @@ export const AppRoutes: React.FC = () => {
                     </>
                 } />
             </Routes>
+            <Toaster position="bottom-right" richColors expand={true} closeButton theme={theme as any} toastOptions={{ className: 'pointer-events-auto', style: { zIndex: 99999 } }} />
         </>
     );
 };

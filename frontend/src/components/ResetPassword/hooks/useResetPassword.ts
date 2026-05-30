@@ -7,11 +7,32 @@ export function useResetPassword() {
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isTokenValid, setIsTokenValid] = useState<boolean>(true);
+    const [isCheckingToken, setIsCheckingToken] = useState<boolean>(true);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const t = params.get('token');
         setToken(t);
+
+        if (t) {
+            const checkToken = async () => {
+                try {
+                    const res = await fetch(`${API_URL}/auth/validate-reset-token?token=${t}`);
+                    if (!res.ok) {
+                        setIsTokenValid(false);
+                    }
+                } catch (err) {
+                    setIsTokenValid(false);
+                } finally {
+                    setIsCheckingToken(false);
+                }
+            };
+            checkToken();
+        } else {
+            setIsTokenValid(false);
+            setIsCheckingToken(false);
+        }
     }, []);
 
     const resetPassword = async (password: string, confirm: string) => {
@@ -58,6 +79,8 @@ export function useResetPassword() {
         token,
         loading,
         isSuccess,
+        isTokenValid,
+        isCheckingToken,
         resetPassword
     };
 }

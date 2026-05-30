@@ -8,7 +8,7 @@ import { ResetPasswordStyles } from './styles/ResetPasswordStyles';
 import heroBg from '@/assets/landing/hero-bg.jpg';
 
 export default function ResetPassword() {
-    const { token, loading, isSuccess, resetPassword } = useResetPassword();
+    const { token, loading, isSuccess, isTokenValid, isCheckingToken, resetPassword } = useResetPassword();
 
     // Remove the early return for isSuccess
 
@@ -28,19 +28,21 @@ export default function ResetPassword() {
 
             <div className="w-full max-w-lg relative z-20 animate-fade-in-up">
                 {/* Header Section (Branding) */}
-                <div className="text-center mb-10">
-                    <div className="login-hero-logo mx-auto">
-                        <div className="login-logo-icon">
-                            <Bike className="w-8 h-8 text-white" />
-                        </div>
+                <div className="text-center mb-10 flex flex-col items-center justify-center">
+                    <div className="mb-4">
+                        <img
+                            src="/favicon/rafamotos-logo.png"
+                            alt="Rafa Motos Logo"
+                            className="h-16 w-auto object-contain hover:scale-105 transition-transform duration-300"
+                        />
                     </div>
-                    <h1 className="login-hero-title">Rafa Motos</h1>
-                    <p className="login-hero-subtitle">Seguridad de Cuenta</p>
+                    <h1 className="verify-hero-title">Rafa Motos</h1>
+                    <p className="verify-hero-subtitle">Seguridad de Cuenta</p>
                 </div>
 
                 {/* Form Card (White Panel Style) */}
                 <div className="login-form-card">
-                    {!isSuccess && (
+                    {!isSuccess && isTokenValid && token && !isCheckingToken && (
                         <div className="login-form-header">
                             <h2 className="lv-title">Nueva Contraseña</h2>
                             <p className="lv-subtitle">Crea una credencial de acceso segura para volver al sistema.</p>
@@ -48,9 +50,14 @@ export default function ResetPassword() {
                     )}
 
                     <div className="login-form-body">
-                        {isSuccess ? (
+                        {isCheckingToken ? (
+                            <div className="text-center py-6">
+                                <div className="inline-block w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                <p className="text-sm text-slate-500 mt-2">Verificando enlace...</p>
+                            </div>
+                        ) : isSuccess ? (
                             <ResetSuccess />
-                        ) : !token ? (
+                        ) : (!token || !isTokenValid) ? (
                             <ResetError />
                         ) : (
                             <ResetForm onSubmit={resetPassword} loading={loading} />
@@ -60,46 +67,34 @@ export default function ResetPassword() {
             </div>
 
             <style>{`
-                /* REPLICATING LOGIN STYLES EXACTLY */
-                .login-hero-logo {
-                    display: inline-flex;
-                    margin-bottom: 1.5rem;
-                }
-                .login-logo-icon {
-                    width: 56px;
-                    height: 56px;
-                    background: rgba(255, 255, 255, 0.15);
-                    backdrop-filter: blur(12px);
-                    border-radius: 16px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border: 1px solid rgba(255, 255, 255, 0.2);
-                }
-                .login-hero-title {
+                .verify-hero-title {
                     font-size: 1.75rem;
                     font-weight: 800;
                     color: white;
                     letter-spacing: -0.02em;
+                    margin-top: 0.5rem;
                     margin-bottom: 0.25rem;
                 }
-                .login-hero-subtitle {
+                .verify-hero-subtitle {
                     font-size: 0.75rem;
                     text-transform: uppercase;
                     letter-spacing: 0.15em;
-                    color: white;
-                    font-weight: 600;
-                    opacity: 0.9;
+                    color: rgba(199, 210, 254, 0.8);
+                    font-weight: 500;
                 }
 
-                /* Panel Style */
+                /* Panel Style - Glassmorphism Dark Mode */
                 .login-form-card {
-                    background: rgba(255, 255, 255, 0.96);
-                    backdrop-filter: blur(40px);
+                    background: rgba(15, 23, 42, 0.75);
+                    backdrop-filter: blur(24px);
+                    -webkit-backdrop-filter: blur(24px);
                     border-radius: 24px;
                     padding: 2.5rem;
-                    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.3);
-                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    box-shadow: 
+                        0 30px 60px rgba(0, 0, 0, 0.6),
+                        0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+                        0 -4px 24px rgba(99, 102, 241, 0.15) inset;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
                 }
 
                 .login-form-header {
@@ -111,14 +106,14 @@ export default function ResetPassword() {
                     font-size: 1.75rem;
                     font-weight: 800;
                     margin-bottom: 0.5rem;
-                    background: linear-gradient(135deg, #4338ca, #7c3aed);
+                    background: linear-gradient(135deg, #a5b4fc, #c084fc);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
                     background-clip: text;
                 }
 
                 .lv-subtitle {
-                    color: #6b7280;
+                    color: #94a3b8;
                     font-size: 0.875rem;
                 }
 

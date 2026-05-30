@@ -369,12 +369,47 @@ const resetPassword = async (token, nuevaContrasena) => {
         throw { status: 400, message: 'Token inválido o expirado.' };
     }
 
+    // Verificar que la nueva contraseña no sea igual a la actual
+    const [user] = await sql`SELECT contrasena FROM usuarios WHERE id_usuario = ${match.id_usuario}`;
+    if (user) {
+        const isSame = await bcrypt.compare(nuevaContrasena, user.contrasena);
+        if (isSame) {
+            throw { status: 400, message: 'La nueva contraseña no puede ser la actual.' };
+        }
+    }
+
     const hashed = await bcrypt.hash(nuevaContrasena, 10);
 
     await sql.begin(async (tx) => {
         await tx`UPDATE usuarios SET contrasena = ${hashed} WHERE id_usuario = ${match.id_usuario}`;
         await tx`UPDATE password_resets SET used = TRUE WHERE id = ${match.id}`;
     });
+};
+
+/**
+ * Validar si un token de restablecimiento de contraseña es válido y no ha sido usado ni ha expirado.
+ */
+const validateResetToken = async (token) => {
+    const sql = await getPool();
+
+    const rows = await sql`SELECT token_hash, expires_at, used
+                           FROM password_resets
+                           WHERE used = FALSE AND expires_at > NOW()`;
+
+    let match = null;
+    for (const r of rows) {
+        const ok = await bcrypt.compare(token, r.token_hash);
+        if (ok) {
+            match = r;
+            break;
+        }
+    }
+
+    if (!match) {
+        throw { status: 400, message: 'Token inválido o expirado.' };
+    }
+
+    return { valid: true };
 };
 
 /**
@@ -416,4 +451,4 @@ const checkEmail = async (correo) => {
     }
 };
 
-module.exports = { login, register, getMe, updateProfile, changePassword, requestPasswordReset, resetPassword, verifyEmailToken, checkEmail };
+module.exports = { login, register, getMe, updateProfile, changePassword, requestPasswordReset, resetPassword, validateResetToken, verifyEmailToken, checkEmail };

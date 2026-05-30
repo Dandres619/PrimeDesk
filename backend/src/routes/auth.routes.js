@@ -62,6 +62,9 @@ router.post(
     authController.resetPassword
 );
 
+// GET /api/auth/validate-reset-token
+router.get('/validate-reset-token', authController.validateResetToken);
+
 // POST /api/auth/verify
 router.post(
     '/verify',
