@@ -2,7 +2,7 @@ import React from 'react';
 import { DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Label } from '../../ui/label';
 import { Button } from '../../ui/button';
-import { ClipboardPen, Wrench, FileText, Info, Calendar, Clock, Phone, FileImage, ExternalLink, Loader2 } from 'lucide-react';
+import { ClipboardPen, Wrench, FileText, Calendar, Clock, Phone, FileImage, ExternalLink, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function FacturaImage({ src }: { src: string }) {

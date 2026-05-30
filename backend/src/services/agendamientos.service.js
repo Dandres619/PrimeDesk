@@ -4,18 +4,18 @@ const getAll = async (id_cliente = null) => {
   const sql = await getPool();
 
   const rows = await sql`
-    SELECT a.id_agendamiento AS "ID_Agendamiento", a.id_reparacion AS "ID_Reparacion",
+    SELECT a.id_agendamiento AS "ID_Agendamiento", r.id_reparacion AS "ID_Reparacion",
            r.id_motocicleta AS "ID_Motocicleta", 
            a.id_empleado AS "ID_Empleado", a.dia AS "Dia", a.horainicio AS "HoraInicio", 
            a.horafin AS "HoraFin", a.notas AS "Notas", a.estado AS "Estado",
            m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "Modelo",
            e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado",
            (SELECT COALESCE(json_agg(json_build_object('Nombre', s.nombre, 'Duracion', s.duracion, 'Precio', s.precio)), '[]'::json) 
-            FROM agendamientos_servicios ags 
-            JOIN servicios s ON ags.id_servicio = s.id_servicio 
-            WHERE ags.id_agendamiento = a.id_agendamiento) AS "Servicios"
+            FROM reparaciones_servicios rs 
+            JOIN servicios s ON rs.id_servicio = s.id_servicio 
+            WHERE rs.id_reparacion = r.id_reparacion) AS "Servicios"
     FROM agendamientos a
-    LEFT JOIN reparaciones r ON a.id_reparacion = r.id_reparacion
+    LEFT JOIN reparaciones r ON r.id_agendamiento = a.id_agendamiento
     LEFT JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta
     INNER JOIN empleados e ON a.id_empleado = e.id_empleado
     ${id_cliente ? sql`WHERE m.id_cliente = ${id_cliente}` : sql``}
@@ -29,14 +29,14 @@ const getById = async (id) => {
   const sql = await getPool();
 
   const appointments = await sql`
-    SELECT a.id_agendamiento AS "ID_Agendamiento", a.id_reparacion AS "ID_Reparacion",
+    SELECT a.id_agendamiento AS "ID_Agendamiento", r.id_reparacion AS "ID_Reparacion",
            r.id_motocicleta AS "ID_Motocicleta", 
            a.id_empleado AS "ID_Empleado", a.dia AS "Dia", a.horainicio AS "HoraInicio", 
            a.horafin AS "HoraFin", a.notas AS "Notas", a.estado AS "Estado",
            m.placa AS "Placa", m.marca AS "MarcaMoto", m.modelo AS "Modelo",
            e.nombre AS "NombreEmpleado", e.apellido AS "ApellidoEmpleado"
     FROM agendamientos a
-    LEFT JOIN reparaciones r ON a.id_reparacion = r.id_reparacion
+    LEFT JOIN reparaciones r ON r.id_agendamiento = a.id_agendamiento
     LEFT JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta
     INNER JOIN empleados e ON a.id_empleado = e.id_empleado
     WHERE a.id_agendamiento = ${id}
@@ -46,9 +46,10 @@ const getById = async (id) => {
 
   const services = await sql`
     SELECT s.id_servicio AS "ID_Servicio", s.nombre AS "Nombre", s.descripcion AS "Descripcion"
-    FROM agendamientos_servicios ag_s
-    INNER JOIN servicios s ON ag_s.id_servicio = s.id_servicio
-    WHERE ag_s.id_agendamiento = ${id}
+    FROM reparaciones_servicios rs
+    INNER JOIN reparaciones r ON rs.id_reparacion = r.id_reparacion
+    INNER JOIN servicios s ON rs.id_servicio = s.id_servicio
+    WHERE r.id_agendamiento = ${id}
   `;
 
   return { ...appointments[0], servicios: services };
@@ -59,48 +60,31 @@ const create = async ({ id_motocicleta, id_empleado, dia, horainicio, horafin, n
 
   try {
     const result = await sql.begin(async (tx) => {
-      // 1. Crear automáticamente una reparación vinculada al agendamiento
-      const [reparacion] = await tx`
-        INSERT INTO reparaciones (id_motocicleta, id_agendamiento, observaciones, estado)
-        VALUES (${id_motocicleta}, NULL, ${notas || null}, 'Esperando motocicleta')
-        RETURNING id_reparacion AS "ID_Reparacion"
-      `;
-
-      // 2. Crear el agendamiento
+      // 1. Crear el agendamiento
       const [agendamiento] = await tx`
-        INSERT INTO agendamientos (id_reparacion, id_empleado, dia, horainicio, horafin, notas, estado)
-        VALUES (${reparacion.ID_Reparacion}, ${id_empleado}, ${dia}, ${horainicio}, ${horafin}, ${notas || null}, 'Esperando motocicleta')
-        RETURNING id_agendamiento AS "ID_Agendamiento", id_reparacion AS "ID_Reparacion",
+        INSERT INTO agendamientos (id_empleado, dia, horainicio, horafin, notas, estado)
+        VALUES (${id_empleado}, ${dia}, ${horainicio}, ${horafin}, ${notas || null}, 'Esperando motocicleta')
+        RETURNING id_agendamiento AS "ID_Agendamiento",
                   id_empleado AS "ID_Empleado", dia AS "Dia", horainicio AS "HoraInicio", 
                   horafin AS "HoraFin", notas AS "Notas", estado AS "Estado"
       `;
 
-      // 3. Vincular el agendamiento de vuelta en la reparación
-      await tx`
-        UPDATE reparaciones 
-        SET id_agendamiento = ${agendamiento.ID_Agendamiento}
-        WHERE id_reparacion = ${reparacion.ID_Reparacion}
+      // 2. Crear automáticamente una reparación vinculada al agendamiento
+      const [reparacion] = await tx`
+        INSERT INTO reparaciones (id_motocicleta, id_agendamiento, observaciones, estado)
+        VALUES (${id_motocicleta}, ${agendamiento.ID_Agendamiento}, ${notas || null}, 'Esperando motocicleta')
+        RETURNING id_reparacion AS "ID_Reparacion"
       `;
 
-      // 4. Agregar servicios al agendamiento
-      if (servicios && servicios.length > 0) {
-        const serviceInserts = servicios.map(id_servicio => ({
-          id_agendamiento: agendamiento.ID_Agendamiento,
-          id_servicio: id_servicio
-        }));
-        await tx`
-          INSERT INTO agendamientos_servicios ${tx(serviceInserts, 'id_agendamiento', 'id_servicio')}
-        `;
-      }
-
-      // 5. Vincular los mismos servicios a la reparación
+      // 3. Vincular los servicios a la reparación
       if (servicios && servicios.length > 0) {
         const repServiceInserts = servicios.map(id_servicio => ({
           id_reparacion: reparacion.ID_Reparacion,
-          id_servicio: id_servicio
+          id_servicio: id_servicio,
+          estado: 'Pendiente'
         }));
         await tx`
-          INSERT INTO reparaciones_servicios ${tx(repServiceInserts, 'id_reparacion', 'id_servicio')}
+          INSERT INTO reparaciones_servicios ${tx(repServiceInserts, 'id_reparacion', 'id_servicio', 'estado')}
         `;
       }
 
@@ -125,7 +109,7 @@ const update = async (id, { id_motocicleta, id_empleado, dia, horainicio, horafi
         SET id_empleado = ${id_empleado},
             dia = ${dia}, horainicio = ${horainicio}, horafin = ${horafin}, notas = ${notas || null}
         WHERE id_agendamiento = ${id}
-        RETURNING id_agendamiento AS "ID_Agendamiento", id_reparacion AS "ID_Reparacion",
+        RETURNING id_agendamiento AS "ID_Agendamiento",
                   id_empleado AS "ID_Empleado", dia AS "Dia", horainicio AS "HoraInicio", 
                   horafin AS "HoraFin", notas AS "Notas"
       `;
@@ -133,15 +117,29 @@ const update = async (id, { id_motocicleta, id_empleado, dia, horainicio, horafi
       if (!agend) throw { status: 404, message: 'Agendamiento no encontrado.' };
 
       // 2. Actualizar la moto en la reparación vinculada
-      if (agend.ID_Reparacion && id_motocicleta) {
-        await tx`
+      let id_reparacion = null;
+      if (id_motocicleta) {
+        const [rep] = await tx`
           UPDATE reparaciones
           SET id_motocicleta = ${id_motocicleta}
-          WHERE id_reparacion = ${agend.ID_Reparacion}
+          WHERE id_agendamiento = ${id}
+          RETURNING id_reparacion AS "ID_Reparacion"
         `;
+        if (rep) {
+          id_reparacion = rep.ID_Reparacion;
+        }
+      } else {
+        const [rep] = await tx`
+          SELECT id_reparacion AS "ID_Reparacion"
+          FROM reparaciones
+          WHERE id_agendamiento = ${id}
+        `;
+        if (rep) {
+          id_reparacion = rep.ID_Reparacion;
+        }
       }
 
-      return { ...agend, ID_Motocicleta: id_motocicleta };
+      return { ...agend, ID_Reparacion: id_reparacion, ID_Motocicleta: id_motocicleta };
     });
 
     return result;
@@ -185,11 +183,29 @@ const remove = async (id, isClient = false) => {
     }
 
     const [deleted] = await sql.begin(async (tx) => {
-      // 1. Marcar la reparación vinculada como 'Anulado'
+      // 1. Marcar la reparación vinculada como 'Anulada'
       await tx`
         UPDATE reparaciones 
-        SET estado = 'Anulado'
+        SET estado = 'Anulada'
         WHERE id_agendamiento = ${id}
+      `;
+
+      // Cancelar servicios asociados a la reparación vinculada
+      await tx`
+        UPDATE reparaciones_servicios
+        SET estado = 'Anulada'
+        WHERE id_reparacion IN (
+          SELECT id_reparacion FROM reparaciones WHERE id_agendamiento = ${id}
+        )
+      `;
+
+      // Cancelar las compras asociadas a la reparación
+      await tx`
+        UPDATE compras 
+        SET estado = 'Anulado' 
+        WHERE id_reparacion IN (
+          SELECT id_reparacion FROM reparaciones WHERE id_agendamiento = ${id}
+        )
       `;
 
       // 2. Marcar el agendamiento como 'Anulado'
@@ -213,16 +229,19 @@ const remove = async (id, isClient = false) => {
 const addServicio = async (id_agendamiento, id_servicio) => {
   const sql = await getPool();
 
+  const [rep] = await sql`SELECT id_reparacion FROM reparaciones WHERE id_agendamiento = ${id_agendamiento}`;
+  if (!rep) throw { status: 404, message: 'Reparación vinculada no encontrada.' };
+
   const exists = await sql`
-    SELECT 1 FROM agendamientos_servicios 
-    WHERE id_agendamiento = ${id_agendamiento} AND id_servicio = ${id_servicio}
+    SELECT 1 FROM reparaciones_servicios 
+    WHERE id_reparacion = ${rep.id_reparacion} AND id_servicio = ${id_servicio}
   `;
 
-  if (exists.length > 0) throw { status: 409, message: 'El servicio ya está agregado a este agendamiento.' };
+  if (exists.length > 0) throw { status: 409, message: 'El servicio ya está agregado a este agendamiento/reparación.' };
 
   await sql`
-    INSERT INTO agendamientos_servicios (id_agendamiento, id_servicio) 
-    VALUES (${id_agendamiento}, ${id_servicio})
+    INSERT INTO reparaciones_servicios (id_reparacion, id_servicio, estado) 
+    VALUES (${rep.id_reparacion}, ${id_servicio}, 'Pendiente')
   `;
 
   return { message: 'Servicio agregado al agendamiento.' };
@@ -231,10 +250,13 @@ const addServicio = async (id_agendamiento, id_servicio) => {
 const removeServicio = async (id_agendamiento, id_servicio) => {
   const sql = await getPool();
 
+  const [rep] = await sql`SELECT id_reparacion FROM reparaciones WHERE id_agendamiento = ${id_agendamiento}`;
+  if (!rep) throw { status: 404, message: 'Reparación vinculada no encontrada.' };
+
   const [deleted] = await sql`
-    DELETE FROM agendamientos_servicios 
-    WHERE id_agendamiento = ${id_agendamiento} AND id_servicio = ${id_servicio}
-    RETURNING id_agendamientoservicio AS "ID_AgendamientoServicio"
+    DELETE FROM reparaciones_servicios 
+    WHERE id_reparacion = ${rep.id_reparacion} AND id_servicio = ${id_servicio}
+    RETURNING id_reparacion, id_servicio
   `;
 
   if (!deleted) throw { status: 404, message: 'Asignación no encontrada.' };

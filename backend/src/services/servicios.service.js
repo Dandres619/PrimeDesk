@@ -60,9 +60,8 @@ const update = async (id, data) => {
     if (!row) throw { status: 404, message: 'Servicio no encontrado.' };
 
     if (estado === false) {
-        const agendamientos = await sql`SELECT 1 FROM agendamientos_servicios WHERE id_servicio = ${id} LIMIT 1`;
         const reparaciones = await sql`SELECT 1 FROM reparaciones_servicios WHERE id_servicio = ${id} LIMIT 1`;
-        if (agendamientos.length > 0 || reparaciones.length > 0) {
+        if (reparaciones.length > 0) {
             await sql`UPDATE servicios SET estado = TRUE WHERE id_servicio = ${id}`;
             throw { status: 400, message: 'No se puede inactivar el servicio porque está siendo utilizado en agendamientos y/o reparaciones.' };
         }
@@ -74,10 +73,9 @@ const update = async (id, data) => {
 const remove = async (id) => {
     const sql = await getPool();
 
-    const agendamientos = await sql`SELECT 1 FROM agendamientos_servicios WHERE id_servicio = ${id} LIMIT 1`;
     const reparaciones = await sql`SELECT 1 FROM reparaciones_servicios WHERE id_servicio = ${id} LIMIT 1`;
 
-    if (agendamientos.length > 0 || reparaciones.length > 0) {
+    if (reparaciones.length > 0) {
         throw { status: 400, message: 'No se puede eliminar el servicio porque ya está siendo utilizado por un agendamiento y/o reparación.' };
     }
 

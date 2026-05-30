@@ -217,7 +217,7 @@ const syncComprasForReparacion = async (id_reparacion, estado) => {
                 `;
             });
         }
-    } else if (estado === 'Anulada') {
+    } else if (estado === 'Anulada' || estado === 'Anulado') {
         await sql`
             UPDATE compras 
             SET estado = 'Anulado' 
@@ -225,7 +225,7 @@ const syncComprasForReparacion = async (id_reparacion, estado) => {
         `;
         await sql`
             UPDATE reparaciones_servicios
-            SET estado = 'Anulado'
+            SET estado = 'Anulada'
             WHERE id_reparacion = ${id_reparacion}
         `;
     }

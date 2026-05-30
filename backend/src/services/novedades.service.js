@@ -75,6 +75,24 @@ const create = async ({ id_empleado, dia, hora_inicio, hora_fin, tipo, descripci
           SET estado = 'Anulada'
           WHERE id_agendamiento IN (${aptIds})
         `;
+
+        // Cancel associated services
+        await tx`
+          UPDATE reparaciones_servicios
+          SET estado = 'Anulada'
+          WHERE id_reparacion IN (
+            SELECT id_reparacion FROM reparaciones WHERE id_agendamiento IN (${aptIds})
+          )
+        `;
+
+        // Cancel associated purchases
+        await tx`
+          UPDATE compras
+          SET estado = 'Anulado'
+          WHERE id_reparacion IN (
+            SELECT id_reparacion FROM reparaciones WHERE id_agendamiento IN (${aptIds})
+          )
+        `;
       }
 
       return { novedad, affectedAppointments: overlappingApts };
