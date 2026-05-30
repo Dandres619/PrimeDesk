@@ -51,7 +51,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             fetch(`${API_URL}/auth/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Sesión expirada o inválida');
+                    }
+                    return res.json();
+                })
                 .then(profileData => {
                     const type = profileData.NombreRol?.toLowerCase() || (profileData.id_rol === 1 ? 'administrador' : (profileData.id_rol === 3 ? 'cliente' : 'mecánico'));
                     const permisos = profileData.permisos || [];
@@ -89,6 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     localStorage.removeItem('user');
                     setIsAuthenticated(false);
                     setCurrentUser(null);
+                    navigate('/login');
                 });
         }
     }, [API_URL, navigate]);
