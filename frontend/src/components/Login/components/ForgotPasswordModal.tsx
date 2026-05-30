@@ -86,13 +86,13 @@ export function ForgotPasswordModal({
           .fp-title {
             font-size: 1.25rem !important;
             font-weight: 800 !important;
-            color: #1e1b4b !important;
+            color: #ffffff !important;
             letter-spacing: -0.02em !important;
           }
 
           .fp-description {
             font-size: 0.85rem;
-            color: #6b7280;
+            color: #94a3b8;
             line-height: 1.5;
           }
 
@@ -101,21 +101,21 @@ export function ForgotPasswordModal({
             font-weight: 600 !important;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #374151 !important;
+            color: #cbd5e1 !important;
           }
 
           .fp-input-wrapper {
             position: relative;
             border-radius: 12px;
-            background: #f8fafc;
-            border: 2px solid #e2e8f0;
+            background: #0f172a;
+            border: 2px solid #334155;
             transition: all 0.3s ease;
             overflow: hidden;
           }
 
           .fp-input-wrapper:focus-within {
             border-color: #4f46e5;
-            background: white;
+            background: #0f172a;
             box-shadow: 0 0 0 1px #4f46e5;
           }
 
@@ -142,6 +142,7 @@ export function ForgotPasswordModal({
             height: 44px !important;
             border: none !important;
             background: transparent !important;
+            color: #ffffff !important;
             box-shadow: none !important;
             outline: none !important;
           }
