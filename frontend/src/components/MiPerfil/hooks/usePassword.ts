@@ -29,10 +29,14 @@ export function usePassword() {
 
         if (touchedFields.contrasena_actual && !passwordData.contrasena_actual) {
             errs.contrasena_actual = 'Ingresa la contraseña actual.';
+        } else if (passwordData.contrasena_actual && passwordData.contrasena_actual.length > 60) {
+            errs.contrasena_actual = 'Máximo 60 caracteres';
         }
 
         if (passwordData.nueva_contrasena) {
-            if (!validatePassword(passwordData.nueva_contrasena)) {
+            if (passwordData.nueva_contrasena.length > 60) {
+                errs.nueva_contrasena = 'Máximo 60 caracteres';
+            } else if (!validatePassword(passwordData.nueva_contrasena)) {
                 errs.nueva_contrasena = 'Contraseña insegura';
             }
         }

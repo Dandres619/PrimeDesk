@@ -43,6 +43,7 @@ export function UserDialog({
   const validatePassword = (pass: string) => {
     if (!pass && editingUser) return '';
     if (!pass && !editingUser) return 'La contraseña es obligatoria';
+    if (pass.length > 60) return 'Máximo 60 caracteres';
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
     if (!passwordRegex.test(pass)) return 'Contraseña insegura';
     return '';
@@ -206,12 +207,35 @@ export function UserDialog({
               </div>
             </div>
 
-            {!editingUser && (
-              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  <span className="font-bold text-slate-700 dark:text-slate-300 block mb-1">Requisitos de seguridad:</span>
-                  Mínimo 8 caracteres, incluir una mayúscula, un número y un carácter especial.
-                </p>
+            {(!editingUser || formData.password.length > 0) && (
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 space-y-2.5">
+                <span className="font-bold text-[11px] tracking-wider uppercase text-slate-400 dark:text-slate-500 block">Requisitos de la contraseña</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[11px] font-bold">
+                  {[
+                    { label: 'Mínimo 8 caracteres', test: (p: string) => p.length >= 8 },
+                    { label: 'Una letra mayúscula', test: (p: string) => /[A-Z]/.test(p) },
+                    { label: 'Un número', test: (p: string) => /[0-9]/.test(p) },
+                    { label: 'Un carácter especial', test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(p) }
+                  ].map((req, i) => {
+                    const isMet = req.test(formData.password || '');
+                    return (
+                      <div key={i} className="flex items-center gap-2 transition-all duration-300">
+                        {isMet ? (
+                          <div className="w-4.5 h-4.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black">✓</span>
+                          </div>
+                        ) : (
+                          <div className="w-4.5 h-4.5 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] text-slate-400 dark:text-slate-600 font-black">○</span>
+                          </div>
+                        )}
+                        <span className={isMet ? "text-emerald-600 dark:text-emerald-400 transition-colors" : "text-slate-500 transition-colors"}>
+                          {req.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
