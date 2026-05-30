@@ -27,7 +27,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
   const getTitleIngreso = () => {
     switch (period) {
       case 'day': return 'Ingresos Hoy';
-      case 'week': return 'Ingresos Semanales';
+      case 'week': return 'Ingresos esta semana';
       case 'quarter': return 'Ingresos Trimestre';
       case 'semester': return 'Ingresos Semestre';
       case 'month':
@@ -38,7 +38,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
   const getTitleVentas = () => {
     switch (period) {
       case 'day': return 'Ventas Hoy';
-      case 'week': return 'Ventas Semanales';
+      case 'week': return 'Ventas Esta Semana';
       case 'quarter': return 'Ventas Trimestre';
       case 'semester': return 'Ventas Semestre';
       case 'month':
@@ -49,7 +49,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
   const getTitleAgendamientos = () => {
     switch (period) {
       case 'day': return 'Agendamientos Hoy';
-      case 'week': return 'Agendamientos Semanales';
+      case 'week': return 'Agendamientos Esta Semana';
       case 'quarter': return 'Agendamientos Trimestre';
       case 'semester': return 'Agendamientos Semestre';
       case 'month':
@@ -60,7 +60,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
   const getTitleReparaciones = () => {
     switch (period) {
       case 'day': return 'Reparaciones Activas Hoy';
-      case 'week': return 'Reparaciones Activas Semanales';
+      case 'week': return 'Reparaciones Activas Esta Semana';
       case 'quarter': return 'Reparaciones Activas Trimestre';
       case 'semester': return 'Reparaciones Activas Semestre';
       case 'month':

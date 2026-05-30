@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
 import { Button } from '../../ui/button';
 import { Badge } from '../../ui/badge';
-import { ShoppingBag, Calendar, User, Wrench, Package, FileText, CheckCircle, Info } from 'lucide-react';
+import { ShoppingBag, Calendar, User, Wrench, Package, FileText, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SalesDetailDialogProps {
@@ -85,8 +85,8 @@ export function SalesDetailDialog({ isOpen, onOpenChange, sales, isLoading, peri
               </div>
 
               {sales.map((sale, idx) => (
-                <div 
-                  key={sale.ID_Venta || idx} 
+                <div
+                  key={sale.ID_Venta || idx}
                   className="p-6 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-slate-100 dark:border-slate-800/80 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 transition-all flex flex-col gap-4 shadow-sm"
                 >
                   {/* Top Sale Info */}
