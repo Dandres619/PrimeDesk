@@ -98,7 +98,7 @@ export function useReparaciones() {
           mecanicoTelefono: r.MecanicoTelefono || '',
           diaAgendamiento: r.DiaAgendamiento || '',
           horaInicio: r.HoraInicio || '',
-          servicios: r.servicios || [],
+          servicios: mappedServs,
           compras: r.compras || [],
           selectedServices: [],
           clientName: cli ? `${cli.Nombre} ${cli.Apellido || ''}` : 'Desconocido',

@@ -116,14 +116,16 @@ export function ReparacionesTable({
                       <TooltipContent><p>Ver detalles</p></TooltipContent>
                     </Tooltip>
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" onClick={() => onDownload(o)} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
-                          <FileText className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent><p>Descargar PDF</p></TooltipContent>
-                    </Tooltip>
+                    {(o.estadoBase === 'Reparación finalizada' || o.associatedSaleId) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" onClick={() => onDownload(o)} className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                            <FileText className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Descargar PDF</p></TooltipContent>
+                      </Tooltip>
+                    )}
 
                     {!(o.anulada || o.estadoBase === 'Reparación finalizada' || o.associatedSaleId) && (
                       <Tooltip>
