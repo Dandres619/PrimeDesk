@@ -105,14 +105,6 @@ export function RolesStyles() {
                 transform: translateY(-1px);
             }
 
-            /* Action Buttons */
-            .dark .roles-root .text-blue-600 {
-                color: #818cf8 !important;
-            }
-            .dark .roles-root .hover\:bg-blue-50:hover {
-                background: rgba(99, 102, 241, 0.15) !important;
-            }
-
             /* Entrance Animation */
             .roles-content-animate {
                 animation: roles-fade-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;

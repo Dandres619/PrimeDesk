@@ -71,7 +71,7 @@ export function MotosTable({
                   <div className="flex justify-end gap-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" onClick={() => setViewingMoto(m)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                        <Button size="sm" variant="ghost" onClick={() => setViewingMoto(m)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                           <Eye className="w-4 h-4" />
                         </Button>
                       </TooltipTrigger>
@@ -84,7 +84,7 @@ export function MotosTable({
                           size="sm"
                           variant="ghost"
                           onClick={() => { setEditingMoto(m); setIsDialogOpen(true); }}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                           disabled={!m.Estado}
                         >
                           <Edit className="w-4 h-4" />
@@ -106,7 +106,7 @@ export function MotosTable({
                             variant: 'delete',
                             onConfirm: () => deleteMoto(m)
                           })}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                           disabled={!m.Estado}
                         >
                           <Trash2 className="w-4 h-4" />

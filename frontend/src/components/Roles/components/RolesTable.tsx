@@ -89,7 +89,7 @@ export function RolesTable({
                             size="sm"
                             variant="ghost"
                             onClick={() => { setViewingRole(r); setIsViewDialogOpen(true); }}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -105,7 +105,7 @@ export function RolesTable({
                             size="sm"
                             variant="ghost"
                             onClick={() => { setEditingRole(r); setIsRoleDialogOpen(true); }}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                             disabled={r.status === 'Inactivo'}
                           >
                             <Edit className="w-4 h-4" />
@@ -134,7 +134,7 @@ export function RolesTable({
                                 }
                               }
                             })}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                             disabled={r.status === 'Inactivo'}
                           >
                             <Trash2 className="w-4 h-4" />
