@@ -274,6 +274,14 @@ export function AppointmentsSection({
                         toast.error('No se pueden agendar servicios en días festivos');
                         return;
                       }
+                      const activeApt = dayApts.find(a => {
+                        const status = (a.status || '').toLowerCase();
+                        return status !== 'anulado' && status !== 'anulada';
+                      });
+                      if (activeApt) {
+                        toast.error('Ya tienes un agendamiento registrado para este día. Por favor, selecciona otra fecha.');
+                        return;
+                      }
                       setSelectedDate(day);
                       setEditingApt(null);
                       setIsModalOpen(true);

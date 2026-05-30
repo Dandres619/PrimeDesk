@@ -60,6 +60,26 @@ const create = async ({ id_motocicleta, id_empleado, dia, horainicio, horafin, n
 
   try {
     const result = await sql.begin(async (tx) => {
+      // 0. Verificar si el cliente ya tiene un agendamiento activo para ese día (no anulado)
+      const [moto] = await tx`SELECT id_cliente FROM motocicletas WHERE id_motocicleta = ${id_motocicleta}`;
+      if (!moto) {
+        throw { status: 404, message: 'La motocicleta especificada no existe.' };
+      }
+
+      const existing = await tx`
+        SELECT COUNT(*)::int as count
+        FROM agendamientos a
+        LEFT JOIN reparaciones r ON r.id_agendamiento = a.id_agendamiento
+        LEFT JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta
+        WHERE m.id_cliente = ${moto.id_cliente}
+          AND a.dia = ${dia}
+          AND LOWER(a.estado) NOT IN ('anulado', 'anulada')
+      `;
+
+      if (existing[0].count > 0) {
+        throw { status: 400, message: 'Ya tienes un agendamiento registrado para este día. Por favor, selecciona otra fecha.' };
+      }
+
       // 1. Crear el agendamiento
       const [agendamiento] = await tx`
         INSERT INTO agendamientos (id_empleado, dia, horainicio, horafin, notas, estado)
