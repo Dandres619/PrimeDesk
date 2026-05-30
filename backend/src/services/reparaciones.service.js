@@ -281,6 +281,31 @@ const sendCancellationMailIfAnulada = async (id) => {
   }
 };
 
+const sendRepairCompletedMail = async (id) => {
+  const sql = await getPool();
+  try {
+    const [aptInfo] = await sql`
+      SELECT c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente",
+             u.correo AS "CorreoCliente",
+             m.placa AS "Placa", m.marca AS "Marca", m.modelo AS "Modelo"
+      FROM reparaciones r
+      INNER JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta
+      INNER JOIN clientes c ON m.id_cliente = c.id_cliente
+      LEFT JOIN usuarios u ON c.id_usuario = u.id_usuario
+      WHERE r.id_reparacion = ${id}
+    `;
+
+    if (aptInfo && aptInfo.CorreoCliente) {
+      const fullName = `${aptInfo.NombreCliente || ''} ${aptInfo.ApellidoCliente || ''}`.trim();
+      const brandModel = `${aptInfo.Marca || ''} ${aptInfo.Modelo || ''}`.trim();
+      await emailService.sendRepairCompletedEmail(aptInfo.CorreoCliente, fullName, aptInfo.Placa, brandModel);
+      console.log(`📧 Reparación: Correo de finalización enviado a ${aptInfo.CorreoCliente}`);
+    }
+  } catch (emailErr) {
+    console.error(`❌ Reparación: Error al enviar correo de finalización:`, emailErr.message || emailErr);
+  }
+};
+
 const update = async (id, { observaciones, estado }) => {
   const sql = await getPool();
   const [row] = await sql`
@@ -298,6 +323,8 @@ const update = async (id, { observaciones, estado }) => {
 
   if (estado === 'Anulada' || estado === 'Anulado') {
     await sendCancellationMailIfAnulada(id);
+  } else if (estado === 'Reparación finalizada') {
+    await sendRepairCompletedMail(id);
   }
 
   return row;
@@ -333,6 +360,8 @@ const updateEstado = async (id, estado) => {
 
     if (estado === 'Anulada' || estado === 'Anulado') {
       await sendCancellationMailIfAnulada(id);
+    } else if (estado === 'Reparación finalizada') {
+      await sendRepairCompletedMail(id);
     }
 
     return row;
@@ -501,7 +530,7 @@ const finalizarReparacionConVenta = async (id, { mano_obra, observaciones_venta 
   const sql = await getPool();
 
   try {
-    return await sql.begin(async (tx) => {
+    const result = await sql.begin(async (tx) => {
       // 1. Update the repair state to 'Reparación finalizada'
       const [row] = await tx`
           UPDATE reparaciones 
@@ -602,6 +631,11 @@ const finalizarReparacionConVenta = async (id, { mano_obra, observaciones_venta 
 
       return { ID_Reparacion: id, ID_Venta: venta.ID_Venta };
     });
+
+    // Send completion email to client (async/non-blocking)
+    sendRepairCompletedMail(id).catch(err => console.error('Error sending repair completed email:', err));
+
+    return result;
   } catch (err) {
     console.error('❌ Error en finalizarReparacionConVenta:', err);
     throw err;

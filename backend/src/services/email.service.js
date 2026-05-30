@@ -247,4 +247,58 @@ const sendCancellationEmail = async (to, name, date, time, options = {}) => {
     return sendMail({ to, subject, html, ...options });
 };
 
-module.exports = { sendMail, sendWelcomeEmail, sendResetPasswordEmail, sendContactEmail, sendVerificationEmail, sendCancellationEmail };
+const sendRepairCompletedEmail = async (to, name, plate, brandModel, options = {}) => {
+    const subject = '¡Tu motocicleta está lista! 🏁 | Rafa Motos';
+    const html = `
+        <!doctype html>
+        <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Reparación Finalizada - Rafa Motos</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+                    body { margin: 0; padding: 0; background-color: #020617; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc; }
+                    .wrapper { width: 100%; background-color: #020617; padding-bottom: 40px; }
+                    .container { max-width: 600px; margin: 40px auto; background-color: #0b1426; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+                    .header { padding: 40px 0; text-align: center; background: linear-gradient(135deg, #0b1426, #161e31); }
+                    .logo-box { display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #ef4444, #f97316); border-radius: 14px; line-height: 64px; text-align: center; font-weight: 800; font-size: 24px; color: #fff; margin-bottom: 16px; }
+                    .content { padding: 40px 32px; text-align: center; }
+                    h1 { font-size: 28px; font-weight: 700; margin: 0 0 16px 0; color: #fff; }
+                    p { font-size: 16px; line-height: 1.6; color: #94a3b8; margin: 0 0 24px 0; }
+                    .btn { display: inline-block; padding: 16px 40px; background: linear-gradient(90deg, #4f46e5, #9333ea); color: #fff !important; text-decoration: none; font-weight: 700; font-size: 16px; border-radius: 12px; }
+                    .footer { padding: 32px; text-align: center; background-color: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05); }
+                    .footer p { font-size: 13px; margin: 4px 0; }
+                    .accent { color: #6366f1; font-weight: 600; }
+                    @media screen and (max-width: 600px) { .container { margin-top: 20px; border-radius: 0; } }
+                </style>
+            </head>
+            <body>
+                <div class="wrapper">
+                    <div class="container">
+                        <div class="header">
+                            <img src="https://ynigfdldjybizqysmnaf.supabase.co/storage/v1/object/public/profiles/rafamotos-logo.png" alt="Rafa Motos Logo" style="height: 64px; width: auto; display: block; margin: 0 auto 12px auto; object-fit: contain;" />
+                            <div style="font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; text-transform: uppercase;">RAFA MOTOS</div>
+                        </div>
+                        <div class="content">
+                            <h1>¡Tu motocicleta está lista!</h1>
+                            <p>Hola <span class="accent">${name || 'cliente'}</span>,</p>
+                            <p>Te informamos que el proceso de servicio y reparación de tu motocicleta <strong>${brandModel || ''}</strong> con placa <span class="accent">${plate || ''}</span> ha sido finalizado con éxito.</p>
+                            <p>¡Ya puedes pasar por nuestro taller a recoger tu vehículo!</p>
+                            <p>Si deseas revisar los detalles, las facturas de repuestos y el costo de la mano de obra, puedes acceder a tu panel en nuestra página web.</p>
+                            <a href="${FRONTEND_URL}" class="btn">Ver detalles en la página web</a>
+                        </div>
+                        <div class="footer">
+                            <p><strong>Rafa Motos</strong></p>
+                            <p>Servicio Técnico Profesional para Motocicletas</p>
+                            <p>© 2026 Rafa Motos. Todos los derechos reservados.</p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+        </html>
+    `;
+    return sendMail({ to, subject, html, ...options });
+};
+
+module.exports = { sendMail, sendWelcomeEmail, sendResetPasswordEmail, sendContactEmail, sendVerificationEmail, sendCancellationEmail, sendRepairCompletedEmail };
