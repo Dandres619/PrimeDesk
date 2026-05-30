@@ -230,7 +230,7 @@ const sendCancellationEmail = async (to, name, date, time, options = {}) => {
                         <div class="content">
                             <h1>Aviso de Cancelación</h1>
                             <p>Hola <span class="accent">${name || 'cliente'}</span>,</p>
-                            <p>Te informamos que tu agendamiento programado para el día <strong>${date}</strong> a las <strong>${time}</strong> ha sido cancelado debido a una novedad de fuerza mayor con el mecánico asignado.</p>
+                            <p>Te informamos que tu agendamiento programado para el día <strong>${date}</strong> a las <strong>${time}</strong> ha sido cancelado debido a una novedad presentada en nuestro taller.</p>
                             <p>Lamentamos los inconvenientes causados. Por favor, ingresa a tu cuenta para programar una nueva cita en el horario que más te convenga.</p>
                             <a href="${FRONTEND_URL}" class="btn">REAGENDAR CITA</a>
                         </div>
