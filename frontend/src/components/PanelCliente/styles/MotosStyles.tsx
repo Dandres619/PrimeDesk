@@ -125,26 +125,6 @@ export function MotosStyles() {
                 box-shadow: 0 6px 15px rgba(99, 102, 241, 0.2) !important;
                 transform: translateY(-1px);
             }
-
-            /* Action Buttons */
-            .dark .motos-root .text-blue-600 {
-                color: #818cf8 !important;
-            }
-            .dark .motos-root .text-green-600 {
-                color: #4ade80 !important;
-            }
-            .dark .motos-root .text-red-600 {
-                color: #f87171 !important;
-            }
-            .dark .motos-root .hover\:bg-blue-50:hover {
-                background: rgba(99, 102, 241, 0.15) !important;
-            }
-            .dark .motos-root .hover\:bg-green-50:hover {
-                background: rgba(74, 222, 128, 0.1) !important;
-            }
-            .dark .motos-root .hover\:bg-red-50:hover {
-                background: rgba(248, 113, 113, 0.1) !important;
-            }
             /* ── Loading State ── */
             .mp-loading {
                 display: flex;
