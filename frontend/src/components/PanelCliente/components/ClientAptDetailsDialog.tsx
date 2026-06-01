@@ -380,7 +380,11 @@ export function ClientAptDetailsDialog({
               <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
                 {!data.compras || data.compras.length === 0 ? (
                   <div className="p-4 bg-slate-50/50 dark:bg-slate-900/10 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center py-6">
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">No se agregaron repuestos</p>
+                    <p className="text-xs text-slate-400 font-bold tracking-wider">
+                      {isEstimatedState
+                        ? 'Aún no se han registrado posibles repuestos para esta reparación'
+                        : 'No se agregaron repuestos'}
+                    </p>
                   </div>
                 ) : (
                   data.compras.map((c: any) => (

@@ -54,6 +54,21 @@ export function Agendamientos() {
     onConfirm: () => { }
   });
 
+  const pendingAptsCount = useMemo(() => {
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    return enrichedApts.filter(a => {
+      const isFutureOrToday = a.date >= todayStr;
+      const status = (a.status || '').toLowerCase();
+      const isActive = status !== 'anulado' && 
+                       status !== 'anulada' && 
+                       status !== 'reparación finalizada' && 
+                       status !== 'reparacion finalizada' &&
+                       status !== 'finalizado' && 
+                       status !== 'finalizada';
+      return isFutureOrToday && isActive;
+    }).length;
+  }, [enrichedApts]);
+
   if (isLoading) {
     return (
       <div className="agendamientos-root flex flex-col items-center justify-center min-h-[500px]">
@@ -79,8 +94,8 @@ export function Agendamientos() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <CardTitle className="text-lg">Calendario de Agendamientos</CardTitle>
-                <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-none font-bold">
-                  {enrichedApts.length === 1 ? '1 agendamiento' : `${enrichedApts.length} agendamientos`}
+                <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-none font-bold animate-pulse">
+                  {pendingAptsCount} {pendingAptsCount === 1 ? 'agendamiento por atender' : 'agendamientos por atender'}
                 </Badge>
               </div>
               <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -89,7 +104,7 @@ export function Agendamientos() {
                   size="sm"
                   onClick={() => setCurrentDate(subMonths(currentDate, 1))}
                   className="h-8 w-8 p-0 rounded-lg hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all"
-                  disabled={isSameMonth(currentDate, new Date())}
+                  disabled={isSameMonth(currentDate, subMonths(new Date(), 12))}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
