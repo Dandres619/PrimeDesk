@@ -123,7 +123,7 @@ const login = async (req, res) => {
                 if (blocked) return;
 
                 const attemptsLeft = 5 - currentAttempts;
-                const msg = `Credenciales incorrectas. Te ${attemptsLeft === 1 ? 'queda' : 'quedan'} ${attemptsLeft} ${attemptsLeft === 1 ? 'intento' : 'intentos'}.`;
+                const msg = `Credenciales incorrectas. Te ${attemptsLeft === 1 ? 'queda' : 'quedan'} ${attemptsLeft} ${attemptsLeft === 1 ? 'intento' : 'intentos'} antes de ser bloqueado.`;
                 return res.status(401).json({ message: msg });
             } else {
                 // Revert increment for non-auth errors
@@ -177,7 +177,7 @@ const register = async (req, res) => {
             if (blocked) return;
 
             const attemptsLeft = 5 - currentAttempts;
-            const msg = `${err.message || 'Error en el registro.'} Te ${attemptsLeft === 1 ? 'queda' : 'quedan'} ${attemptsLeft} ${attemptsLeft === 1 ? 'intento' : 'intentos'}.`;
+            const msg = `${err.message || 'Error en el registro.'} Te ${attemptsLeft === 1 ? 'queda' : 'quedan'} ${attemptsLeft} ${attemptsLeft === 1 ? 'intento' : 'intentos'} antes de ser bloqueado.`;
             res.status(err.status || 400).json({ message: msg });
         }
     } catch (err) {
@@ -262,7 +262,7 @@ const checkEmail = async (req, res) => {
             if (blocked) return;
 
             const attemptsLeft = 5 - currentAttempts;
-            const msg = `Este correo electrónico ya está registrado. Te ${attemptsLeft === 1 ? 'queda' : 'quedan'} ${attemptsLeft} ${attemptsLeft === 1 ? 'intento' : 'intentos'}.`;
+            const msg = `Este correo electrónico ya está registrado. Te ${attemptsLeft === 1 ? 'queda' : 'quedan'} ${attemptsLeft} ${attemptsLeft === 1 ? 'intento' : 'intentos'} antes de ser bloqueado.`;
             return res.status(400).json({ exists: true, message: msg });
         }
 
