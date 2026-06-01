@@ -20,7 +20,7 @@ const generateDateRange = (period) => {
       dates.push({ label: dayLabel, dateStr, total: 0 });
     }
   } else if (period === 'week') {
-    for (let i = 3; i >= 0; i--) {
+    for (let i = 4; i >= 0; i--) {
       const lbl = i === 0 ? 'Esta semana' : i === 1 ? '1 sem. atrás' : `${i} sem. atrás`;
       dates.push({ label: lbl, offset: i, total: 0 });
     }
@@ -77,7 +77,14 @@ const getStats = async (period = 'month') => {
     startDateActual = sql`date_trunc('week', timezone('America/Bogota', NOW()))`;
     startDateAnterior = sql`date_trunc('week', timezone('America/Bogota', NOW())) - interval '1 week'`;
     endDateAnterior = sql`date_trunc('week', timezone('America/Bogota', NOW()))`;
-    chartQuery = sql`SELECT (EXTRACT(WEEK FROM timezone('America/Bogota', NOW())) - EXTRACT(WEEK FROM v.fecha))::int as idx, ${ingresosFormula}::numeric as total FROM ventas v WHERE v.fecha >= date_trunc('week', timezone('America/Bogota', NOW())) - interval '3 weeks' GROUP BY idx`;
+    chartQuery = sql`
+      SELECT 
+        (EXTRACT(epoch FROM (date_trunc('week', timezone('America/Bogota', NOW())) - date_trunc('week', timezone('America/Bogota', v.fecha)))) / 604800)::int as idx, 
+        ${ingresosFormula}::numeric as total 
+      FROM ventas v 
+      WHERE v.fecha >= date_trunc('week', timezone('America/Bogota', NOW())) - interval '4 weeks' 
+      GROUP BY idx
+    `;
   } else if (period === 'quarter') {
     startDateActual = sql`date_trunc('quarter', timezone('America/Bogota', NOW()))`;
     startDateAnterior = sql`date_trunc('quarter', timezone('America/Bogota', NOW())) - interval '3 months'`;
@@ -88,10 +95,10 @@ const getStats = async (period = 'month') => {
     startDateAnterior = sql`date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int - interval '6 months'`;
     endDateAnterior = sql`date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int`;
     chartQuery = sql`SELECT CASE WHEN v.fecha >= date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int THEN 0 ELSE 1 END as idx, ${ingresosFormula}::numeric as total FROM ventas v WHERE v.fecha >= date_trunc('year', timezone('America/Bogota', NOW())) + interval '6 months' * (EXTRACT(QUARTER FROM timezone('America/Bogota', NOW())) > 2)::int - interval '6 months' GROUP BY idx`;
-  } else { // month
-    startDateActual = sql`date_trunc('month', timezone('America/Bogota', NOW()))`;
-    startDateAnterior = sql`date_trunc('month', timezone('America/Bogota', NOW())) - interval '1 month'`;
-    endDateAnterior = sql`date_trunc('month', timezone('America/Bogota', NOW()))`;
+  } else { // month (default: last 30 days)
+    startDateActual = sql`timezone('America/Bogota', NOW())::date - interval '30 days'`;
+    startDateAnterior = sql`timezone('America/Bogota', NOW())::date - interval '60 days'`;
+    endDateAnterior = sql`timezone('America/Bogota', NOW())::date - interval '30 days'`;
     chartQuery = sql`SELECT to_char(v.fecha, 'YYYY-MM') as grouping, ${ingresosFormula}::numeric as total FROM ventas v WHERE v.fecha >= (date_trunc('month', timezone('America/Bogota', NOW())) - interval '5 months') GROUP BY grouping ORDER BY grouping`;
   }
 
@@ -176,27 +183,20 @@ const getStats = async (period = 'month') => {
   const estadoReparaciones = await sql`SELECT estado, COUNT(*)::int as cantidad FROM reparaciones GROUP BY estado ORDER BY cantidad DESC`;
   const topServicios = await sql`SELECT s.nombre, COUNT(*)::int as cantidad FROM reparaciones_servicios rs JOIN servicios s ON rs.id_servicio = s.id_servicio GROUP BY s.nombre ORDER BY cantidad DESC LIMIT 5`;
   
-  const actividadReciente = await sql`(
-    SELECT 'venta' as tipo, CONCAT('Venta #', v.id_venta, ' - ', c.nombre, ' ', c.apellido) as descripcion, v.fecha as fecha
-    FROM ventas v LEFT JOIN motocicletas m ON v.id_motocicleta = m.id_motocicleta LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
-    ORDER BY v.fecha DESC LIMIT 3
-  ) UNION ALL (
+  const proximosAgendamientos = await sql`
     SELECT 
-      'reparacion' as tipo, 
-      CONCAT('Reparación #', r.id_reparacion, ' - ', m.placa, ' (', m.marca, ' ', m.modelo, ')') as descripcion, 
-      COALESCE(
-        (SELECT MAX(rs.fecha_finalizacion) FROM reparaciones_servicios rs WHERE rs.id_reparacion = r.id_reparacion),
-        (SELECT (a.dia::date + a.horainicio::time)::timestamp FROM agendamientos a WHERE a.id_agendamiento = r.id_agendamiento),
-        '1970-01-01'::timestamp
-      ) as fecha
-    FROM reparaciones r 
-    LEFT JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta
-    ORDER BY fecha DESC LIMIT 3
-  ) UNION ALL (
-    SELECT 'agendamiento' as tipo, CONCAT('Agendamiento #', a.id_agendamiento, ' - ', e.nombre, ' ', e.apellido) as descripcion, (a.dia::date + a.horainicio::time)::timestamp as fecha
-    FROM agendamientos a LEFT JOIN empleados e ON a.id_empleado = e.id_empleado
-    ORDER BY a.dia DESC, a.horainicio DESC LIMIT 3
-  ) ORDER BY fecha DESC LIMIT 5`;
+      'agendamiento' as tipo,
+      CONCAT('Agendamiento #', a.id_agendamiento, ' - ', c.nombre, ' ', c.apellido, ' (', m.placa, ')') as descripcion, 
+      (a.dia::date + a.horainicio::time)::timestamp as fecha
+    FROM agendamientos a 
+    LEFT JOIN reparaciones r ON r.id_agendamiento = a.id_agendamiento 
+    LEFT JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta 
+    LEFT JOIN clientes c ON m.id_cliente = c.id_cliente
+    WHERE (a.dia::date + a.horainicio::time)::timestamp >= timezone('America/Bogota', NOW())
+      AND LOWER(a.estado) NOT IN ('anulado', 'anulada')
+    ORDER BY fecha ASC 
+    LIMIT 5
+  `;
 
   // Gráfica de ingresos con "Rellenador" de ceros
   const chartDataRaw = await chartQuery;
@@ -235,7 +235,7 @@ const getStats = async (period = 'month') => {
       estadoReparaciones: estadoReparaciones.map(r => ({ estado: r.estado, cantidad: r.cantidad })),
       topServicios: topServicios.map(r => ({ nombre: r.nombre, cantidad: r.cantidad }))
     },
-    recentActivity: actividadReciente.map(r => ({ tipo: r.tipo, descripcion: r.descripcion, fecha: r.fecha }))
+    recentActivity: proximosAgendamientos.map(r => ({ tipo: r.tipo, descripcion: r.descripcion, fecha: r.fecha }))
   };
 };
 

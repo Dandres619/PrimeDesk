@@ -29,8 +29,8 @@ export function RecentActivity({ activities }: RecentActivityProps) {
   return (
     <Card className="activity-section-animate dashboard-chart-card border-slate-200 dark:border-indigo-500/20 bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl">
       <CardHeader className="flex flex-row items-center gap-2 pb-4 border-b border-slate-100 dark:border-slate-800">
-        <Activity className="w-5 h-5 text-indigo-500" />
-        <CardTitle className="text-lg font-bold">Actividad Reciente</CardTitle>
+        <CalendarClock className="w-5 h-5 text-indigo-500" />
+        <CardTitle className="text-lg font-bold">Próximos agendamientos</CardTitle>
       </CardHeader>
       <CardContent className="pt-4">
         {activities && activities.length > 0 ? (
@@ -70,8 +70,8 @@ export function RecentActivity({ activities }: RecentActivityProps) {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 text-slate-500 dark:text-slate-400">
-            <Activity className="w-12 h-12 mb-3 opacity-20" />
-            <p className="text-sm font-medium">No hay actividad reciente registrada</p>
+            <CalendarClock className="w-12 h-12 mb-3 opacity-20" />
+            <p className="text-sm font-medium">No hay próximos agendamientos</p>
           </div>
         )}
       </CardContent>

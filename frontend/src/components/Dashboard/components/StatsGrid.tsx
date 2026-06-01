@@ -24,6 +24,12 @@ export function StatsGrid({ stats }: StatsGridProps) {
 
   const period = stats?.period || 'month';
 
+  const getCurrentMonthName = () => {
+    const date = new Date();
+    const monthName = date.toLocaleDateString('es-CO', { month: 'long' });
+    return monthName.charAt(0).toUpperCase() + monthName.slice(1);
+  };
+
   const getTitleIngreso = () => {
     switch (period) {
       case 'day': return 'Ingresos Hoy';
@@ -31,7 +37,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
       case 'quarter': return 'Ingresos Trimestre';
       case 'semester': return 'Ingresos Semestre';
       case 'month':
-      default: return 'Ingresos del Mes';
+      default: return 'Ingresos últimos 30 días';
     }
   };
 
@@ -42,7 +48,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
       case 'quarter': return 'Ventas Trimestre';
       case 'semester': return 'Ventas Semestre';
       case 'month':
-      default: return 'Ventas del Mes';
+      default: return 'Ventas últimos 30 días';
     }
   };
 
@@ -53,7 +59,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
       case 'quarter': return 'Agendamientos Trimestre';
       case 'semester': return 'Agendamientos Semestre';
       case 'month':
-      default: return 'Agendamientos del Mes';
+      default: return 'Agendamientos últimos 30 días';
     }
   };
 
@@ -64,7 +70,7 @@ export function StatsGrid({ stats }: StatsGridProps) {
       case 'quarter': return 'Reparaciones Activas Trimestre';
       case 'semester': return 'Reparaciones Activas Semestre';
       case 'month':
-      default: return 'Reparaciones Activas del Mes';
+      default: return 'Reparaciones activas';
     }
   };
 
