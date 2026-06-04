@@ -146,7 +146,8 @@ export function MotoDialog({ moto, motos, clients, onSave, isSaving, onOpenChang
     } else {
       setFormData(prev => ({ ...prev, [name]: finalValue }));
     }
-    if (touched[name]) validateField(name, finalValue);
+    setTouched(prev => ({ ...prev, [name]: true }));
+    validateField(name, finalValue);
   };
 
   const handleFocus = (name: string) => {
