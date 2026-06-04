@@ -101,6 +101,8 @@ export function AptFormDialog({ apt, date, clients, motorcycles, mechanics, serv
             apt={apt} services={services} filteredServices={filteredServices}
             toggleService={toggleService} durationData={durationData}
             totalPrice={totalPrice} format12h={format12h}
+            selectedMechanicSchedule={selectedMechanicSchedule}
+            selectedMechanic={selectedMechanic}
           />
         </div>
 

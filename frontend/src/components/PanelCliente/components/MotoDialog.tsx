@@ -139,7 +139,8 @@ export function MotoDialog({
       setFormData({ ...formData, [name]: finalValue });
     }
     
-    if (touched[name]) validateField(name, finalValue);
+    setTouched(prev => ({ ...prev, [name]: true }));
+    validateField(name, finalValue);
   };
 
   const handleFocus = (name: string) => {
@@ -414,6 +415,7 @@ export function MotoDialog({
                   onChange={(e) => handleInputChange('color', e.target.value)}
                   onFocus={() => handleFocus('color')}
                   placeholder="Ej: Negro Mate"
+
                   className={cn(touched.color && errors.color && "border-red-500")}
                 />
               </div>

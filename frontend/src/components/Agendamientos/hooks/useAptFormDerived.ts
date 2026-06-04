@@ -51,7 +51,7 @@ export function useAptFormDerived({
       const [h, m] = form.startTime.split(':').map(Number);
       const totalStartMins = h * 60 + m;
       const totalEndMins = totalStartMins + servicesMinutes;
-      const endH = Math.floor(totalEndMins / 60) % 24;
+      const endH = Math.floor(totalEndMins / 60);
       const endM = totalEndMins % 60;
       endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
     }
@@ -77,7 +77,7 @@ export function useAptFormDerived({
       if (!timeStr) return '';
       const [h, m] = timeStr.split(':').map(Number);
       const totalMins = h * 60 + m + mins;
-      const endH = Math.floor(totalMins / 60) % 24;
+      const endH = Math.floor(totalMins / 60);
       const endM = totalMins % 60;
       return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
     };
@@ -222,7 +222,7 @@ export function useAptFormDerived({
         if (!timeStr) return '';
         const [h, m] = timeStr.split(':').map(Number);
         const totalMins = h * 60 + m + mins;
-        const endH = Math.floor(totalMins / 60) % 24;
+        const endH = Math.floor(totalMins / 60);
         const endM = totalMins % 60;
         return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
       };

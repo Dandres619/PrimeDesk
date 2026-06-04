@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate": "node src/scripts/create_password_resets_table.js",
-    "migrate:verify": "node src/scripts/create_verification_tables.js"
+    "migrate:verify": "node src/scripts/create_verification_tables.js",
+    "migrate:color": "node src/scripts/alter_motos_color_column.js"
   },
   "keywords": [
     "express",
