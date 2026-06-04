@@ -13,6 +13,7 @@ export function MiPerfil() {
         profileData,
         isLoading,
         isProcessing,
+        isUploadingPhoto,
         formData,
         setFormData,
         formErrors,
@@ -54,6 +55,14 @@ export function MiPerfil() {
                         </div>
                     ) : (
                         <div className="mp-content-animate">
+                            {isUploadingPhoto && (
+                                <div className="mp-loading-overlay">
+                                    <div className="mp-loading">
+                                        <div className="mp-loading-ring" />
+                                        <p className="mp-loading-text">Actualizando foto...</p>
+                                    </div>
+                                </div>
+                            )}
                             <div className="mp-grid">
                                 <ProfileHeader
                                     formData={formData}
@@ -74,7 +83,6 @@ export function MiPerfil() {
                                             touchedFields={profileTouched}
                                             handleBlur={handleProfileBlur}
                                             handleProfileSubmit={handleProfileSubmit}
-                                            handleFileChange={handleFileChange}
                                             isProcessing={isProcessing}
                                             hasProfileChanges={hasProfileChanges}
                                         />

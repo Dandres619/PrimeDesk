@@ -10,6 +10,7 @@ export function useProfile() {
     const [profileData, setProfileData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
     const [formData, setFormData] = useState({
         nombre: '',
         apellido: '',
@@ -81,8 +82,8 @@ export function useProfile() {
 
     const hasProfileChanges = () => {
         if (!initialFormData) return false;
-        if (fotoFile) return true;
         return Object.keys(formData).some(key => {
+            if (key === 'foto') return false;
             const currentVal = (formData as any)[key] || '';
             const initialVal = (initialFormData as any)[key] || '';
             return currentVal !== initialVal;
@@ -185,20 +186,22 @@ export function useProfile() {
         try {
             const formDataToSend = new FormData();
             
-            const normalizedFormData = {
-                ...formData,
+            const personalInfo = {
+                nombre: formData.nombre,
+                apellido: formData.apellido,
+                tipo_documento: formData.tipo_documento,
+                documento: formData.documento,
+                telefono: formData.telefono,
+                barrio: formData.barrio,
+                direccion: formData.direccion,
                 fecha_nacimiento: normalizeDate(formData.fecha_nacimiento)
             };
 
-            Object.entries(normalizedFormData).forEach(([key, value]) => {
+            Object.entries(personalInfo).forEach(([key, value]) => {
                 if (value !== null && value !== undefined) {
                     formDataToSend.append(key, value as string);
                 }
             });
-
-            if (fotoFile) {
-                formDataToSend.append('fotoFile', fotoFile);
-            }
 
             const response = await fetch(`${API_URL}/auth/profile`, {
                 method: 'PUT',
@@ -229,17 +232,61 @@ export function useProfile() {
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadPhoto = async (file: File) => {
+        setIsUploadingPhoto(true);
+        try {
+            const formDataToSend = new FormData();
+            formDataToSend.append('fotoFile', file);
+
+            const personalInfo = {
+                nombre: formData.nombre,
+                apellido: formData.apellido,
+                tipo_documento: formData.tipo_documento,
+                documento: formData.documento,
+                telefono: formData.telefono,
+                barrio: formData.barrio,
+                direccion: formData.direccion,
+                fecha_nacimiento: normalizeDate(formData.fecha_nacimiento)
+            };
+
+            Object.entries(personalInfo).forEach(([key, value]) => {
+                if (value !== null && value !== undefined) {
+                    formDataToSend.append(key, value as string);
+                }
+            });
+
+            const response = await fetch(`${API_URL}/auth/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formDataToSend
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al subir la foto de perfil');
+            }
+
+            toast.success('Foto de perfil actualizada correctamente');
+            fetchProfile(false);
+        } catch (error: any) {
+            toast.error(error.message);
+        } finally {
+            setIsUploadingPhoto(false);
+        }
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setFotoFile(file);
-            setFormData(prev => ({ ...prev, foto: '' }));
-
             const reader = new FileReader();
             reader.onloadend = () => {
                 setFotoPreview(reader.result as string);
             };
             reader.readAsDataURL(file);
+
+            await uploadPhoto(file);
         }
     };
 
@@ -247,6 +294,7 @@ export function useProfile() {
         profileData,
         isLoading,
         isProcessing,
+        isUploadingPhoto,
         formData,
         setFormData,
         formErrors,

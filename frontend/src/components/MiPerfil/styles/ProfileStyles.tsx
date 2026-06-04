@@ -21,6 +21,7 @@ export function ProfileStyles() {
 
             /* ── Entrance Animation ── */
             .mp-content-animate {
+                position: relative;
                 animation: mp-content-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
             }
 
@@ -87,6 +88,25 @@ export function ProfileStyles() {
                 font-size: 14px;
                 color: #64748b;
                 font-weight: 500;
+            }
+
+            .mp-loading-overlay {
+                position: absolute;
+                inset: 0;
+                background: rgba(255, 255, 255, 0.7);
+                backdrop-filter: blur(4px);
+                z-index: 50;
+                border-radius: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .dark .mp-loading-overlay {
+                background: rgba(2, 6, 23, 0.7);
+                backdrop-filter: blur(4px);
+            }
+            .mp-loading-overlay .mp-loading {
+                min-height: 0;
             }
 
             /* ── Grid ── */

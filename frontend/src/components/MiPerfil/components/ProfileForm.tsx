@@ -10,7 +10,6 @@ interface ProfileFormProps {
     touchedFields: Record<string, boolean>;
     handleBlur: (field: string) => void;
     handleProfileSubmit: (e: React.FormEvent) => void;
-    handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     isProcessing: boolean;
     hasProfileChanges: () => boolean;
 }
@@ -30,7 +29,6 @@ export function ProfileForm({
     touchedFields,
     handleBlur,
     handleProfileSubmit,
-    handleFileChange,
     isProcessing,
     hasProfileChanges
 }: ProfileFormProps) {
@@ -178,22 +176,6 @@ export function ProfileForm({
                                 error={!!(touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento)}
                             />
                         </div>
-                    </div>
-
-                    <div className="mp-divider" />
-                    <p className="mp-section-label">Foto de perfil</p>
-
-                    <div className="mp-photo-section">
-                        <div className="mp-photo-label">
-                            <ImageIcon style={{ width: 16, height: 16, color: '#2563eb' }} />
-                            Sube una imagen desde tu dispositivo
-                        </div>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            className="mp-file-input"
-                        />
                     </div>
 
                     <div className="mp-submit-row" style={{ marginTop: 28 }}>
