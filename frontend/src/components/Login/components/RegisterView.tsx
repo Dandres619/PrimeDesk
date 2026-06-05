@@ -177,7 +177,12 @@ export function RegisterView({
                   <Input
                     placeholder="12345678"
                     value={registerData.documento}
-                    onChange={(e) => setRegisterData({ ...registerData, documento: e.target.value.replace(/\D/g, '') })}
+                    onChange={(e) => {
+                      const value = registerData.tipo_documento === 'PP'
+                        ? e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+                        : e.target.value.replace(/\D/g, '');
+                      setRegisterData({ ...registerData, documento: value });
+                    }}
                     onFocus={() => {
                       setFocusedField('documento');
                       setTouchedFields(prev => ({ ...prev, documento: true }));
@@ -817,6 +822,7 @@ export function RegisterView({
 
         /* Select */
         .rv-select-trigger {
+          width: 100% !important;
           height: 44px !important;
           border-radius: 12px !important;
           border: 2px solid #e2e8f0 !important;

@@ -18,8 +18,21 @@ export const validateField = (name: string, value: string, currentData: any, act
         else if (value.length > 50) error = 'Máximo 50 caracteres';
         break;
       case 'documento':
-        if (!value) error = 'No puede estar vacío';
-        else if (!/^\d{7,10}$/.test(value)) error = 'Entre 7 y 10 números';
+        if (!value) {
+          error = 'No puede estar vacío';
+        } else if (currentData.tipo_documento === 'PP') {
+          if (value.length < 5) {
+            error = 'Mínimo 5 caracteres';
+          } else if (value.length > 20) {
+            error = 'Máximo 20 caracteres';
+          } else if (!/[A-Z0-9]/.test(value)) {
+            error = 'Solo letras y números';
+          } else if (!/\d/.test(value)) {
+            error = 'Debe tener al menos un número';
+          }
+        } else if (!/^\d{7,10}$/.test(value)) {
+          error = 'Entre 7 y 10 números';
+        }
         break;
       case 'fecha_nacimiento':
         if (!value) {
