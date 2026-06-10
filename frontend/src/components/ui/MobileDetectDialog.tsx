@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from './button';
 import { Smartphone, Download, Globe } from 'lucide-react';
 
-const APK_URL = 'https://drive.google.com/uc?export=download&id=12H14E2LRh-apyub6bL2ndaLXLVyCGsn9';
+const APK_URL = 'https://primedeskbackend.onrender.com/rafa-motos.apk';
 
 interface MobileDetectDialogProps {
   open: boolean;
