@@ -80,6 +80,15 @@ const update = async (id, { id_cliente, marca, modelo, anio, placa, color, motor
     }
   }
 
+  // Si intentan inactivar, verificar dependencias primero
+  if (estado === false) {
+    const agendamientos = await sql`SELECT 1 FROM agendamientos a INNER JOIN reparaciones r ON r.id_agendamiento = a.id_agendamiento WHERE r.id_motocicleta = ${id} LIMIT 1`;
+    const reparaciones = await sql`SELECT 1 FROM reparaciones WHERE id_motocicleta = ${id} LIMIT 1`;
+    if (agendamientos.length > 0 || reparaciones.length > 0) {
+      throw { status: 400, message: 'No se puede inactivar la motocicleta porque tiene agendamientos o reparaciones asociados.' };
+    }
+  }
+
   const [row] = await sql`
         UPDATE motocicletas 
         SET id_cliente = ${id_cliente}, marca = ${marca}, modelo = ${modelo},
@@ -92,26 +101,13 @@ const update = async (id, { id_cliente, marca, modelo, anio, placa, color, motor
     `;
   if (!row) throw { status: 404, message: 'Motocicleta no encontrada.' };
 
-  // Si intentan inactivar, verificar dependencias
-  if (estado === false) {
-    const agendamientos = await sql`SELECT 1 FROM agendamientos a LEFT JOIN reparaciones r ON a.id_reparacion = r.id_reparacion WHERE r.id_motocicleta = ${id} LIMIT 1`;
-    const reparaciones = await sql`SELECT 1 FROM reparaciones WHERE id_motocicleta = ${id} LIMIT 1`;
-    if (agendamientos.length > 0 || reparaciones.length > 0) {
-      // Revertir estado si hay dependencias? O mejor lanzar error antes.
-      // Vamos a lanzar error ANTES de actualizar si es posible, o simplemente no permitirlo.
-      // Para ser consistente con lo que hicimos antes, lanzamos error si intentan inactivar.
-      await sql`UPDATE motocicletas SET estado = TRUE WHERE id_motocicleta = ${id}`;
-      throw { status: 400, message: 'No se puede inactivar la motocicleta porque tiene agendamientos o reparaciones asociados.' };
-    }
-  }
-
   return row;
 };
 
 const remove = async (id) => {
   const sql = await getPool();
 
-  const agendamientos = await sql`SELECT 1 FROM agendamientos a LEFT JOIN reparaciones r ON a.id_reparacion = r.id_reparacion WHERE r.id_motocicleta = ${id} LIMIT 1`;
+  const agendamientos = await sql`SELECT 1 FROM agendamientos a INNER JOIN reparaciones r ON r.id_agendamiento = a.id_agendamiento WHERE r.id_motocicleta = ${id} LIMIT 1`;
   const reparaciones = await sql`SELECT 1 FROM reparaciones WHERE id_motocicleta = ${id} LIMIT 1`;
 
   if (agendamientos.length > 0 || reparaciones.length > 0) {
