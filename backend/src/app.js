@@ -34,6 +34,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(express.static(path.join(__dirname, 'public')));
+
 // app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // ── Rutas de la API ─────────────────────────────────────────────────────────
@@ -57,11 +59,11 @@ app.use((_req, res) => {
 // ── Error handler global ────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
     console.error('❌ Error detectado:', err.stack || err);
-    
+
     const statusCode = err.status || 500;
     const message = err.message || 'Error interno del servidor.';
-    
-    res.status(statusCode).json({ 
+
+    res.status(statusCode).json({
         message,
         error: process.env.NODE_ENV === 'development' ? err : {}
     });
