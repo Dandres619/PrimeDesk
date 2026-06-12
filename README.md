@@ -8,9 +8,6 @@
 ![Node.js](https://img.shields.io/badge/Node.js-18.x-339933?style=flat-square&logo=nodedotjs&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-4.19-000000?style=flat-square&logo=express&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?style=flat-square&logo=postgresql&logoColor=white)
-![GitHub license](https://img.shields.io/github/license/Dandres619/PrimeDesk?style=flat-square)
-![GitHub last commit](https://img.shields.io/github/last-commit/Dandres619/PrimeDesk?style=flat-square)
-![GitHub repo size](https://img.shields.io/github/repo-size/Dandres619/PrimeDesk?style=flat-square)
 
 ---
 
