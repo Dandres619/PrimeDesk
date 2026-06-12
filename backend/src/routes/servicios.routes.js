@@ -13,7 +13,7 @@ router.get('/', verifyToken, ctrl.getAll);
 router.get('/:id', verifyToken, ctrl.getById);
 router.post('/', verifyToken, requirePermiso('gestionar_servicios'),
     [
-        body('nombre').notEmpty().withMessage('Nombre requerido.'),
+        body('nombre').notEmpty().withMessage('Nombre requerido.').isLength({ max: 50 }).withMessage('El nombre no puede superar los 50 caracteres.'),
         body('duracion').optional().isNumeric().withMessage('La duración debe ser un número.'),
         body('precio').notEmpty().withMessage('Precio requerido.').isNumeric().withMessage('El precio debe ser un número.'),
         handleValidation
@@ -22,7 +22,7 @@ router.post('/', verifyToken, requirePermiso('gestionar_servicios'),
 );
 router.put('/:id', verifyToken, requirePermiso('gestionar_servicios'),
     [
-        body('nombre').notEmpty().withMessage('Nombre requerido.'),
+        body('nombre').notEmpty().withMessage('Nombre requerido.').isLength({ max: 50 }).withMessage('El nombre no puede superar los 50 caracteres.'),
         body('duracion').optional().isNumeric().withMessage('La duración debe ser un número.'),
         body('precio').notEmpty().withMessage('Precio requerido.').isNumeric().withMessage('El precio debe ser un número.'),
         handleValidation

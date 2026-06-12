@@ -32,6 +32,7 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
     switch (name) {
       case 'nombre':
         if (!value) error = 'El nombre es obligatorio';
+        else if (value.length > 50) error = 'Máximo 50 caracteres';
         break;
       case 'duracion':
         if (value === '') error = 'La duración es obligatoria';
@@ -106,9 +107,8 @@ export function ServicioDialog({ service, onSave, isSaving, onOpenChange }: Serv
 
     if (finalValue === undefined) return;
     setFormData(prev => ({ ...prev, [name]: finalValue }));
-    if (touched[name]) {
-      validateField(name, finalValue);
-    }
+    setTouched(prev => ({ ...prev, [name]: true }));
+    validateField(name, finalValue);
   };
 
   const handleFocus = (name: string) => {
