@@ -154,26 +154,11 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
       } else {
         finalValue = value.replace(/[^0-9.-]/g, '').slice(0, 15);
       }
-    } else {
-      const limits: Record<string, number> = {
-        name: 60,
-        contact: 50,
-        specialty: 50,
-        address: 80,
-        city: 30,
-        country: 30,
-        email: 50,
-        website: 100
-      };
-      if (limits[name] && finalValue.length > limits[name]) {
-        finalValue = finalValue.slice(0, limits[name]);
-      }
     }
 
     setForm(prev => ({ ...prev, [name]: finalValue }));
-    if (touched[name] || name === 'notes') {
-      validateField(name, finalValue);
-    }
+    setTouched(prev => ({ ...prev, [name]: true }));
+    validateField(name, finalValue);
   };
 
   const handleFocus = (name: string) => {

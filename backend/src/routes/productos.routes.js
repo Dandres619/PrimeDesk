@@ -9,7 +9,7 @@ const router = Router();
 
 const validations = [
     body('id_categoria').isInt({ min: 1 }).withMessage('ID categoría inválido.'),
-    body('nombre').notEmpty().withMessage('Nombre requerido.'),
+    body('nombre').notEmpty().withMessage('Nombre requerido.').isLength({ max: 50 }).withMessage('El nombre no puede superar los 50 caracteres.'),
     body('marca').notEmpty().withMessage('Marca requerida.'),
     handleValidation,
 ];

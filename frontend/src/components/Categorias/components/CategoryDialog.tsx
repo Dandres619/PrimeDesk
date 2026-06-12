@@ -20,6 +20,7 @@ export function CategoryDialog({ category, onSave, onOpenChange }: CategoryDialo
     description: category?.description || ''
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [touched, setTouched] = useState(false);
 
   useEffect(() => {
     if (category) {
@@ -27,20 +28,29 @@ export function CategoryDialog({ category, onSave, onOpenChange }: CategoryDialo
     } else {
       setForm({ name: '', description: '' });
     }
+    setTouched(false);
   }, [category]);
+
+  const nameError = useMemo(() => {
+    if (form.name && form.name.length > 50) return 'Máximo 50 caracteres';
+    return null;
+  }, [form.name]);
 
   const descriptionError = useMemo(() => {
     const val = form.description;
-    if (val && val.length > 80) {
-      return `Máximo 80 caracteres`;
-    }
+    if (val && val.length > 80) return 'Máximo 80 caracteres';
     return null;
   }, [form.description]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched(true);
     if (!form.name?.trim()) {
       toast.error('Complete todos los campos obligatorios');
+      return;
+    }
+    if (nameError) {
+      toast.error('Por favor corrija los errores en el formulario');
       return;
     }
     if (descriptionError) {
@@ -86,12 +96,18 @@ export function CategoryDialog({ category, onSave, onOpenChange }: CategoryDialo
 
         <div className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar text-left">
           <div className="space-y-2">
-            <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nombre de la Categoría *</Label>
+            <div className="flex justify-between items-center">
+              <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nombre de la Categoría *</Label>
+              {touched && nameError && <span className="text-red-500 text-[10px] font-bold">{nameError}</span>}
+            </div>
             <Input 
               value={form.name} 
-              onChange={e => setForm({ ...form, name: e.target.value })} 
+              onChange={e => { setForm({ ...form, name: e.target.value }); setTouched(true); }} 
               placeholder="Ej. Lubricantes, Frenos, Iluminación..."
-              className="h-11 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+              className={cn(
+                "h-11 rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all",
+                touched && nameError ? "border-red-500 focus:ring-red-500/20" : ""
+              )}
             />
           </div>
 

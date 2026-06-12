@@ -63,7 +63,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
   const [roleSearch, setRoleSearch] = useState('');
 
   const filteredRoles = useMemo(() => {
-    return availableRoles.filter(r => 
+    return availableRoles.filter(r =>
       r.Nombre?.toLowerCase().includes(roleSearch.toLowerCase())
     );
   }, [availableRoles, roleSearch]);
@@ -77,9 +77,9 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
           });
           if (response.ok) {
             const data = await response.json();
-            const filtered = data.filter((r: any) => 
-              (r.Estado === true || r.Estado === 1) && 
-              r.ID_Rol !== 3 && 
+            const filtered = data.filter((r: any) =>
+              (r.Estado === true || r.Estado === 1) &&
+              r.ID_Rol !== 3 &&
               r.Nombre?.toLowerCase() !== 'cliente'
             );
             setAvailableRoles(filtered);
@@ -383,8 +383,8 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
                           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent 
-                        className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto bg-white dark:bg-slate-950" 
+                      <PopoverContent
+                        className="w-[var(--radix-popover-trigger-width)] p-0 border-none shadow-2xl rounded-2xl overflow-hidden pointer-events-auto bg-white dark:bg-slate-950"
                         align="start"
                         onCloseAutoFocus={(e) => e.preventDefault()}
                       >
@@ -399,7 +399,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
                             />
                           </div>
                         </div>
-                        <div 
+                        <div
                           className="max-h-[200px] overflow-y-auto p-1 bg-white dark:bg-slate-950 custom-scrollbar"
                           onWheel={(e) => e.stopPropagation()}
                         >
@@ -553,7 +553,7 @@ export function EmployeeDialog({ employee, onSave, isSaving, onOpenChange, open 
                     </div>
                     <div className="space-y-2 col-span-2">
                       <div className="flex justify-between items-center px-1">
-                        <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Fecha de Nacimiento</Label>
+                        <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Fecha de Nacimiento (opcional)</Label>
                         {touchedFields.fecha_nacimiento && formErrors.fecha_nacimiento && <span className="text-[9px] font-bold text-red-500 uppercase">{formErrors.fecha_nacimiento}</span>}
                       </div>
                       <DatePickerInput

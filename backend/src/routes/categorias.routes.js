@@ -21,11 +21,11 @@ const router = Router();
 router.get('/', verifyToken, ctrl.getAll);
 router.get('/:id', verifyToken, ctrl.getById);
 router.post('/', verifyToken, requirePermiso('gestionar_categorias'),
-    [body('nombre').notEmpty().withMessage('Nombre requerido.'), handleValidation],
+    [body('nombre').notEmpty().withMessage('Nombre requerido.').isLength({ max: 50 }).withMessage('El nombre no puede superar los 50 caracteres.'), handleValidation],
     ctrl.create
 );
 router.put('/:id', verifyToken, requirePermiso('gestionar_categorias'),
-    [body('nombre').notEmpty().withMessage('Nombre requerido.'), handleValidation],
+    [body('nombre').notEmpty().withMessage('Nombre requerido.').isLength({ max: 50 }).withMessage('El nombre no puede superar los 50 caracteres.'), handleValidation],
     ctrl.update
 );
 router.delete('/:id', verifyToken, requirePermiso('gestionar_categorias'), ctrl.remove);

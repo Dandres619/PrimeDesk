@@ -111,7 +111,7 @@ const remove = async (id) => {
   const reparaciones = await sql`SELECT 1 FROM reparaciones WHERE id_motocicleta = ${id} LIMIT 1`;
 
   if (agendamientos.length > 0 || reparaciones.length > 0) {
-    throw { status: 400, message: 'No se puede eliminar la motocicleta porque tiene historial de agendamientos o reparaciones. Considere inactivarla.' };
+    throw { status: 400, message: 'No se puede eliminar la motocicleta porque tiene historial de agendamientos o reparaciones activas.' };
   }
 
   const [row] = await sql`

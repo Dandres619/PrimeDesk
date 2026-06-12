@@ -107,6 +107,19 @@ const toggleEstado = async (id) => {
         throw { status: 400, message: 'No se puede inactivar este usuario porque tiene agendamientos asignados.' };
       }
     }
+
+    const [cli] = await sql`SELECT id_cliente FROM clientes WHERE id_usuario = ${id}`;
+    if (cli) {
+      const agendamientos = await sql`
+        SELECT COUNT(*) FROM agendamientos a
+        INNER JOIN reparaciones r ON r.id_agendamiento = a.id_agendamiento
+        INNER JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta
+        WHERE m.id_cliente = ${cli.id_cliente}
+      `;
+      if (parseInt(agendamientos[0].count) > 0) {
+        throw { status: 400, message: 'No se puede inactivar este usuario porque tiene agendamientos asociados.' };
+      }
+    }
   }
 
   const [row] = await sql`

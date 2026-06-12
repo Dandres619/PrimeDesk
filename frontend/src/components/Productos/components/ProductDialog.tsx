@@ -25,6 +25,7 @@ export function ProductDialog({ product, categories, brands, onSave, onOpenChang
     brand: ''
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [touched, setTouched] = useState(false);
   
   const [popovers, setPopovers] = useState({
     brand: false,
@@ -64,18 +65,26 @@ export function ProductDialog({ product, categories, brands, onSave, onOpenChang
 
   const selectedCategory = categories.find(c => c.id.toString() === form.categoryId);
 
+  const nameError = useMemo(() => {
+    if (form.name && form.name.length > 50) return 'Máximo 50 caracteres';
+    return null;
+  }, [form.name]);
+
   const descriptionError = useMemo(() => {
     const val = form.description;
-    if (val && val.length > 80) {
-      return `Máximo 80 caracteres`;
-    }
+    if (val && val.length > 80) return 'Máximo 80 caracteres';
     return null;
   }, [form.description]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched(true);
     if (!form.name?.trim() || !form.brand?.trim() || !form.categoryId) {
       toast.error('Complete todos los campos obligatorios');
+      return;
+    }
+    if (nameError) {
+      toast.error('Por favor corrija los errores en el formulario');
       return;
     }
     if (descriptionError) {
@@ -115,12 +124,18 @@ export function ProductDialog({ product, categories, brands, onSave, onOpenChang
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {/* Full width row for Name */}
             <div className="sm:col-span-2 space-y-2">
-              <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nombre del Producto *</Label>
+              <div className="flex justify-between items-center">
+                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nombre del Producto *</Label>
+                {touched && nameError && <span className="text-red-500 text-[10px] font-bold">{nameError}</span>}
+              </div>
               <Input
                 placeholder="Ej. Filtro de Aceite"
                 value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
-                className="h-11 rounded-xl focus:ring-2 focus:ring-blue-500/20"
+                onChange={e => { setForm({ ...form, name: e.target.value }); setTouched(true); }}
+                className={cn(
+                  "h-11 rounded-xl focus:ring-2 outline-none transition-all",
+                  touched && nameError ? "border-red-500 focus:ring-red-500/20" : "focus:ring-blue-500/20"
+                )}
               />
             </div>
 
