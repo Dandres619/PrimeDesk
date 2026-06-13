@@ -43,7 +43,7 @@ const create = async ({ id_empleado, dia, hora_inicio, hora_fin, tipo, descripci
                c.nombre AS "NombreCliente", c.apellido AS "ApellidoCliente",
                u.correo AS "CorreoCliente"
         FROM agendamientos a
-        LEFT JOIN reparaciones r ON a.id_reparacion = r.id_reparacion
+        LEFT JOIN reparaciones r ON r.id_agendamiento = a.id_agendamiento
         INNER JOIN motocicletas m ON r.id_motocicleta = m.id_motocicleta
         INNER JOIN clientes c ON m.id_cliente = c.id_cliente
         LEFT JOIN usuarios u ON c.id_usuario = u.id_usuario
