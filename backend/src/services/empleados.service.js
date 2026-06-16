@@ -214,12 +214,6 @@ const remove = async (id) => {
     throw { status: 400, message: `No se puede eliminar a ${emp.nombre} ${emp.apellido} porque tiene agendamientos asignados en el calendario.` };
   }
 
-  // 3. Verificar reparaciones (por si acaso aunque no tenga agendamiento directo)
-  const reparaciones = await sql`SELECT COUNT(*) FROM reparaciones_avances WHERE id_empleado = ${id}`;
-  if (parseInt(reparaciones[0].count) > 0) {
-    throw { status: 400, message: `No se puede eliminar a ${emp.nombre} ${emp.apellido} porque tiene avances de reparación registrados.` };
-  }
-
   try {
     return await sql.begin(async (tx) => {
       // Borrar empleado
