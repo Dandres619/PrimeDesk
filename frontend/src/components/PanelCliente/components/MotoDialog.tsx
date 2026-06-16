@@ -63,6 +63,8 @@ export function MotoDialog({
       case 'color':
         if (!value) {
           error = 'El color es obligatorio';
+        } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$/.test(value)) {
+          error = 'Solo letras';
         } else if (value.length > 50) {
           error = 'Máximo 50 caracteres';
         }
@@ -77,6 +79,7 @@ export function MotoDialog({
         if (value === '') error = 'El kilometraje es obligatorio';
         else if (isNaN(value)) error = 'Solo números';
         else if (value <= 0) error = 'El kilometraje no puede ser 0 o menor';
+        else if (value > 360000) error = 'Máximo 360,000 km';
         break;
     }
     setErrors(prev => ({ ...prev, [name]: error }));
@@ -102,12 +105,15 @@ export function MotoDialog({
 
   const blockInvalidChar = (e: React.KeyboardEvent) => {
     if (['e', 'E', '+', '-', ',', '.'].includes(e.key)) e.preventDefault();
+    if (e.key === '0' && (e.currentTarget as HTMLInputElement).value === '') e.preventDefault();
   };
 
   const handleInputChange = (name: string, value: any) => {
     let finalValue = value;
     
-    if (name === 'placa') {
+    if (name === 'color') {
+      finalValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ]/g, '');
+    } else if (name === 'placa') {
       finalValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
     } else if (name === 'ano' || name === 'cilindraje' || name === 'kilometraje') {
       if (value === '') {
@@ -382,14 +388,14 @@ export function MotoDialog({
                   value={formData.cilindraje}
                   onChange={(e) => handleInputChange('cilindraje', e.target.value)}
                   onFocus={() => handleFocus('cilindraje')}
-                  onKeyDown={blockInvalidChar}
-                  placeholder="Ej: 600"
-                  className={cn(touched.cilindraje && errors.cilindraje && "border-red-500")}
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="kilometraje">Kilometraje *</Label>
+                   onKeyDown={blockInvalidChar}
+                   placeholder="Ej: 600"
+                   className={cn(touched.cilindraje && errors.cilindraje && "border-red-500")}
+                 />
+               </div>
+               <div className="space-y-2">
+                 <div className="flex justify-between items-center">
+                   <Label htmlFor="kilometraje">Kilometraje *</Label>
                   {touched.kilometraje && errors.kilometraje && <span className="text-red-500 text-[10px] font-medium">{errors.kilometraje}</span>}
                 </div>
                 <Input

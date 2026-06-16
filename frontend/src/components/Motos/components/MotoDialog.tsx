@@ -58,6 +58,8 @@ export function MotoDialog({ moto, motos, clients, onSave, isSaving, onOpenChang
       case 'color':
         if (!value) {
           error = 'El color es obligatorio';
+        } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$/.test(value)) {
+          error = 'Solo letras';
         } else if (value.length > 50) {
           error = 'Máximo 50 caracteres';
         }
@@ -72,6 +74,7 @@ export function MotoDialog({ moto, motos, clients, onSave, isSaving, onOpenChang
         if (value === '') error = 'El kilometraje es obligatorio';
         else if (isNaN(value)) error = 'Solo números';
         else if (value <= 0) error = 'El kilometraje no puede ser 0 o menor';
+        else if (value > 360000) error = 'Máximo 360,000 km';
         break;
       case 'id_cliente': if (!value) error = 'Debe seleccionar un propietario'; break;
     }
@@ -118,10 +121,14 @@ export function MotoDialog({ moto, motos, clients, onSave, isSaving, onOpenChang
 
   const blockInvalidChar = (e: React.KeyboardEvent) => {
     if (['e', 'E', '+', '-', ',', '.'].includes(e.key)) e.preventDefault();
+    if (e.key === '0' && (e.currentTarget as HTMLInputElement).value === '') e.preventDefault();
   };
 
   const handleInputChange = (name: string, value: any) => {
     let finalValue = value;
+    if (name === 'color') {
+      finalValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ]/g, '');
+    }
     if (name === 'placa') finalValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
     if (name === 'anio' || name === 'motor' || name === 'kilometraje') {
       if (value === '') finalValue = '';
