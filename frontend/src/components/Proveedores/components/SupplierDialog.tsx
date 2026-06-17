@@ -118,10 +118,11 @@ export function SupplierDialog({ supplier, onSave, onOpenChange }: SupplierDialo
       case 'website':
         if (currentPersonType === 'Jurídica' && !value?.trim()) {
           error = 'Obligatorio para persona jurídica';
+        } else if (value && value.length > 100) {
+          error = 'Máximo 100 caracteres';
         } else if (value && value.trim()) {
-          const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+          const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})(\/[\w .-]*)?\/?$/i;
           if (!urlRegex.test(value)) error = 'URL inválida';
-          else if (value.length > 100) error = 'Máximo 100 caracteres';
         }
         break;
       case 'notes':
