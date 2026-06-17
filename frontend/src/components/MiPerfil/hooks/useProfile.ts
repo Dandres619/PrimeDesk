@@ -185,7 +185,7 @@ export function useProfile() {
         setIsProcessing(true);
         try {
             const formDataToSend = new FormData();
-            
+
             const personalInfo = {
                 nombre: formData.nombre,
                 apellido: formData.apellido,
@@ -280,6 +280,11 @@ export function useProfile() {
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (!file.type.startsWith('image/')) {
+                toast.error('Solo se permiten imágenes (JPG, PNG, WEBP, etc).');
+                e.target.value = '';
+                return;
+            }
             const reader = new FileReader();
             reader.onloadend = () => {
                 setFotoPreview(reader.result as string);

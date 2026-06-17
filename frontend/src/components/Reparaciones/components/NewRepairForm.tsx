@@ -575,8 +575,13 @@ export function NewRepairForm({
             value={formData.observations}
             onChange={(e) => setFormData((prev: any) => ({ ...prev, observations: e.target.value }))}
             placeholder="Describa detalladamente el problema..."
-            className="min-h-[100px] rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-sm p-4 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all resize-none"
+            className={`min-h-[100px] rounded-xl bg-slate-50/50 dark:bg-slate-900/50 border text-sm p-4 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all resize-none ${(formData.observations || '').length > 80 ? 'border-red-500 bg-red-50/10' : 'border-slate-200 dark:border-slate-800'}`}
           />
+          {(formData.observations || '').length > 80 && (
+            <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" /> Máximo 80 caracteres
+            </p>
+          )}
         </div>
       </div>
 
