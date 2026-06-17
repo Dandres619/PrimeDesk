@@ -67,7 +67,7 @@ export function useProductos() {
         nombre: data.name,
         marca: data.brand,
         descripcion: data.description,
-        estado: editingProduct ? (data.status === 'Activo' ? 1 : 0) : 1
+        estado: editingProduct ? (editingProduct.status === 'Activo' ? 1 : 0) : 1
       };
 
       const res = await fetch(url, {
