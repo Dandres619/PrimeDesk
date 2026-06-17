@@ -111,8 +111,8 @@ const remove = async (id) => {
     const [prov] = await sql`SELECT nombreempresa, estado FROM proveedores WHERE id_proveedor = ${id}`;
     if (!prov) throw { status: 404, message: 'Proveedor no encontrado.' };
 
-    if (prov.estado !== false && prov.estado !== 'Inactivo') {
-        throw { status: 400, message: `No se puede eliminar el proveedor ${prov.nombreempresa} porque está Activo. Primero debe inactivarlo.` };
+    if (!prov.estado || prov.estado === 'Inactivo') {
+        throw { status: 400, message: `No se puede eliminar el proveedor ${prov.nombreempresa} porque está Inactivo.` };
     }
 
     // 2. Verificar asociaciones (compras)

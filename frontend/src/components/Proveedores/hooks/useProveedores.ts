@@ -92,8 +92,8 @@ export function useProveedores() {
   };
 
   const handleDelete = async (supplier: any) => {
-    if (supplier.status === 'Activo') {
-      toast.error('No se puede eliminar un proveedor activo. Primero debe inactivarlo.');
+    if (supplier.status === 'Inactivo') {
+      toast.error('No se puede eliminar un proveedor inactivo.');
       return false;
     }
 
